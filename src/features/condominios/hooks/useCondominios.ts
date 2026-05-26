@@ -5,6 +5,13 @@ import {
   createCondominio,
   updateCondominio,
   deleteCondominio,
+  getBlocos,
+  createBloco,
+  deleteBloco,
+  updateBloco,
+  createUnidade,
+  updateUnidade,
+  deleteUnidade,
 } from "../services/condominios.service"
 import type { CreateCondominioRequest } from "../types/condominio.types"
 
@@ -51,6 +58,86 @@ export function useDeleteCondominio() {
     mutationFn: (id: string) => deleteCondominio(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["condominios"] })
+    },
+  })
+}
+
+export function useBlocos(condominioId: string) {
+  return useQuery({
+    queryKey: ["condominios", condominioId, "blocos"],
+    queryFn: () => getBlocos(condominioId),
+    enabled: !!condominioId,
+  })
+}
+
+export function useCreateBloco(condominioId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (nome: string) => createBloco(condominioId, nome),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["condominios", condominioId, "blocos"] })
+    },
+  })
+}
+
+export function useUpdateBloco(condominioId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ blocoId, nome }: { blocoId: string; nome: string }) =>
+      updateBloco(condominioId, blocoId, nome),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["condominios", condominioId, "blocos"] })
+    },
+  })
+}
+
+export function useDeleteBloco(condominioId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (blocoId: string) => deleteBloco(condominioId, blocoId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["condominios", condominioId, "blocos"] })
+      qc.invalidateQueries({ queryKey: ["condominios"] })
+    },
+  })
+}
+
+export function useCreateUnidade(condominioId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ blocoId, numero }: { blocoId: string; numero: string }) =>
+      createUnidade(condominioId, blocoId, numero),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["condominios", condominioId, "blocos"] })
+    },
+  })
+}
+
+export function useUpdateUnidade(condominioId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      blocoId,
+      unidadeId,
+      numero,
+    }: {
+      blocoId: string
+      unidadeId: string
+      numero: string
+    }) => updateUnidade(condominioId, blocoId, unidadeId, numero),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["condominios", condominioId, "blocos"] })
+    },
+  })
+}
+
+export function useDeleteUnidade(condominioId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ blocoId, unidadeId }: { blocoId: string; unidadeId: string }) =>
+      deleteUnidade(condominioId, blocoId, unidadeId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["condominios", condominioId, "blocos"] })
     },
   })
 }

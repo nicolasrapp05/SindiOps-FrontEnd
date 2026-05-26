@@ -26,6 +26,9 @@ export interface Condominio {
   criadoEm: string
 }
 
+export type PadraoNumeracao = "andar100" | "sequencial" | "prefixoBloco" | "letras"
+export type IdentificacaoBloco = "letras" | "numeros" | "custom"
+
 export interface CreateCondominioRequest {
   nome: string
   enderecoRua?: string

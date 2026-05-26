@@ -65,6 +65,8 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
         .toUpperCase()
     : "SC"
 
+  const allHrefs = navGroups.flatMap((g) => g.items.map((i) => i.href))
+
   const filteredGroups = navGroups
     .map((group) => ({
       ...group,
@@ -169,6 +171,9 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
                 <li key={item.href}>
                   <NavLink
                     to={item.href}
+                    end={allHrefs.some(
+                      (h) => h !== item.href && h.startsWith(item.href + "/"),
+                    )}
                     onClick={onNavigate}
                     className={({ isActive }) =>
                       cn(
