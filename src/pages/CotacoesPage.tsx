@@ -282,10 +282,9 @@ export default function CotacoesPage() {
               <TableBody>
                 {paged.map((row) => {
                   const open = expandedId === row.id
-                  const cotacoes =
-                    open
-                      ? (expandedDetail?.cotacoes ?? row.cotacoes ?? [])
-                      : (row.cotacoes ?? [])
+                  const cotacoes = open
+                    ? (expandedDetail?.cotacoes ?? row.cotacoes ?? [])
+                    : (row.cotacoes ?? [])
                   const cotacoesCount = cotacoes.length
 
                   return (
