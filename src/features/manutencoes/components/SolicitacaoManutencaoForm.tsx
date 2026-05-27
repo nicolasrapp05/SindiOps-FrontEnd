@@ -28,6 +28,8 @@ import {
   type CreateSolicitacaoManutencaoRequest,
   type SolicitacaoTipoServico,
 } from "../types/solicitacao-manutencao.types"
+import { useFornecedores } from "@/features/fornecedores/hooks/useFornecedores"
+import Combobox from "@/components/shared/Combobox"
 
 const TIPOS = Object.keys(SOLICITACAO_TIPO_LABEL) as SolicitacaoTipoServico[]
 
@@ -47,7 +49,7 @@ const schema = z
     if (data.responsavel === "fornecedor" && !data.fornecedorId?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Informe o ID do fornecedor",
+        message: "Selecione o fornecedor",
         path: ["fornecedorId"],
       })
     }
@@ -88,6 +90,9 @@ export default function SolicitacaoManutencaoForm({
   })
 
   const responsavel = watch("responsavel")
+
+  const { data: fornecedoresData } = useFornecedores(undefined)
+  const fornecedoresList = Array.isArray(fornecedoresData) ? fornecedoresData : []
 
   useEffect(() => {
     if (open) {
@@ -190,12 +195,18 @@ export default function SolicitacaoManutencaoForm({
           </div>
           {responsavel === "fornecedor" && (
             <div className="space-y-2">
-              <Label htmlFor="sol-forn">ID do fornecedor</Label>
+              <Label>Fornecedor *</Label>
               <Controller
                 name="fornecedorId"
                 control={control}
                 render={({ field }) => (
-                  <Input {...field} id="sol-forn" placeholder="UUID do fornecedor" />
+                  <Combobox
+                    options={fornecedoresList.map((f) => ({ value: f.id, label: f.nome }))}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    placeholder="Selecionar fornecedor"
+                    searchPlaceholder="Buscar fornecedor..."
+                  />
                 )}
               />
               {errors.fornecedorId && (

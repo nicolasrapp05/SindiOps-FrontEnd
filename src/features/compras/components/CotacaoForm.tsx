@@ -13,14 +13,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useFornecedores } from "@/features/fornecedores/hooks/useFornecedores"
+import Combobox, { type ComboboxOption } from "@/components/shared/Combobox"
 import type { Cotacao, CreateCotacaoRequest } from "../types/compra.types"
 
 const schema = z
@@ -52,8 +46,6 @@ const schema = z
 
 type FormData = z.infer<typeof schema>
 
-const NONE_VALUE = "__none__"
-
 interface CotacaoFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -73,6 +65,11 @@ export default function CotacaoForm({
 
   const { data: fornecedores } = useFornecedores()
   const fornecedoresList = Array.isArray(fornecedores) ? fornecedores : []
+
+  const fornecedorOptions: ComboboxOption[] = [
+    { value: "", label: "Nenhum" },
+    ...fornecedoresList.map((f) => ({ value: f.id, label: f.nome })),
+  ]
 
   const {
     register,
@@ -156,22 +153,13 @@ export default function CotacaoForm({
               name="fornecedorId"
               control={control}
               render={({ field }) => (
-                <Select
-                  value={field.value || NONE_VALUE}
-                  onValueChange={(v) => field.onChange(v === NONE_VALUE ? "" : v)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione (opcional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE_VALUE}>Nenhum</SelectItem>
-                    {fornecedoresList.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>
-                        {f.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={fornecedorOptions}
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                  placeholder="Selecione (opcional)"
+                  searchPlaceholder="Buscar fornecedor..."
+                />
               )}
             />
           </div>

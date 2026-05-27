@@ -15,16 +15,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { getBlocos } from "@/features/condominios/services/condominios.service"
 import type { Bloco } from "@/features/condominios/types/condominio.types"
 import type { Morador, CreateMoradorRequest } from "../types/morador.types"
+import Combobox from "@/components/shared/Combobox"
 
 function phoneMask(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11)
@@ -147,25 +141,17 @@ export default function MoradorForm({
                 control={control}
                 name="blocoId"
                 render={({ field }) => (
-                  <Select
+                  <Combobox
+                    options={(blocos ?? []).map((b: Bloco) => ({ value: b.id, label: b.nome }))}
                     value={field.value}
                     onValueChange={(val) => {
                       field.onChange(val)
                       setSelectedBlocoId(val)
                       setValue("unidadeId", "")
                     }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {blocos?.map((b: Bloco) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Selecionar"
+                    searchPlaceholder="Buscar bloco..."
+                  />
                 )}
               />
               {errors.blocoId && <p className="text-xs text-red-500">{errors.blocoId.message}</p>}
@@ -177,22 +163,14 @@ export default function MoradorForm({
                 control={control}
                 name="unidadeId"
                 render={({ field }) => (
-                  <Select
+                  <Combobox
+                    options={unidades.map((u) => ({ value: u.id, label: u.numero }))}
                     value={field.value}
                     onValueChange={field.onChange}
+                    placeholder="Selecionar"
+                    searchPlaceholder="Buscar unidade..."
                     disabled={!selectedBlocoId}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {unidades.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {u.numero}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
                 )}
               />
               {errors.unidadeId && <p className="text-xs text-red-500">{errors.unidadeId.message}</p>}

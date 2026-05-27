@@ -1,8 +1,9 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Loader2 } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -19,6 +20,10 @@ import {
   TIPO_LOCAL_LABEL,
 } from "../types/ocorrencia.types"
 import type { CreateOcorrenciaRequest, OcorrenciaOrigem, OcorrenciaTipo, TipoLocal } from "../types/ocorrencia.types"
+import { getBlocos } from "@/features/condominios/services/condominios.service"
+import type { Bloco } from "@/features/condominios/types/condominio.types"
+import { useMoradores } from "@/features/moradores/hooks/useMoradores"
+import Combobox from "@/components/shared/Combobox"
 
 const formSchema = z.object({
   origem: z.string().min(1, "Obrigatório"),
@@ -44,7 +49,23 @@ interface OcorrenciaFormProps {
 export default function OcorrenciaForm({
   open, onOpenChange, condominioId, onSubmit, isSubmitting,
 }: OcorrenciaFormProps) {
-  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormData>({
+  const [selectedBlocoId, setSelectedBlocoId] = useState("")
+
+  const { data: blocosData } = useQuery({
+    queryKey: ["condominios", condominioId, "blocos"],
+    queryFn: () => getBlocos(condominioId),
+    enabled: open && !!condominioId,
+  })
+  const blocos: Bloco[] = Array.isArray(blocosData) ? blocosData : []
+  const selectedBloco = blocos.find((b) => b.id === selectedBlocoId)
+  const unidades = selectedBloco?.unidades ?? []
+
+  const { data: moradoresData } = useMoradores(condominioId, { pageSize: 200 })
+  const moradores = Array.isArray(moradoresData)
+    ? moradoresData
+    : (moradoresData as { items?: unknown[] } | undefined)?.items ?? []
+
+  const { register, handleSubmit, reset, control, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       origem: "", tipoLocal: "", tipoOcorrencia: "", ocorreuEm: "",
@@ -53,7 +74,10 @@ export default function OcorrenciaForm({
   })
 
   useEffect(() => {
-    if (open) reset()
+    if (open) {
+      reset()
+      setSelectedBlocoId("")
+    }
   }, [open, reset])
 
   const onFormSubmit = (data: FormData) => {
@@ -134,6 +158,81 @@ export default function OcorrenciaForm({
             <Textarea placeholder="Descreva a ocorrência em detalhes..." rows={4} {...register("descricao")} />
             {errors.descricao && <p className="text-xs text-red-500">{errors.descricao.message}</p>}
           </div>
+
+          {/* Localização e morador (opcionais) */}
+          <div className="space-y-3 rounded-lg border border-dashed border-gray-200 p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+              Localização e morador (opcional)
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Bloco</Label>
+                <Controller
+                  control={control}
+                  name="blocoId"
+                  render={({ field }) => (
+                    <Combobox
+                      options={[
+                        { value: "", label: "Nenhum" },
+                        ...blocos.map((b) => ({ value: b.id, label: b.nome })),
+                      ]}
+                      value={field.value || ""}
+                      onValueChange={(v) => {
+                        field.onChange(v)
+                        setSelectedBlocoId(v)
+                        setValue("unidadeId", "")
+                      }}
+                      placeholder="Selecionar"
+                      searchPlaceholder="Buscar bloco..."
+                    />
+                  )}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Unidade</Label>
+                <Controller
+                  control={control}
+                  name="unidadeId"
+                  render={({ field }) => (
+                    <Combobox
+                      options={[
+                        { value: "", label: "Nenhuma" },
+                        ...unidades.map((u) => ({ value: u.id, label: u.numero })),
+                      ]}
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                      placeholder="Selecionar"
+                      searchPlaceholder="Buscar unidade..."
+                      disabled={!selectedBlocoId}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Morador</Label>
+              <Controller
+                control={control}
+                name="moradorId"
+                render={({ field }) => (
+                  <Combobox
+                    options={[
+                      { value: "", label: "Nenhum" },
+                      ...(moradores as Array<{ id: string; nome: string }>).map((m) => ({
+                        value: m.id,
+                        label: m.nome,
+                      })),
+                    ]}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    placeholder="Selecionar"
+                    searchPlaceholder="Buscar morador..."
+                  />
+                )}
+              />
+            </div>
+          </div>
+
           <DialogFooter className="pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" disabled={isSubmitting} className="bg-emerald-700 hover:bg-emerald-800">

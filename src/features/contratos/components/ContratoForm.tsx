@@ -28,6 +28,8 @@ import {
   type CreateContratoRequest,
   type TipoServico,
 } from "../types/contrato.types"
+import { useFornecedores } from "@/features/fornecedores/hooks/useFornecedores"
+import Combobox from "@/components/shared/Combobox"
 
 const TIPO_SERVICO_OPTIONS = Object.entries(TIPO_SERVICO_LABEL) as [TipoServico, string][]
 
@@ -47,8 +49,7 @@ const tipoServicoSchema = z.enum([
 
 const contratoSchema = z
   .object({
-    condominioId: z.string().min(1, "Informe o condomínio"),
-    fornecedorId: z.string().min(1, "Informe o fornecedor"),
+    fornecedorId: z.string().min(1, "Selecione um fornecedor"),
     tipoServico: tipoServicoSchema,
     nomeContato: z.string().optional(),
     telefoneContato: z.string().optional(),
@@ -74,6 +75,7 @@ interface ContratoFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   condominioId: string
+  condominioNome?: string
   contrato?: Contrato | null
   onSubmit: (data: CreateContratoRequest) => void
   isSubmitting: boolean
@@ -83,11 +85,15 @@ export default function ContratoForm({
   open,
   onOpenChange,
   condominioId,
+  condominioNome,
   contrato,
   onSubmit,
   isSubmitting,
 }: ContratoFormProps) {
   const isEdit = !!contrato
+
+  const { data: fornecedoresData } = useFornecedores(undefined)
+  const fornecedoresList = Array.isArray(fornecedoresData) ? fornecedoresData : []
 
   const {
     register,
@@ -98,7 +104,6 @@ export default function ContratoForm({
   } = useForm<FormData>({
     resolver: zodResolver(contratoSchema),
     defaultValues: {
-      condominioId,
       fornecedorId: "",
       tipoServico: "administradora",
       nomeContato: "",
@@ -115,7 +120,6 @@ export default function ContratoForm({
   useEffect(() => {
     if (open && contrato) {
       reset({
-        condominioId: contrato.condominioId,
         fornecedorId: contrato.fornecedor.id,
         tipoServico: contrato.tipoServico,
         nomeContato: contrato.nomeContato ?? "",
@@ -129,7 +133,6 @@ export default function ContratoForm({
       })
     } else if (open) {
       reset({
-        condominioId,
         fornecedorId: "",
         tipoServico: "administradora",
         nomeContato: "",
@@ -142,11 +145,11 @@ export default function ContratoForm({
         condicoesRescisao: "",
       })
     }
-  }, [open, contrato, condominioId, reset])
+  }, [open, contrato, reset])
 
   const handleFormSubmit = (data: FormData) => {
     onSubmit({
-      condominioId: data.condominioId,
+      condominioId,
       fornecedorId: data.fornecedorId,
       tipoServico: data.tipoServico,
       nomeContato: data.nomeContato || undefined,
@@ -174,17 +177,30 @@ export default function ContratoForm({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 py-2">
+          {/* Condomínio (read-only context) */}
           <div className="space-y-1.5">
-            <Label htmlFor="condominioId">Condomínio (ID) *</Label>
-            <Input id="condominioId" placeholder="ID do condomínio" {...register("condominioId")} />
-            {errors.condominioId && (
-              <p className="text-xs text-red-500">{errors.condominioId.message}</p>
-            )}
+            <Label>Condomínio</Label>
+            <div className="flex h-10 items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground">
+              {condominioNome || "—"}
+            </div>
           </div>
 
+          {/* Fornecedor */}
           <div className="space-y-1.5">
-            <Label htmlFor="fornecedorId">Fornecedor (ID) *</Label>
-            <Input id="fornecedorId" placeholder="ID do fornecedor" {...register("fornecedorId")} />
+            <Label>Fornecedor *</Label>
+            <Controller
+              control={control}
+              name="fornecedorId"
+              render={({ field }) => (
+                <Combobox
+                  options={fornecedoresList.map((f) => ({ value: f.id, label: f.nome }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Selecionar fornecedor"
+                  searchPlaceholder="Buscar fornecedor..."
+                />
+              )}
+            />
             {errors.fornecedorId && (
               <p className="text-xs text-red-500">{errors.fornecedorId.message}</p>
             )}

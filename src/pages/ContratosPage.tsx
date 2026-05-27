@@ -83,6 +83,7 @@ export default function ContratosPage() {
   const [editingContrato, setEditingContrato] = useState<Contrato | null>(null)
 
   const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
+  const condominioNome = useCondominioScopeStore((s) => s.selectedCondominioNome) ?? ""
   const condoConfigured = !!condominioId
 
   const tableFilters = {
@@ -383,6 +384,7 @@ export default function ContratosPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         condominioId={condominioId}
+        condominioNome={condominioNome}
         contrato={editingContrato}
         onSubmit={handleFormSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}
