@@ -1,4 +1,5 @@
 import { Fragment, useState } from "react"
+import { toast } from "sonner"
 import {
   Plus,
   Search,
@@ -38,6 +39,7 @@ import type {
 } from "@/features/fornecedores/types/fornecedor.types"
 import FornecedorForm from "@/features/fornecedores/components/FornecedorForm"
 import FornecedorExpandido from "@/features/fornecedores/components/FornecedorExpandido"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 const SUMMARY_CARDS = [
   { label: "Total", icon: Package, color: "text-blue-600 bg-blue-50" },
@@ -52,6 +54,7 @@ export default function FornecedoresPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<Fornecedor | null>(null)
 
   const filters = { search: search || undefined, page, pageSize: 20 }
   const { data: fornecedores, isLoading, isError, refetch } = useFornecedores(filters)
@@ -72,8 +75,21 @@ export default function FornecedoresPage() {
     setFormOpen(true)
   }
   const handleDelete = (f: Fornecedor) => {
-    if (!confirm(`Remover "${f.nome}"?`)) return
-    deleteMutation.mutate(f.id)
+    setPendingDelete(f)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!pendingDelete) return
+    deleteMutation.mutate(pendingDelete.id, {
+      onSuccess: () => {
+        toast.success("Fornecedor removido com sucesso")
+        setPendingDelete(null)
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : "Erro ao remover")
+        setPendingDelete(null)
+      },
+    })
   }
   const handleFormSubmit = (data: CreateFornecedorRequest) => {
     if (editingFornecedor) {
@@ -333,6 +349,16 @@ export default function FornecedoresPage() {
         fornecedor={editingFornecedor}
         onSubmit={handleFormSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Remover fornecedor"
+        description={`Tem certeza que deseja remover "${pendingDelete?.nome}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Remover"
+        onConfirm={handleConfirmDelete}
+        isPending={deleteMutation.isPending}
       />
     </div>
   )

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { toast } from "sonner"
 import { Link } from "react-router-dom"
 import {
   Plus,
@@ -51,6 +52,7 @@ import type {
   CreateMoradorRequest,
 } from "@/features/moradores/types/morador.types"
 import MoradorForm from "@/features/moradores/components/MoradorForm"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
@@ -76,6 +78,7 @@ export default function MoradoresPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingMorador, setEditingMorador] = useState<Morador | null>(null)
   const [detailId, setDetailId] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<Morador | null>(null)
 
   const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
   const condoConfigured = !!condominioId
@@ -110,8 +113,21 @@ export default function MoradoresPage() {
   }
 
   const handleDelete = (m: Morador) => {
-    if (!confirm(`Remover "${m.nome}"?`)) return
-    deleteMutation.mutate(m.id)
+    setPendingDelete(m)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!pendingDelete) return
+    deleteMutation.mutate(pendingDelete.id, {
+      onSuccess: () => {
+        toast.success("Morador removido com sucesso")
+        setPendingDelete(null)
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : "Erro ao remover")
+        setPendingDelete(null)
+      },
+    })
   }
 
   const handleFormSubmit = (data: CreateMoradorRequest) => {
@@ -475,6 +491,16 @@ export default function MoradoresPage() {
         morador={editingMorador}
         onSubmit={handleFormSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Remover morador"
+        description={`Tem certeza que deseja remover "${pendingDelete?.nome}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Remover"
+        onConfirm={handleConfirmDelete}
+        isPending={deleteMutation.isPending}
       />
     </div>
   )

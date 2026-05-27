@@ -21,7 +21,7 @@ export interface Condominio {
   vencimentoMandato: string
   totalBlocos: number
   totalUnidades: number
-  status?: "vigente" | "expirando"
+  status?: "vigente" | "expirando" | "vencido"
   blocos?: Bloco[]
   criadoEm: string
 }

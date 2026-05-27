@@ -1,4 +1,4 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import { Outlet } from "react-router-dom"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -46,7 +46,7 @@ export default function AppLayout() {
             <span className="sr-only">Abrir menu</span>
           </Button>
           <span className="ml-3 text-sm font-semibold tracking-tight text-white">
-            SíndiCore
+            SíndiOps
           </span>
         </header>
 

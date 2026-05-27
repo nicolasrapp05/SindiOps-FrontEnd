@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { toast } from "sonner"
 import {
   CheckCircle2,
   ChevronLeft,
@@ -32,6 +33,7 @@ import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { ManutencaoStatusBadge } from "@/features/manutencoes/components/ManutencaoStatusBadge"
 import ManutencaoObrigatoriaForm from "@/features/manutencoes/components/ManutencaoObrigatoriaForm"
 import RealizarManutencaoModal from "@/features/manutencoes/components/RealizarManutencaoModal"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import {
   useManutencoesObrigatorias,
   useCreateManutencaoObrigatoria,
@@ -70,6 +72,7 @@ export default function ManutencoesObrigatoriasPage() {
   const [editing, setEditing] = useState<ManutencaoObrigatoria | null>(null)
   const [realizarOpen, setRealizarOpen] = useState(false)
   const [realizarId, setRealizarId] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<ManutencaoObrigatoria | null>(null)
 
   const filters = useMemo(
     () => ({
@@ -118,8 +121,21 @@ export default function ManutencoesObrigatoriasPage() {
   }
 
   const handleDelete = (m: ManutencaoObrigatoria) => {
-    if (!confirm(`Remover manutenção "${MANUTENCAO_TIPO_LABEL[m.tipo]}"?`)) return
-    deleteMutation.mutate(m.id)
+    setPendingDelete(m)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!pendingDelete) return
+    deleteMutation.mutate(pendingDelete.id, {
+      onSuccess: () => {
+        toast.success("Manutenção removida com sucesso")
+        setPendingDelete(null)
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : "Erro ao remover")
+        setPendingDelete(null)
+      },
+    })
   }
 
   const handleFormSubmit = (payload: CreateManutencaoObrigatoriaRequest) => {
@@ -374,6 +390,16 @@ export default function ManutencoesObrigatoriasPage() {
             },
           )
         }}
+      />
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Remover manutenção"
+        description={`Tem certeza que deseja remover "${pendingDelete ? MANUTENCAO_TIPO_LABEL[pendingDelete.tipo] : ""}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Remover"
+        onConfirm={handleConfirmDelete}
+        isPending={deleteMutation.isPending}
       />
     </div>
   )

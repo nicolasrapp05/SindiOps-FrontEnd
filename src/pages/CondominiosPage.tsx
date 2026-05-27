@@ -17,6 +17,7 @@ import type {
 import CondominioCard from "@/features/condominios/components/CondominioCard"
 import CondominioForm from "@/features/condominios/components/CondominioForm"
 import EstruturaCondominio from "@/features/condominios/components/EstruturaCondominio"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 export default function CondominiosPage() {
   const { data: condominios, isLoading, isError, refetch } = useCondominios()
@@ -28,6 +29,7 @@ export default function CondominiosPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingCondominio, setEditingCondominio] = useState<Condominio | null>(null)
   const [selectedCondominio, setSelectedCondominio] = useState<Condominio | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<Condominio | null>(null)
 
   useEffect(() => {
     if (!condominios?.length || !scopeCondominioId) return
@@ -57,14 +59,21 @@ export default function CondominiosPage() {
   }
 
   const handleDelete = (c: Condominio) => {
-    if (!confirm(`Tem certeza que deseja remover "${c.nome}"?`)) return
-    deleteMutation.mutate(c.id, {
+    setPendingDelete(c)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!pendingDelete) return
+    deleteMutation.mutate(pendingDelete.id, {
       onSuccess: () => {
         toast.success("Condomínio removido com sucesso")
-        if (selectedCondominio?.id === c.id) setSelectedCondominio(null)
+        if (selectedCondominio?.id === pendingDelete.id) setSelectedCondominio(null)
+        setPendingDelete(null)
       },
-      onError: (err) =>
-        toast.error(err instanceof Error ? err.message : "Erro ao remover"),
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : "Erro ao remover")
+        setPendingDelete(null)
+      },
     })
   }
 
@@ -233,6 +242,16 @@ export default function CondominiosPage() {
         condominio={editingCondominio}
         onSubmit={handleFormSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Remover condomínio"
+        description={`Tem certeza que deseja remover "${pendingDelete?.nome}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Remover"
+        onConfirm={handleConfirmDelete}
+        isPending={deleteMutation.isPending}
       />
     </div>
   )

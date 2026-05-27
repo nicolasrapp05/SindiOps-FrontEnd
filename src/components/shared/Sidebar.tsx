@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+﻿import { useEffect } from "react"
 import { Link, NavLink } from "react-router-dom"
 import { ChevronDown, LogOut, Building } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -79,14 +79,18 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
   return (
     <div className="flex h-full w-60 flex-col bg-[#0f1b14]">
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-5 py-6">
+      <Link
+        to="/dashboard"
+        onClick={onNavigate}
+        className="flex items-center gap-2.5 px-5 py-6 transition-opacity hover:opacity-80"
+      >
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
           <Building className="h-4 w-4 text-white" />
         </div>
         <span className="text-lg font-bold tracking-tight text-white">
-          SíndiCore
+          SíndiOps
         </span>
-      </div>
+      </Link>
 
       {/* Condo selector */}
       <div className="px-3 pb-4">
@@ -198,19 +202,25 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
 
       {/* User footer */}
       <div className="flex items-center gap-3 px-4 py-4">
-        <Avatar className="h-9 w-9 border border-white/20">
-          <AvatarFallback className="bg-emerald-700 text-xs text-white">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 overflow-hidden">
-          <p className="truncate text-sm font-medium text-white">
-            {user?.nome || "Usuário"}
-          </p>
-          <p className="truncate text-xs capitalize text-white/50">
-            {cargo || "—"}
-          </p>
-        </div>
+        <Link
+          to="/configuracoes/perfil"
+          onClick={onNavigate}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg transition-opacity hover:opacity-80"
+        >
+          <Avatar className="h-9 w-9 shrink-0 border border-white/20">
+            <AvatarFallback className="bg-emerald-700 text-xs text-white">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 overflow-hidden">
+            <p className="truncate text-sm font-medium text-white">
+              {user?.nome || "Usuário"}
+            </p>
+            <p className="truncate text-xs capitalize text-white/50">
+              {cargo || "—"}
+            </p>
+          </div>
+        </Link>
         <button
           onClick={logout}
           className="rounded-md p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white/80"
