@@ -451,11 +451,13 @@ export default function GerarEstruturaWizard({
                       value: "andar100",
                       label: "Andar × 100 + sequência",
                       example: "101, 102, 201, 202…",
+                      disabled: false,
                     },
                     {
                       value: "sequencial",
                       label: "Sequencial simples",
                       example: "1, 2, 3, 4…",
+                      disabled: false,
                     },
                     {
                       value: "prefixoBloco",
@@ -467,6 +469,7 @@ export default function GerarEstruturaWizard({
                       value: "letras",
                       label: "Letras por unidade",
                       example: "1A, 1B, 2A, 2B…",
+                      disabled: false,
                     },
                   ] as const
                 ).map((opt) => (

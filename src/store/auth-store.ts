@@ -13,7 +13,7 @@ interface AuthState {
   initSession: () => Promise<void>
 }
 
-const REFRESH_TOKEN_KEY = "sindicore_refresh_token"
+const REFRESH_TOKEN_KEY = "sindiops_refresh_token"
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,

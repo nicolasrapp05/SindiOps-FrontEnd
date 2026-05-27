@@ -71,7 +71,7 @@ export const useCondominioScopeStore = create<CondominioScopeState>()(
       },
     }),
     {
-      name: "sindicore_selected_condominio",
+      name: "sindiops_selected_condominio",
       partialize: (s) => ({
         selectedCondominioId: s.selectedCondominioId,
         selectedCondominioNome: s.selectedCondominioNome,
