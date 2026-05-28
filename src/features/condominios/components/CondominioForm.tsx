@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+﻿import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -131,10 +131,10 @@ export default function CondominioForm({
         >
           {/* Nome */}
           <div className="space-y-1.5">
-            <Label htmlFor="nome">Nome *</Label>
+            <Label htmlFor="nome">Nome<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Input id="nome" placeholder="Ex: Condomínio Jardins" {...register("nome")} />
             {errors.nome && (
-              <p className="text-xs text-red-500">{errors.nome.message}</p>
+              <p className="text-xs text-destructive">{errors.nome.message}</p>
             )}
           </div>
 
@@ -171,14 +171,14 @@ export default function CondominioForm({
               <Label htmlFor="dataEleicao">Data da Eleição</Label>
               <Input id="dataEleicao" type="date" {...register("dataEleicao")} />
               {errors.dataEleicao && (
-                <p className="text-xs text-red-500">{errors.dataEleicao.message}</p>
+                <p className="text-xs text-destructive">{errors.dataEleicao.message}</p>
               )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="vencimentoMandato">Vencimento do Mandato</Label>
               <Input id="vencimentoMandato" type="date" {...register("vencimentoMandato")} />
               {errors.vencimentoMandato && (
-                <p className="text-xs text-red-500">{errors.vencimentoMandato.message}</p>
+                <p className="text-xs text-destructive">{errors.vencimentoMandato.message}</p>
               )}
             </div>
           </div>

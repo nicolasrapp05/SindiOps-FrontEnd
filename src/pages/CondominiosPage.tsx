@@ -155,8 +155,8 @@ export default function CondominiosPage() {
           </p>
           <p className="mt-2 max-w-2xl text-sm text-gray-600">
             {scopeCondominioId
-              ? "A secção Estrutura abaixo corresponde ao condomínio ativo na barra lateral; pode alterar selecionando outro card."
-              : "Selecione um condomínio no card abaixo para cadastrar blocos e unidades na secção Estrutura."}
+              ? "A seção Estrutura abaixo corresponde ao condomínio ativo na barra lateral; pode alterar selecionando outro card."
+              : "Selecione um condomínio no card abaixo para cadastrar blocos e unidades na seção Estrutura."}
           </p>
         </div>
         <Button

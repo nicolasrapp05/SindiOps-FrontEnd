@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+﻿import { useEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -86,7 +86,7 @@ export default function RealizarManutencaoModal({
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor={`data-realizacao-${manutencaoId}`}>Data da Realização *</Label>
+            <Label htmlFor={`data-realizacao-${manutencaoId}`}>Data da Realização<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller
               name="dataRealizacao"
               control={control}

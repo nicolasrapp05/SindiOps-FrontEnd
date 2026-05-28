@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+﻿import { useEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -94,12 +94,12 @@ export default function ConvidarFuncionarioModal({
         </div>
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="convite-nome">Nome *</Label>
+            <Label htmlFor="convite-nome">Nome<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Input id="convite-nome" {...register("nome")} placeholder="Nome completo" />
             {errors.nome && <p className="text-xs text-destructive">{errors.nome.message}</p>}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="convite-email">Email *</Label>
+            <Label htmlFor="convite-email">Email<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Input
               id="convite-email"
               type="email"
@@ -109,7 +109,7 @@ export default function ConvidarFuncionarioModal({
             {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
           </div>
           <div className="space-y-2">
-            <Label>Cargo *</Label>
+            <Label>Cargo<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller
               name="cargo"
               control={control}

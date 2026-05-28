@@ -1,13 +1,13 @@
-import { useEffect } from "react"
+﻿import { useEffect, useRef } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Loader2 } from "lucide-react"
+import { Info, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import TokenTextarea, { type TokenDef, type TokenTextareaHandle } from "@/components/shared/TokenTextarea"
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { get } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   TEMPLATE_TIPO_LABEL,
   VARIAVEIS_DISPONIVEIS,
@@ -64,6 +70,11 @@ const defaultValues: FormData = {
   corpo: "",
 }
 
+const TOKEN_DEFS: TokenDef[] = VARIAVEIS_DISPONIVEIS.map((v) => ({
+  token: v.token,
+  label: v.descricao,
+}))
+
 export function TemplateEditor({
   open,
   onOpenChange,
@@ -72,14 +83,20 @@ export function TemplateEditor({
   isSubmitting,
 }: TemplateEditorProps) {
   const isEdit = !!template
+  const tokenTextareaRef = useRef<TokenTextareaHandle>(null)
+
+  const { data: templateDetail, isLoading: isLoadingDetail } = useQuery({
+    queryKey: ["email-template-detail", template?.id],
+    queryFn: () => get<{ corpo: string; assunto: string }>(`/email-templates/${template!.id}`),
+    enabled: open && !!template?.id,
+    staleTime: 0,
+  })
 
   const {
     register,
     handleSubmit,
     reset,
     control,
-    setValue,
-    getValues,
     watch,
     formState: { errors },
   } = useForm<FormData>({
@@ -91,21 +108,20 @@ export function TemplateEditor({
 
   useEffect(() => {
     if (!open) return
-    if (template) {
+    if (template && templateDetail) {
       reset({
         nome: template.nome,
         tipo: template.tipo,
-        assunto: template.assunto,
-        corpo: template.corpo,
+        assunto: templateDetail.assunto ?? template.assunto,
+        corpo: templateDetail.corpo ?? "",
       })
-    } else {
+    } else if (!template) {
       reset(defaultValues)
     }
-  }, [open, template, reset])
+  }, [open, template, templateDetail, reset])
 
-  function appendToken(token: string) {
-    const current = getValues("corpo") ?? ""
-    setValue("corpo", current + token, { shouldDirty: true, shouldValidate: true })
+  function appendToken(token: string, label: string) {
+    tokenTextareaRef.current?.insertToken(token, label)
   }
 
   return (
@@ -114,8 +130,8 @@ export function TemplateEditor({
         <DialogHeader>
           <DialogTitle>{isEdit ? "Editar template" : "Novo template"}</DialogTitle>
           <DialogDescription>
-            Defina nome, tipo, assunto e corpo do e-mail. Use variáveis entre chaves duplas onde
-            indicado.
+            Defina nome, tipo, assunto e corpo do e-mail. Clique nas variáveis ao lado para
+            inseri-las no corpo.
           </DialogDescription>
         </DialogHeader>
 
@@ -134,9 +150,13 @@ export function TemplateEditor({
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="template-nome">
-                  Nome <span className="text-destructive">*</span>
+                  Nome<span className="text-destructive ml-0.5 relative top-[2px]">*</span>
                 </Label>
-                <Input id="template-nome" placeholder="Ex.: Multa estacionamento" {...register("nome")} />
+                <Input
+                  id="template-nome"
+                  placeholder="Ex.: Multa estacionamento"
+                  {...register("nome")}
+                />
                 {errors.nome && (
                   <p className="text-xs text-destructive">{errors.nome.message}</p>
                 )}
@@ -144,7 +164,7 @@ export function TemplateEditor({
 
               <div className="space-y-2">
                 <Label>
-                  Tipo <span className="text-destructive">*</span>
+                  Tipo<span className="text-destructive ml-0.5 relative top-[2px]">*</span>
                 </Label>
                 <Controller
                   name="tipo"
@@ -171,9 +191,13 @@ export function TemplateEditor({
 
               <div className="space-y-2">
                 <Label htmlFor="template-assunto">
-                  Assunto <span className="text-destructive">*</span>
+                  Assunto<span className="text-destructive ml-0.5 relative top-[2px]">*</span>
                 </Label>
-                <Input id="template-assunto" placeholder="Assunto do e-mail" {...register("assunto")} />
+                <Input
+                  id="template-assunto"
+                  placeholder="Assunto do e-mail"
+                  {...register("assunto")}
+                />
                 {errors.assunto && (
                   <p className="text-xs text-destructive">{errors.assunto.message}</p>
                 )}
@@ -181,25 +205,24 @@ export function TemplateEditor({
 
               <div className="space-y-2">
                 <Label htmlFor="template-corpo">
-                  Corpo <span className="text-destructive">*</span>
+                  Corpo<span className="text-destructive ml-0.5 relative top-[2px]">*</span>
                 </Label>
                 <Controller
                   name="corpo"
                   control={control}
                   render={({ field }) => (
-                    <Textarea
-                      id="template-corpo"
+                    <TokenTextarea
+                      ref={tokenTextareaRef}
+                      value={field.value}
+                      onChange={field.onChange}
+                      tokens={TOKEN_DEFS}
                       placeholder="Texto do e-mail..."
-                      rows={14}
-                      className="min-h-[220px] resize-y font-mono text-sm"
-                      {...field}
+                      minRows={12}
                     />
                   )}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Você pode inserir tokens como{" "}
-                  <code className="rounded bg-muted px-1 py-0.5">{"{{nome_morador}}"}</code> — clique
-                  nas variáveis ao lado para adicionar ao corpo.
+                  Clique nas variáveis ao lado para inserir no ponto do cursor.
                   {corpoWatch != null && corpoWatch.length > 0 && (
                     <span className="ml-1">({corpoWatch.length} caracteres)</span>
                   )}
@@ -210,28 +233,51 @@ export function TemplateEditor({
               </div>
             </div>
 
+            {/* Variables sidebar */}
             <div
               className={cn(
                 "rounded-lg border bg-muted/30 p-3",
-                "lg:sticky lg:top-0 lg:max-h-[min(420px,50vh)] lg:overflow-y-auto",
+                "lg:sticky lg:top-0 lg:max-h-[min(480px,60vh)] lg:overflow-y-auto",
               )}
             >
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Variáveis disponíveis
               </p>
-              <ul className="flex flex-col gap-2">
+              <ul className="flex flex-col gap-1">
                 {VARIAVEIS_DISPONIVEIS.map((v) => (
-                  <li key={v.token}>
+                  <li key={v.token} className="flex items-center gap-1">
+                    {/* Click to insert */}
                     <button
                       type="button"
-                      onClick={() => appendToken(v.token)}
-                      className="flex w-full flex-col items-start gap-0.5 rounded-md border border-transparent bg-background/80 p-2 text-left text-xs transition-colors hover:border-border hover:bg-background"
+                      onClick={() => appendToken(v.token, v.descricao)}
+                      className={cn(
+                        "min-w-0 flex-1 cursor-pointer rounded-md border border-transparent px-2 py-1.5 text-left text-xs transition-colors",
+                        "hover:border-border hover:bg-background",
+                        "focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                      )}
                     >
-                      <Badge variant="secondary" className="max-w-full truncate font-mono text-[10px]">
-                        {v.token}
-                      </Badge>
-                      <span className="text-muted-foreground">{v.descricao}</span>
+                      <span className="token-chip pointer-events-none">{v.descricao}</span>
                     </button>
+
+                    {/* Info tooltip */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          role="img"
+                          aria-label="Informações sobre esta variável"
+                          className={cn(
+                            "flex size-5 shrink-0 cursor-default items-center justify-center rounded-full",
+                            "text-muted-foreground/60 transition-colors hover:text-muted-foreground",
+                          )}
+                        >
+                          <Info className="size-3.5" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-[200px]">
+                        <p className="font-medium text-foreground">{v.descricao}</p>
+                        <p className="mt-0.5 text-muted-foreground">{v.fonte}</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </li>
                 ))}
               </ul>
@@ -242,11 +288,15 @@ export function TemplateEditor({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting} className="bg-emerald-700 hover:bg-emerald-800">
-              {isSubmitting ? (
+            <Button
+              type="submit"
+              disabled={isSubmitting || (isEdit && isLoadingDetail)}
+              className="bg-emerald-700 hover:bg-emerald-800"
+            >
+              {isSubmitting || (isEdit && isLoadingDetail) ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
+                  {isLoadingDetail ? "Carregando..." : "Salvando..."}
                 </>
               ) : isEdit ? (
                 "Salvar alterações"

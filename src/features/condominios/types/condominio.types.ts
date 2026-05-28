@@ -26,8 +26,19 @@ export interface Condominio {
   criadoEm: string
 }
 
-export type PadraoNumeracao = "andar100" | "sequencial" | "prefixoBloco" | "letras"
+export type PadraoNumeracao = "personalizado" | "sequencial" | "prefixoBloco" | "letras"
 export type IdentificacaoBloco = "letras" | "numeros" | "custom"
+
+export interface CustomPatternConfig {
+  prefix: string
+  incluirAndar: boolean
+  andarFormato: "raw" | "padded"
+  andarDigitos: number
+  separador: string
+  seqFormato: "raw" | "padded"
+  seqDigitos: number
+  suffix: string
+}
 
 export interface CreateCondominioRequest {
   nome: string

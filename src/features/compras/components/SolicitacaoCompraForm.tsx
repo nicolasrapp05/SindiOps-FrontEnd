@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+﻿import { useEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -120,7 +120,7 @@ export default function SolicitacaoCompraForm({
         </DialogHeader>
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
           <div className="space-y-2">
-            <Label>Categoria *</Label>
+            <Label>Categoria<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller
               name="categoria"
               control={control}
@@ -145,13 +145,13 @@ export default function SolicitacaoCompraForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="item">Item *</Label>
+            <Label htmlFor="item">Item<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Input id="item" {...register("item")} placeholder="Descrição do item" />
             {errors.item && <p className="text-xs text-destructive">{errors.item.message}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="quantidade">Quantidade *</Label>
+            <Label htmlFor="quantidade">Quantidade<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Input
               id="quantidade"
               type="number"
@@ -177,7 +177,7 @@ export default function SolicitacaoCompraForm({
           </div>
 
           <div className="space-y-2">
-            <Label>Tipo de aprovação *</Label>
+            <Label>Tipo de aprovação<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller
               name="tipoAprovacao"
               control={control}

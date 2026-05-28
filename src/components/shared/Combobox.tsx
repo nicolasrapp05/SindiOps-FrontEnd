@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react"
-import { Check, ChevronsUpDown, Search } from "lucide-react"
+import { Check, ChevronDown, Search } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
@@ -73,21 +73,22 @@ export default function Combobox({
           aria-haspopup="listbox"
           disabled={disabled}
           className={cn(
-            "flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm transition-colors",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            "flex h-8 w-full items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent pl-2.5 pr-2 text-sm whitespace-nowrap transition-colors outline-none select-none",
+            "hover:border-ring/50",
+            "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
             "disabled:cursor-not-allowed disabled:opacity-50",
             !selectedOption && "text-muted-foreground",
             className,
           )}
         >
           <span className="truncate">{selectedOption?.label ?? placeholder}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+          <ChevronDown className="pointer-events-none size-4 shrink-0 text-muted-foreground" />
         </button>
       </PopoverTrigger>
       <PopoverContent
         align="start"
         sideOffset={4}
-        className="w-[var(--radix-popover-trigger-width)] p-0 gap-0"
+        className="w-[var(--radix-popover-trigger-width)] p-0"
       >
         {/* Search bar */}
         <div className="flex items-center gap-2 border-b px-3 py-2">
@@ -103,7 +104,7 @@ export default function Combobox({
         </div>
 
         {/* Options list */}
-        <div role="listbox" className="max-h-60 overflow-y-auto p-1">
+        <div role="listbox" className="max-h-56 overflow-y-auto p-1">
           {filtered.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">{emptyText}</p>
           ) : (
@@ -117,14 +118,17 @@ export default function Combobox({
                   aria-selected={isSelected}
                   onClick={() => handleSelect(option.value)}
                   className={cn(
-                    "relative flex w-full cursor-default items-center rounded-md py-1.5 pl-3 pr-8 text-sm outline-none",
+                    "relative flex w-full cursor-default items-center rounded-md py-1 pl-1.5 pr-8 text-sm outline-none",
+                    "focus:bg-accent focus:text-accent-foreground",
                     "hover:bg-accent hover:text-accent-foreground",
-                    isSelected && "bg-accent/50 font-medium",
+                    isSelected && "text-primary font-medium",
                   )}
                 >
                   <span className="truncate">{option.label}</span>
                   {isSelected && (
-                    <Check className="absolute right-2 h-4 w-4 shrink-0 text-emerald-700" />
+                    <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center">
+                      <Check className="size-4 text-primary" />
+                    </span>
                   )}
                 </button>
               )

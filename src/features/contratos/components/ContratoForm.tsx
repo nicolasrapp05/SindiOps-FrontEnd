@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+﻿import { useEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -187,7 +187,7 @@ export default function ContratoForm({
 
           {/* Fornecedor */}
           <div className="space-y-1.5">
-            <Label>Fornecedor *</Label>
+            <Label>Fornecedor<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller
               control={control}
               name="fornecedorId"
@@ -202,12 +202,12 @@ export default function ContratoForm({
               )}
             />
             {errors.fornecedorId && (
-              <p className="text-xs text-red-500">{errors.fornecedorId.message}</p>
+              <p className="text-xs text-destructive">{errors.fornecedorId.message}</p>
             )}
           </div>
 
           <div className="space-y-1.5">
-            <Label>Tipo de serviço *</Label>
+            <Label>Tipo de serviço<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller
               control={control}
               name="tipoServico"
@@ -227,7 +227,7 @@ export default function ContratoForm({
               )}
             />
             {errors.tipoServico && (
-              <p className="text-xs text-red-500">{errors.tipoServico.message}</p>
+              <p className="text-xs text-destructive">{errors.tipoServico.message}</p>
             )}
           </div>
 
@@ -280,7 +280,7 @@ export default function ContratoForm({
               />
             </div>
             {errors.valorMensal && (
-              <p className="text-xs text-red-500">{errors.valorMensal.message}</p>
+              <p className="text-xs text-destructive">{errors.valorMensal.message}</p>
             )}
           </div>
 

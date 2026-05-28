@@ -4,6 +4,7 @@ export interface EnviarComunicacaoRequest {
   assuntoEditado: string
   corpoEditado: string
   valorMulta?: number
+  prazoResposta?: string
 }
 
 export interface ComunicacaoResponse {

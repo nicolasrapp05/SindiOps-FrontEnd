@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+﻿import { useEffect, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -104,7 +104,7 @@ export default function OcorrenciaForm({
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Origem *</Label>
+              <Label>Origem<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Controller control={control} name="origem" render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
@@ -115,10 +115,10 @@ export default function OcorrenciaForm({
                   </SelectContent>
                 </Select>
               )} />
-              {errors.origem && <p className="text-xs text-red-500">{errors.origem.message}</p>}
+              {errors.origem && <p className="text-xs text-destructive">{errors.origem.message}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>Tipo de Local *</Label>
+              <Label>Tipo de Local<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Controller control={control} name="tipoLocal" render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
@@ -129,12 +129,12 @@ export default function OcorrenciaForm({
                   </SelectContent>
                 </Select>
               )} />
-              {errors.tipoLocal && <p className="text-xs text-red-500">{errors.tipoLocal.message}</p>}
+              {errors.tipoLocal && <p className="text-xs text-destructive">{errors.tipoLocal.message}</p>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Tipo de Ocorrência *</Label>
+              <Label>Tipo de Ocorrência<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Controller control={control} name="tipoOcorrencia" render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
@@ -145,18 +145,18 @@ export default function OcorrenciaForm({
                   </SelectContent>
                 </Select>
               )} />
-              {errors.tipoOcorrencia && <p className="text-xs text-red-500">{errors.tipoOcorrencia.message}</p>}
+              {errors.tipoOcorrencia && <p className="text-xs text-destructive">{errors.tipoOcorrencia.message}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>Data e Hora *</Label>
+              <Label>Data e Hora<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Input type="datetime-local" {...register("ocorreuEm")} />
-              {errors.ocorreuEm && <p className="text-xs text-red-500">{errors.ocorreuEm.message}</p>}
+              {errors.ocorreuEm && <p className="text-xs text-destructive">{errors.ocorreuEm.message}</p>}
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Descrição *</Label>
+            <Label>Descrição<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Textarea placeholder="Descreva a ocorrência em detalhes..." rows={4} {...register("descricao")} />
-            {errors.descricao && <p className="text-xs text-red-500">{errors.descricao.message}</p>}
+            {errors.descricao && <p className="text-xs text-destructive">{errors.descricao.message}</p>}
           </div>
 
           {/* Localização e morador (opcionais) */}

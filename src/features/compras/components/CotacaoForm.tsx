@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+﻿import { useEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -196,7 +196,7 @@ export default function CotacaoForm({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="valorUnitario">Valor unitário *</Label>
+              <Label htmlFor="valorUnitario">Valor unitário<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Input
                 id="valorUnitario"
                 type="number"
@@ -209,7 +209,7 @@ export default function CotacaoForm({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="valorTotal">Valor total *</Label>
+              <Label htmlFor="valorTotal">Valor total<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Input
                 id="valorTotal"
                 type="number"

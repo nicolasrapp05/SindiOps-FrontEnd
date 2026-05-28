@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+﻿import { useEffect, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -128,15 +128,15 @@ export default function MoradorForm({
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 py-2">
           {/* Nome */}
           <div className="space-y-1.5">
-            <Label htmlFor="nome">Nome Completo *</Label>
+            <Label htmlFor="nome">Nome Completo<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Input id="nome" placeholder="Ex: João da Silva" {...register("nome")} />
-            {errors.nome && <p className="text-xs text-red-500">{errors.nome.message}</p>}
+            {errors.nome && <p className="text-xs text-destructive">{errors.nome.message}</p>}
           </div>
 
           {/* Bloco + Unidade */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Bloco *</Label>
+              <Label>Bloco<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Controller
                 control={control}
                 name="blocoId"
@@ -154,11 +154,11 @@ export default function MoradorForm({
                   />
                 )}
               />
-              {errors.blocoId && <p className="text-xs text-red-500">{errors.blocoId.message}</p>}
+              {errors.blocoId && <p className="text-xs text-destructive">{errors.blocoId.message}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <Label>Unidade *</Label>
+              <Label>Unidade<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Controller
                 control={control}
                 name="unidadeId"
@@ -173,15 +173,15 @@ export default function MoradorForm({
                   />
                 )}
               />
-              {errors.unidadeId && <p className="text-xs text-red-500">{errors.unidadeId.message}</p>}
+              {errors.unidadeId && <p className="text-xs text-destructive">{errors.unidadeId.message}</p>}
             </div>
           </div>
 
           {/* Email */}
           <div className="space-y-1.5">
-            <Label htmlFor="email">Email *</Label>
+            <Label htmlFor="email">Email<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Input id="email" type="email" placeholder="morador@email.com" {...register("email")} />
-            {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
+            {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
           </div>
 
           {/* Telefone */}

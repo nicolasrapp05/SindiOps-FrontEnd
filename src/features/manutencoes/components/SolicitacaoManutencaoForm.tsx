@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+﻿import { useEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -127,7 +127,7 @@ export default function SolicitacaoManutencaoForm({
         </DialogHeader>
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
           <div className="space-y-2">
-            <Label>Tipo de serviço *</Label>
+            <Label>Tipo de serviço<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller
               name="tipoServico"
               control={control}
@@ -148,7 +148,7 @@ export default function SolicitacaoManutencaoForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="sol-local">Local *</Label>
+            <Label htmlFor="sol-local">Local<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller
               name="local"
               control={control}
@@ -161,7 +161,7 @@ export default function SolicitacaoManutencaoForm({
             )}
           </div>
           <div className="space-y-2">
-            <Label>Responsável *</Label>
+            <Label>Responsável<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller
               name="responsavel"
               control={control}
@@ -195,7 +195,7 @@ export default function SolicitacaoManutencaoForm({
           </div>
           {responsavel === "fornecedor" && (
             <div className="space-y-2">
-              <Label>Fornecedor *</Label>
+              <Label>Fornecedor<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Controller
                 name="fornecedorId"
                 control={control}

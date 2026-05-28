@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+﻿import { useEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -159,7 +159,7 @@ export default function ManutencaoObrigatoriaForm({
             {errors.tipo && <p className="text-xs text-destructive">{errors.tipo.message}</p>}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="mo-venc">Data de vencimento *</Label>
+            <Label htmlFor="mo-venc">Data de vencimento<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller
               name="dataVencimento"
               control={control}

@@ -42,7 +42,7 @@ interface CondominioCardProps {
   onEdit: (c: Condominio) => void
   onDelete: (c: Condominio) => void
   onSelect: (c: Condominio) => void
-  /** Seleciona o condomínio e foca a secção Estrutura (blocos/unidades). */
+  /** Seleciona o condomínio e foca a seção Estrutura (blocos/unidades). */
   onOpenBlocosUnidades?: (c: Condominio) => void
   isSelected?: boolean
 }

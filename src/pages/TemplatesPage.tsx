@@ -31,7 +31,8 @@ import type {
 import { TemplateTipoBadge } from "@/features/comunicacao/components/TemplateTipoBadge"
 import { TemplateEditor } from "@/features/comunicacao/components/TemplateEditor"
 
-function formatDate(iso: string) {
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "—"
   return new Date(iso).toLocaleDateString("pt-BR")
 }
 
@@ -156,7 +157,12 @@ export default function TemplatesPage() {
                     <TableCell className="max-w-xs break-words font-mono text-sm text-gray-700">
                       {t.assunto}
                     </TableCell>
-                    <TableCell className="text-gray-600">{formatDate(t.atualizadoEm)}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {t.atualizadoEm
+                        ? formatDate(t.atualizadoEm)
+                        : <span className="text-xs">Criado em {formatDate(t.criadoEm)}</span>
+                      }
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button

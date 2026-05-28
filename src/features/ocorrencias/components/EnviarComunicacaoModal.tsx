@@ -22,11 +22,16 @@ import {
 import { get } from "@/lib/api"
 import { useEnviarComunicacao } from "../hooks/useOcorrencias"
 
+// List endpoint — no corpo
 interface EmailTemplate {
   id: string
   nome: string
   tipo: string
   assunto: string
+}
+
+// Detail endpoint — includes corpo
+interface EmailTemplateDetail extends EmailTemplate {
   corpo: string
 }
 
@@ -56,36 +61,80 @@ export default function EnviarComunicacaoModal({
   const [assunto, setAssunto] = useState("")
   const [corpo, setCorpo] = useState("")
   const [valorMulta, setValorMulta] = useState("")
+  const [prazoResposta, setPrazoResposta] = useState("")
+
+  // ── Queries ────────────────────────────────────────────────────────────────
 
   const { data: templates } = useQuery({
     queryKey: ["email-templates", templateTipoPadrao],
-    queryFn: () => get<EmailTemplate[]>("/email-templates", templateTipoPadrao ? { tipo: templateTipoPadrao } : undefined),
+    queryFn: () =>
+      get<EmailTemplate[]>(
+        "/email-templates",
+        templateTipoPadrao ? { tipo: templateTipoPadrao } : undefined,
+      ),
     enabled: open,
+  })
+
+  // Fetches full detail (including corpo) as soon as a template is selected
+  const { data: templateDetail, isFetching: isLoadingDetail } = useQuery({
+    queryKey: ["email-template", selectedTemplateId],
+    queryFn: () => get<EmailTemplateDetail>(`/email-templates/${selectedTemplateId}`),
+    enabled: !!selectedTemplateId,
+    staleTime: 5 * 60 * 1000,
   })
 
   const enviarMutation = useEnviarComunicacao()
 
+  // ── Effects ────────────────────────────────────────────────────────────────
+
+  // Reset everything when modal opens
   useEffect(() => {
-    if (open) { setStep(1); setSelectedTemplateId(""); setAssunto(""); setCorpo(""); setValorMulta("") }
+    if (open) {
+      setStep(1)
+      setSelectedTemplateId("")
+      setAssunto("")
+      setCorpo("")
+      setValorMulta("")
+      setPrazoResposta("")
+    }
   }, [open])
+
+  // Reset body fields when the selected template changes
+  useEffect(() => {
+    setAssunto("")
+    setCorpo("")
+    setValorMulta("")
+    setPrazoResposta("")
+  }, [selectedTemplateId])
+
+  // Pre-fill assunto and corpo once the detail arrives
+  useEffect(() => {
+    if (!templateDetail) return
+    setAssunto(templateDetail.assunto)
+    let body = templateDetail.corpo
+    if (moradorPadrao) {
+      body = body.replace(/\{\{nome_morador\}\}/g, moradorPadrao.nome)
+      body = body.replace(/\{\{unidade\}\}/g, moradorPadrao.unidade)
+      body = body.replace(/\{\{bloco\}\}/g, moradorPadrao.bloco)
+    }
+    setCorpo(body)
+  }, [templateDetail, moradorPadrao])
+
+  // ── Derived state ──────────────────────────────────────────────────────────
 
   const selectedTemplate = templates?.find((t) => t.id === selectedTemplateId)
 
-  useEffect(() => {
-    if (selectedTemplate) {
-      setAssunto(selectedTemplate.assunto)
-      let body = selectedTemplate.corpo
-      if (moradorPadrao) {
-        body = body.replace(/\{\{nome_morador\}\}/g, moradorPadrao.nome)
-        body = body.replace(/\{\{unidade\}\}/g, moradorPadrao.unidade)
-        body = body.replace(/\{\{bloco\}\}/g, moradorPadrao.bloco)
-      }
-      setCorpo(body)
-    }
-  }, [selectedTemplate, moradorPadrao])
+  // Tokens whose values are provided via dedicated input fields — resolved by backend
+  const inputProvidedTokens: Record<string, boolean> = {
+    "{{valor_multa}}": !!valorMulta,
+    "{{prazo_resposta}}": !!prazoResposta,
+  }
+  const unresolvedVars = VARIAVEIS.filter((v) => corpo.includes(v) && !inputProvidedTokens[v])
+  const canSend = !unresolvedVars.length && !!assunto.trim() && !!corpo.trim() && !!moradorPadrao
 
-  const unresolvedVars = VARIAVEIS.filter((v) => corpo.includes(v))
-  const canSend = !unresolvedVars.length && assunto.trim() && corpo.trim() && moradorPadrao
+  const showPrazoField = !!templateDetail?.corpo.includes("{{prazo_resposta}}")
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleSend = () => {
     if (!moradorPadrao || !selectedTemplateId) return
@@ -98,11 +147,14 @@ export default function EnviarComunicacaoModal({
           assuntoEditado: assunto,
           corpoEditado: corpo,
           ...(valorMulta ? { valorMulta: parseFloat(valorMulta) } : {}),
+          ...(prazoResposta ? { prazoResposta } : {}),
         },
       },
       { onSuccess: () => onOpenChange(false) },
     )
   }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -163,7 +215,13 @@ export default function EnviarComunicacaoModal({
               </div>
             )}
             <div className="flex justify-end pt-2">
-              <Button disabled={!selectedTemplateId} onClick={() => setStep(2)}>
+              <Button
+                disabled={!selectedTemplateId || isLoadingDetail}
+                onClick={() => setStep(2)}
+              >
+                {isLoadingDetail ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
                 Próximo <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             </div>
@@ -227,9 +285,35 @@ export default function EnviarComunicacaoModal({
               </div>
             )}
 
+            {showPrazoField && (
+              <div className="space-y-1.5">
+                <Label>
+                  Prazo para resposta
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                    — substitui{" "}
+                    <span className="token-chip !mx-0 !py-0 text-[10px]">Prazo para resposta</span>
+                    {" "}no corpo
+                  </span>
+                </Label>
+                <Input
+                  type="date"
+                  value={prazoResposta}
+                  onChange={(e) => setPrazoResposta(e.target.value)}
+                />
+                {prazoResposta && (
+                  <p className="text-xs text-muted-foreground">
+                    Será enviado como:{" "}
+                    <strong>{prazoResposta.split("-").reverse().join("/")}</strong>
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Variable chips panel */}
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase text-gray-400">Variáveis Disponíveis</p>
+              <p className="mb-2 text-xs font-semibold uppercase text-gray-400">
+                Variáveis Disponíveis
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {VARIAVEIS.map((v) => {
                   const unresolved = corpo.includes(v)

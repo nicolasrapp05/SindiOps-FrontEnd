@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+﻿import { useEffect } from "react"
 import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -168,9 +168,9 @@ export default function FornecedorForm({
           {/* Nome + CNPJ */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="nome">Nome *</Label>
+              <Label htmlFor="nome">Nome<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Input id="nome" placeholder="Razão Social" {...register("nome")} />
-              {errors.nome && <p className="text-xs text-red-500">{errors.nome.message}</p>}
+              {errors.nome && <p className="text-xs text-destructive">{errors.nome.message}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="cnpj">CNPJ</Label>
