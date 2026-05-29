@@ -20,7 +20,7 @@ const STATUS_CONFIG: Record<
   },
   cancelada: {
     label: "Cancelada",
-    className: "bg-gray-100 text-gray-600 hover:bg-gray-100",
+    className: "bg-red-100 text-red-700 hover:bg-red-100",
   },
 }
 

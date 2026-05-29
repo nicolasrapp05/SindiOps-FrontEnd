@@ -164,6 +164,32 @@
   }
 }
 
+/* Toast: slide in from right, slide out to right.
+   Uses @keyframes + !important because Sonner v2 injects its own <style> via
+   __insertCSS() after our stylesheet, so only !important or higher-specificity
+   rules can reliably override it.
+   No fill-mode on entry so Sonner regains transform control after 0.35s and
+   stacking (--y updates) works normally via its own transitions. */
+
+@keyframes toast-slide-in {
+  from { transform: translateX(calc(100% + 2rem)); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes toast-slide-out {
+  from { transform: translateY(0); opacity: 1; }
+  to   { transform: translateX(calc(100% + 2rem)); opacity: 0; }
+}
+
+[data-sonner-toaster] [data-sonner-toast] {
+  animation: toast-slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-removed='true'][data-swipe-out='false'] {
+  animation: toast-slide-out 0.25s ease-in forwards !important;
+  transition: none !important;
+}
+
 @layer components {
   /* Token chips inside the rich-text template editor */
   .token-chip {

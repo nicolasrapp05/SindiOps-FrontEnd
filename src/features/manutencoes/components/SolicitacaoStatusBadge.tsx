@@ -6,7 +6,7 @@ const STYLE: Record<SolicitacaoStatus, string> = {
   nova: "bg-blue-100 text-blue-700 border-transparent",
   em_andamento: "bg-amber-100 text-amber-700 border-transparent",
   finalizada: "bg-emerald-100 text-emerald-700 border-transparent",
-  cancelada: "bg-gray-100 text-gray-600 border-transparent",
+  cancelada: "bg-red-100 text-red-700 border-transparent",
 }
 
 const LABEL: Record<SolicitacaoStatus, string> = {

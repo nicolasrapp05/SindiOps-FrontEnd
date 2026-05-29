@@ -25,7 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Link } from "react-router-dom"
-import { cn } from "@/lib/utils"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { SolicitacaoStatusBadge } from "@/features/manutencoes/components/SolicitacaoStatusBadge"
 import SolicitacaoManutencaoForm from "@/features/manutencoes/components/SolicitacaoManutencaoForm"
@@ -42,7 +41,7 @@ import {
   type SolicitacaoTipoServico,
 } from "@/features/manutencoes/types/solicitacao-manutencao.types"
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 10
 
 const TIPOS = Object.keys(SOLICITACAO_TIPO_LABEL) as SolicitacaoTipoServico[]
 
@@ -108,38 +107,30 @@ export default function ManutencoesPage() {
     })
   }
 
-  if (!condominioId) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-          Solicitações de Manutenção
-        </h1>
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
-          Selecione um condomínio na barra lateral para carregar as solicitações. Cadastre em{" "}
-          <Link to="/condominios" className="font-medium text-emerald-800 underline underline-offset-2">
-            Condomínios
-          </Link>
-          .
-        </div>
-      </div>
-    )
-  }
+  const condoConfigured = !!condominioId
 
-  if (isLoading) {
+  if (condoConfigured && isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-10 w-full max-w-xl" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-10 w-44" />
+        </div>
+        <Skeleton className="h-12 w-full max-w-2xl" />
         <Skeleton className="h-96 rounded-xl" />
       </div>
     )
   }
 
-  if (isError) {
+  if (condoConfigured && isError) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
-        <Hammer className="h-10 w-10 text-red-500" />
-        <h3 className="mt-4 text-lg font-semibold">Erro ao carregar solicitações</h3>
-        <Button variant="outline" className="mt-4" onClick={() => refetch()}>
+        <div className="rounded-full bg-red-50 p-4">
+          <Hammer className="h-8 w-8 text-red-500" />
+        </div>
+        <h3 className="mt-4 text-lg font-semibold text-gray-900">Erro ao carregar solicitações</h3>
+        <p className="mt-1 text-sm text-gray-500">Verifique sua conexão e tente novamente.</p>
+        <Button variant="outline" className="mt-6" onClick={() => refetch()}>
           <RefreshCw className="mr-2 h-4 w-4" />
           Tentar novamente
         </Button>
@@ -149,28 +140,57 @@ export default function ManutencoesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-          Solicitações de Manutenção
-        </h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1">
-            {STATUS_TABS.map((tab) => (
-              <Button
-                key={tab}
-                type="button"
-                size="sm"
-                variant={statusTab === tab ? "default" : "ghost"}
-                className={cn(statusTab === tab && "bg-white shadow-sm", "text-xs sm:text-sm")}
-                onClick={() => {
-                  setStatusTab(tab)
-                  setPage(1)
-                }}
-              >
-                {STATUS_TAB_LABEL[tab]}
-              </Button>
-            ))}
-          </div>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Solicitações de Manutenção
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Acompanhe e gerencie os chamados de manutenção.
+          </p>
+        </div>
+        <Button
+          className="shrink-0 bg-emerald-700 hover:bg-emerald-800"
+          disabled={!condoConfigured}
+          onClick={() => setFormOpen(true)}
+        >
+          <Plus className="mr-1.5 h-4 w-4" />
+          Nova Solicitação
+        </Button>
+      </div>
+
+      {!condoConfigured && (
+        <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-950">
+          Selecione um condomínio na barra lateral para carregar solicitações e habilitar novos
+          cadastros. Cadastre condomínios em{" "}
+          <Link
+            to="/condominios"
+            className="font-medium text-emerald-800 underline underline-offset-2"
+          >
+            Condomínios
+          </Link>
+          .
+        </div>
+      )}
+
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {STATUS_TABS.map((tab) => (
+            <Button
+              key={tab}
+              type="button"
+              size="sm"
+              variant={statusTab === tab ? "default" : "outline"}
+              onClick={() => {
+                setStatusTab(tab)
+                setPage(1)
+              }}
+            >
+              {STATUS_TAB_LABEL[tab]}
+            </Button>
+          ))}
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
           <Select
             value={tipoFilter || "__all__"}
             onValueChange={(v) => {
@@ -178,7 +198,7 @@ export default function ManutencoesPage() {
               setPage(1)
             }}
           >
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-full sm:w-[220px]">
               <SelectValue placeholder="Tipo" />
             </SelectTrigger>
             <SelectContent>
@@ -190,34 +210,37 @@ export default function ManutencoesPage() {
               ))}
             </SelectContent>
           </Select>
-          <Button className="bg-emerald-700 hover:bg-emerald-800" onClick={() => setFormOpen(true)}>
-            <Plus className="mr-1.5 h-4 w-4" />
-            Nova Solicitação
-          </Button>
         </div>
       </div>
 
-      {list.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20">
-          <Hammer className="h-10 w-10 text-gray-400" />
-          <h3 className="mt-4 text-lg font-semibold text-gray-700">Nenhuma solicitação</h3>
-          <p className="mt-1 text-sm text-gray-500">Abra um novo chamado de manutenção.</p>
-          <Button className="mt-6 bg-emerald-700 hover:bg-emerald-800" onClick={() => setFormOpen(true)}>
+      {!condoConfigured || list.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20 text-center">
+          <div className="rounded-full bg-gray-100 p-4">
+            <Hammer className="h-8 w-8 text-gray-400" />
+          </div>
+          <h3 className="mt-4 text-lg font-semibold text-gray-700">
+            {!condoConfigured ? "Condomínio não configurado" : "Nenhuma solicitação"}
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {!condoConfigured
+              ? "Informe o ID do condomínio para listar e criar solicitações."
+              : "Abra um novo chamado de manutenção."}
+          </p>
+          <Button
+            className="mt-6 bg-emerald-700 hover:bg-emerald-800"
+            disabled={!condoConfigured}
+            onClick={() => setFormOpen(true)}
+          >
             <Plus className="mr-1.5 h-4 w-4" />
             Nova Solicitação
           </Button>
         </div>
       ) : (
-        <div className="relative rounded-xl bg-white shadow-sm ring-1 ring-gray-100">
-          {isFetching && !isLoading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/50">
-              <RefreshCw className="h-6 w-6 animate-spin text-emerald-700" />
-            </div>
-          )}
-          <div className="overflow-x-auto">
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-xl bg-white shadow-sm">
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent">
+                <TableRow>
                   <TableHead>Status</TableHead>
                   <TableHead>Tipo de serviço</TableHead>
                   <TableHead>Local</TableHead>
@@ -274,32 +297,35 @@ export default function ManutencoesPage() {
               </TableBody>
             </Table>
           </div>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t px-4 py-3">
-              <p className="text-sm text-gray-500">
-                Página {page} de {totalPages}
-                {totalCount != null && ` · ${totalCount} itens`}
-              </p>
-              <div className="flex gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+
+          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+            <p className="text-sm text-muted-foreground">
+              Página {page} de {totalPages}
+              {isFetching ? " · Atualizando…" : ""}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Anterior
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Próxima
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
             </div>
-          )}
+          </div>
         </div>
       )}
 

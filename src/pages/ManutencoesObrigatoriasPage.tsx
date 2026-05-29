@@ -49,7 +49,7 @@ import {
   type ManutencaoTipo,
 } from "@/features/manutencoes/types/manutencao-obrigatoria.types"
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 10
 
 const TIPOS = Object.keys(MANUTENCAO_TIPO_LABEL) as ManutencaoTipo[]
 
@@ -64,6 +64,7 @@ const TAB_LABELS: Record<StatusTab, string> = {
 
 export default function ManutencoesObrigatoriasPage() {
   const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
+  const condominioNome = useCondominioScopeStore((s) => s.selectedCondominioNome)
 
   const [statusTab, setStatusTab] = useState<StatusTab>("todas")
   const [tipoFilter, setTipoFilter] = useState<ManutencaoTipo | "">("")
@@ -154,38 +155,30 @@ export default function ManutencoesObrigatoriasPage() {
     setRealizarOpen(true)
   }
 
-  if (!condominioId) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-          Manutenções Obrigatórias
-        </h1>
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
-          Selecione um condomínio na barra lateral para carregar as manutenções. Cadastre em{" "}
-          <Link to="/condominios" className="font-medium text-emerald-800 underline underline-offset-2">
-            Condomínios
-          </Link>
-          .
-        </div>
-      </div>
-    )
-  }
+  const condoConfigured = !!condominioId
 
-  if (isLoading) {
+  if (condoConfigured && isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-10 w-full max-w-xl" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-10 w-44" />
+        </div>
+        <Skeleton className="h-12 w-full max-w-2xl" />
         <Skeleton className="h-96 rounded-xl" />
       </div>
     )
   }
 
-  if (isError) {
+  if (condoConfigured && isError) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
-        <ClipboardList className="h-10 w-10 text-red-500" />
-        <h3 className="mt-4 text-lg font-semibold">Erro ao carregar manutenções</h3>
-        <Button variant="outline" className="mt-4" onClick={() => refetch()}>
+        <div className="rounded-full bg-red-50 p-4">
+          <ClipboardList className="h-8 w-8 text-red-500" />
+        </div>
+        <h3 className="mt-4 text-lg font-semibold text-gray-900">Erro ao carregar manutenções</h3>
+        <p className="mt-1 text-sm text-gray-500">Verifique sua conexão e tente novamente.</p>
+        <Button variant="outline" className="mt-6" onClick={() => refetch()}>
           <RefreshCw className="mr-2 h-4 w-4" />
           Tentar novamente
         </Button>
@@ -195,31 +188,57 @@ export default function ManutencoesObrigatoriasPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-          Manutenções Obrigatórias
-        </h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1">
-            {(Object.keys(TAB_LABELS) as StatusTab[]).map((tab) => (
-              <Button
-                key={tab}
-                type="button"
-                size="sm"
-                variant={statusTab === tab ? "default" : "ghost"}
-                className={cn(
-                  statusTab === tab && "bg-white shadow-sm",
-                  "text-xs sm:text-sm",
-                )}
-                onClick={() => {
-                  setStatusTab(tab)
-                  setPage(1)
-                }}
-              >
-                {TAB_LABELS[tab]}
-              </Button>
-            ))}
-          </div>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Manutenções Obrigatórias
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Controle as obrigações periódicas e vencimentos do condomínio.
+          </p>
+        </div>
+        <Button
+          className="shrink-0 bg-emerald-700 hover:bg-emerald-800"
+          disabled={!condoConfigured}
+          onClick={openCreate}
+        >
+          <Plus className="mr-1.5 h-4 w-4" />
+          Nova Manutenção
+        </Button>
+      </div>
+
+      {!condoConfigured && (
+        <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-950">
+          Selecione um condomínio na barra lateral para carregar manutenções e habilitar novos
+          cadastros. Cadastre condomínios em{" "}
+          <Link
+            to="/condominios"
+            className="font-medium text-emerald-800 underline underline-offset-2"
+          >
+            Condomínios
+          </Link>
+          .
+        </div>
+      )}
+
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(TAB_LABELS) as StatusTab[]).map((tab) => (
+            <Button
+              key={tab}
+              type="button"
+              size="sm"
+              variant={statusTab === tab ? "default" : "outline"}
+              onClick={() => {
+                setStatusTab(tab)
+                setPage(1)
+              }}
+            >
+              {TAB_LABELS[tab]}
+            </Button>
+          ))}
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
           <Select
             value={tipoFilter || "__all__"}
             onValueChange={(v) => {
@@ -227,7 +246,7 @@ export default function ManutencoesObrigatoriasPage() {
               setPage(1)
             }}
           >
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-full sm:w-[220px]">
               <SelectValue placeholder="Tipo" />
             </SelectTrigger>
             <SelectContent>
@@ -239,34 +258,37 @@ export default function ManutencoesObrigatoriasPage() {
               ))}
             </SelectContent>
           </Select>
-          <Button className="bg-emerald-700 hover:bg-emerald-800" onClick={openCreate}>
-            <Plus className="mr-1.5 h-4 w-4" />
-            Nova Manutenção
-          </Button>
         </div>
       </div>
 
-      {sortedList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20">
-          <ClipboardList className="h-10 w-10 text-gray-400" />
-          <h3 className="mt-4 text-lg font-semibold text-gray-700">Nenhuma manutenção</h3>
-          <p className="mt-1 text-sm text-gray-500">Cadastre a primeira obrigação.</p>
-          <Button className="mt-6 bg-emerald-700 hover:bg-emerald-800" onClick={openCreate}>
+      {!condoConfigured || sortedList.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20 text-center">
+          <div className="rounded-full bg-gray-100 p-4">
+            <ClipboardList className="h-8 w-8 text-gray-400" />
+          </div>
+          <h3 className="mt-4 text-lg font-semibold text-gray-700">
+            {!condoConfigured ? "Condomínio não configurado" : "Nenhuma manutenção"}
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {!condoConfigured
+              ? "Informe o ID do condomínio para listar e criar manutenções."
+              : "Cadastre a primeira obrigação."}
+          </p>
+          <Button
+            className="mt-6 bg-emerald-700 hover:bg-emerald-800"
+            disabled={!condoConfigured}
+            onClick={openCreate}
+          >
             <Plus className="mr-1.5 h-4 w-4" />
             Nova Manutenção
           </Button>
         </div>
       ) : (
-        <div className="relative rounded-xl bg-white shadow-sm ring-1 ring-gray-100">
-          {isFetching && !isLoading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/50">
-              <RefreshCw className="h-6 w-6 animate-spin text-emerald-700" />
-            </div>
-          )}
-          <div className="overflow-x-auto">
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-xl bg-white shadow-sm">
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent">
+                <TableRow>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Condomínio</TableHead>
                   <TableHead>Data vencimento</TableHead>
@@ -333,38 +355,43 @@ export default function ManutencoesObrigatoriasPage() {
               </TableBody>
             </Table>
           </div>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t px-4 py-3">
-              <p className="text-sm text-gray-500">
-                Página {page} de {totalPages}
-                {totalCount != null && ` · ${totalCount} itens`}
-              </p>
-              <div className="flex gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+
+          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+            <p className="text-sm text-muted-foreground">
+              Página {page} de {totalPages}
+              {isFetching ? " · Atualizando…" : ""}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Anterior
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Próxima
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
             </div>
-          )}
+          </div>
         </div>
       )}
 
       <ManutencaoObrigatoriaForm
         open={formOpen}
         onOpenChange={setFormOpen}
+        condominioId={condominioId}
+        condominioNome={condominioNome}
         manutencao={editing}
         onSubmit={handleFormSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}

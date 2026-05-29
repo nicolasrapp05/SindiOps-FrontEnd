@@ -34,10 +34,16 @@ const TIPOS = Object.keys(MANUTENCAO_TIPO_LABEL) as ManutencaoTipo[]
 const tipoEnum = z.enum(TIPOS as [ManutencaoTipo, ...ManutencaoTipo[]])
 
 const schema = z.object({
-  condominioId: z.string().min(1, "Informe o ID do condomínio"),
   tipo: tipoEnum,
   dataVencimento: z.string().min(1, "Data de vencimento obrigatória"),
-  ultimaRealizacao: z.string().optional().or(z.literal("")),
+  ultimaRealizacao: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine(
+      (v) => !v || new Date(v) <= new Date(),
+      { message: "A data não pode ser futura" },
+    ),
   observacoes: z.string().optional().or(z.literal("")),
 })
 
@@ -46,6 +52,8 @@ type FormData = z.infer<typeof schema>
 interface ManutencaoObrigatoriaFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  condominioId: string
+  condominioNome?: string | null
   manutencao?: ManutencaoObrigatoria | null
   onSubmit: (data: CreateManutencaoObrigatoriaRequest) => void
   isSubmitting: boolean
@@ -54,6 +62,8 @@ interface ManutencaoObrigatoriaFormProps {
 export default function ManutencaoObrigatoriaForm({
   open,
   onOpenChange,
+  condominioId,
+  condominioNome,
   manutencao,
   onSubmit,
   isSubmitting,
@@ -68,7 +78,6 @@ export default function ManutencaoObrigatoriaForm({
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      condominioId: "",
       tipo: "dedetizacao",
       dataVencimento: "",
       ultimaRealizacao: "",
@@ -80,7 +89,6 @@ export default function ManutencaoObrigatoriaForm({
     if (!open) return
     if (manutencao) {
       reset({
-        condominioId: manutencao.condominio.id,
         tipo: manutencao.tipo,
         dataVencimento: manutencao.dataVencimento.slice(0, 10),
         ultimaRealizacao: manutencao.ultimaRealizacao?.slice(0, 10) ?? "",
@@ -88,7 +96,6 @@ export default function ManutencaoObrigatoriaForm({
       })
     } else {
       reset({
-        condominioId: "",
         tipo: "dedetizacao",
         dataVencimento: "",
         ultimaRealizacao: "",
@@ -99,7 +106,7 @@ export default function ManutencaoObrigatoriaForm({
 
   const submit = (values: FormData) => {
     onSubmit({
-      condominioId: values.condominioId.trim(),
+      condominioId,
       tipo: values.tipo,
       dataVencimento: values.dataVencimento,
       ultimaRealizacao: values.ultimaRealizacao?.trim() || undefined,
@@ -117,24 +124,11 @@ export default function ManutencaoObrigatoriaForm({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="mo-condominio">Condomínio (ID)</Label>
-            <Controller
-              name="condominioId"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  id="mo-condominio"
-                  placeholder="UUID do condomínio"
-                  disabled={isEdit}
-                  aria-invalid={!!errors.condominioId}
-                />
-              )}
-            />
-            {errors.condominioId && (
-              <p className="text-xs text-destructive">{errors.condominioId.message}</p>
-            )}
+          <div className="space-y-1.5">
+            <Label>Condomínio</Label>
+            <div className="flex h-10 items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground">
+              {condominioNome || "—"}
+            </div>
           </div>
           <div className="space-y-2">
             <Label>Tipo</Label>
@@ -176,8 +170,19 @@ export default function ManutencaoObrigatoriaForm({
             <Controller
               name="ultimaRealizacao"
               control={control}
-              render={({ field }) => <Input {...field} id="mo-ultima" type="date" />}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  id="mo-ultima"
+                  type="date"
+                  max={new Date().toISOString().slice(0, 10)}
+                  aria-invalid={!!errors.ultimaRealizacao}
+                />
+              )}
             />
+            {errors.ultimaRealizacao && (
+              <p className="text-xs text-destructive">{errors.ultimaRealizacao.message}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="mo-obs">Observações</Label>
