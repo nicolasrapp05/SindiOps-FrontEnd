@@ -80,9 +80,8 @@ export default function LoginPage() {
 
         {/* Social proof */}
         <p className="text-sm text-white/40">
-          Junte-se a{" "}
-          <span className="font-semibold text-emerald-400">+2.000 condomínios</span>{" "}
-          que já usam o SíndiOps
+          Feito para síndicos que levam a{" "}
+          <span className="font-semibold text-emerald-400">gestão a sério</span>
         </p>
       </div>
 

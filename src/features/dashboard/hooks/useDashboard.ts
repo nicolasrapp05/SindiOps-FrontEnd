@@ -5,5 +5,6 @@ export function useDashboard(condominioId?: string) {
   return useQuery({
     queryKey: ["dashboard", condominioId],
     queryFn: () => getDashboard(condominioId),
+    staleTime: 0,
   })
 }

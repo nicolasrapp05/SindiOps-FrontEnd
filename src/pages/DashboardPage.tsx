@@ -1,3 +1,4 @@
+import { useState } from "react"
 import {
   AlertTriangle,
   Clock,
@@ -6,18 +7,30 @@ import {
   FileText,
   CalendarDays,
   Download,
-  Filter,
   RefreshCw,
   Inbox,
+  Loader2,
 } from "lucide-react"
 import { useAuthStore } from "@/store/auth-store"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { useDashboard } from "@/features/dashboard/hooks/useDashboard"
+import { useGerarRelatorio } from "@/features/relatorios/hooks/useRelatorios"
 import type { AgendaItem } from "@/features/dashboard/types/dashboard.types"
+import {
+  MANUTENCAO_TIPO_LABEL,
+  type ManutencaoTipo,
+} from "@/features/manutencoes/types/manutencao-obrigatoria.types"
 import AlertaCard from "@/features/dashboard/components/AlertaCard"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -69,6 +82,13 @@ function formatFullDate(): string {
 
 function capitalizeFirst(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+function formatDescricao(item: AgendaItem): string {
+  if (item.tipo === "manutencao_obrigatoria") {
+    return MANUTENCAO_TIPO_LABEL[item.descricao as ManutencaoTipo] ?? item.descricao
+  }
+  return item.descricao
 }
 
 function statusLabel(status: string): string {
@@ -134,22 +154,59 @@ function DashboardError({ onRetry }: { onRetry: () => void }) {
 
 // ── Main page ─────────────────────────────────────────────────────────
 
+type TipoFilter = "all" | AgendaItem["tipo"]
+type StatusFilter = "all" | string
+
+const TIPO_FILTER_OPTIONS: { value: TipoFilter; label: string }[] = [
+  { value: "all", label: "Todos os tipos" },
+  { value: "manutencao_obrigatoria", label: "Manutenção" },
+  { value: "contrato", label: "Contrato" },
+  { value: "mandato", label: "Mandato" },
+]
+
+const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: "all", label: "Todos os status" },
+  { value: "overdue", label: "Vencida" },
+  { value: "upcoming", label: "Próxima" },
+  { value: "expiring", label: "Expirando" },
+  { value: "ok", label: "Em dia" },
+]
+
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const selectedCondominioId = useCondominioScopeStore((s) => s.selectedCondominioId)
+
+  const [tipoFilter, setTipoFilter] = useState<TipoFilter>("all")
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+
   const { data, isLoading, isError, refetch } = useDashboard(
     selectedCondominioId ?? undefined,
   )
+  const exportar = useGerarRelatorio()
 
   if (isLoading) return <DashboardSkeleton />
   if (isError || !data) return <DashboardError onRetry={() => refetch()} />
 
   const { alertas, agenda } = data
-  const sortedAgenda = [...agenda].sort(
-    (a, b) =>
-      new Date(a.dataVencimento).getTime() -
-      new Date(b.dataVencimento).getTime(),
-  )
+
+  const sortedAgenda = [...agenda]
+    .sort(
+      (a, b) =>
+        new Date(a.dataVencimento).getTime() -
+        new Date(b.dataVencimento).getTime(),
+    )
+    .filter((item) => tipoFilter === "all" || item.tipo === tipoFilter)
+    .filter((item) => statusFilter === "all" || item.status === statusFilter)
+
+  const handleExportar = () => {
+    if (!selectedCondominioId) return
+    exportar.mutate({
+      tipo: "agenda_prazos",
+      condominioId: selectedCondominioId,
+      formato: "excel",
+      filtros: {},
+    })
+  }
 
   const firstName = user?.nome?.split(" ")[0] ?? "Usuário"
 
@@ -206,22 +263,59 @@ export default function DashboardPage() {
 
       {/* Agenda table */}
       <div className="rounded-xl bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-gray-500" />
-            <h2 className="text-lg font-semibold text-gray-900">
-              Agenda de Vencimentos
-            </h2>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="mr-1.5 h-4 w-4" />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-gray-500" />
+              <h2 className="text-lg font-semibold text-gray-900">
+                Agenda de Vencimentos
+              </h2>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!selectedCondominioId || exportar.isPending}
+              onClick={handleExportar}
+            >
+              {exportar.isPending ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-1.5 h-4 w-4" />
+              )}
               Exportar
             </Button>
-            <Button variant="outline" size="sm">
-              <Filter className="mr-1.5 h-4 w-4" />
-              Filtrar
-            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Select
+              value={tipoFilter}
+              onValueChange={(v) => setTipoFilter(v as TipoFilter)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                {TIPO_FILTER_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_FILTER_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -263,7 +357,7 @@ export default function DashboardPage() {
                       </span>
                     </TableCell>
                     <TableCell className="max-w-xs truncate font-medium text-gray-900">
-                      {item.descricao}
+                      {formatDescricao(item)}
                     </TableCell>
                     <TableCell className="text-gray-500">
                       {item.condominioNome}

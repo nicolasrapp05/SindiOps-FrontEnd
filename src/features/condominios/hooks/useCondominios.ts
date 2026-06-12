@@ -19,6 +19,7 @@ export function useCondominios() {
   return useQuery({
     queryKey: ["condominios"],
     queryFn: getCondominios,
+    staleTime: 0,
   })
 }
 
@@ -76,6 +77,7 @@ export function useCreateBloco(condominioId: string) {
     mutationFn: (nome: string) => createBloco(condominioId, nome),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["condominios", condominioId, "blocos"] })
+      qc.invalidateQueries({ queryKey: ["condominios"] })
     },
   })
 }
@@ -109,6 +111,7 @@ export function useCreateUnidade(condominioId: string) {
       createUnidade(condominioId, blocoId, numero),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["condominios", condominioId, "blocos"] })
+      qc.invalidateQueries({ queryKey: ["condominios"] })
     },
   })
 }
@@ -138,6 +141,7 @@ export function useDeleteUnidade(condominioId: string) {
       deleteUnidade(condominioId, blocoId, unidadeId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["condominios", condominioId, "blocos"] })
+      qc.invalidateQueries({ queryKey: ["condominios"] })
     },
   })
 }

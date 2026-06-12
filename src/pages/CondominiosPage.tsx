@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Plus, Building2, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
@@ -31,11 +31,17 @@ export default function CondominiosPage() {
   const [selectedCondominio, setSelectedCondominio] = useState<Condominio | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Condominio | null>(null)
 
+  const lastSyncedScopeId = useRef<string | null>(null)
+
   useEffect(() => {
     if (!condominios?.length || !scopeCondominioId) return
+    // Only auto-selects when the sidebar selection itself changes,
+    // not a cada refetch de condominios (ex: após criar/excluir bloco/unidade)
+    if (lastSyncedScopeId.current === scopeCondominioId) return
+    lastSyncedScopeId.current = scopeCondominioId
     const match = condominios.find((c) => c.id === scopeCondominioId)
     if (!match) return
-    setSelectedCondominio((prev) => (prev?.id === match.id ? prev : match))
+    setSelectedCondominio(match)
   }, [condominios, scopeCondominioId])
 
   const scrollToEstrutura = () => {
@@ -151,12 +157,7 @@ export default function CondominiosPage() {
             Condomínios
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Gerencie seus condomínios e suas estruturas.
-          </p>
-          <p className="mt-2 max-w-2xl text-sm text-gray-600">
-            {scopeCondominioId
-              ? "A seção Estrutura abaixo corresponde ao condomínio ativo na barra lateral; pode alterar selecionando outro card."
-              : "Selecione um condomínio no card abaixo para cadastrar blocos e unidades na seção Estrutura."}
+            Gerencie seus condomínios e estruturas.
           </p>
         </div>
         <Button
