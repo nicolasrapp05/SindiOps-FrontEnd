@@ -1,4 +1,4 @@
-import { get, post, put, patch, del } from "@/lib/api"
+import { getPaginated, post, put, patch, del } from "@/lib/api"
 import type {
   CreateManutencaoObrigatoriaRequest,
   ManutencaoFilters,
@@ -10,7 +10,7 @@ export function getManutencoesObrigatorias(
   condominioId: string,
   filters?: ManutencaoFilters,
 ) {
-  return get<ManutencaoObrigatoria[]>("/manutencoes-obrigatorias", {
+  return getPaginated<ManutencaoObrigatoria>("/manutencoes-obrigatorias", {
     condominioId,
     ...filters,
   })

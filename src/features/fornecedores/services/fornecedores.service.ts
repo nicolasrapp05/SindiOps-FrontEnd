@@ -1,4 +1,4 @@
-import { get, post, put, del } from "@/lib/api"
+import { getPaginated, post, put, del } from "@/lib/api"
 import type {
   Fornecedor,
   CreateFornecedorRequest,
@@ -6,7 +6,7 @@ import type {
 } from "../types/fornecedor.types"
 
 export function getFornecedores(filters?: FornecedoresFilters) {
-  return get<Fornecedor[]>("/fornecedores", filters)
+  return getPaginated<Fornecedor>("/fornecedores", filters)
 }
 
 export function getFornecedor(id: string) {

@@ -1,4 +1,4 @@
-import { get, post, put, patch } from "@/lib/api"
+import { getPaginated, post, put, patch } from "@/lib/api"
 import type {
   Contrato,
   ContratoStatus,
@@ -7,7 +7,7 @@ import type {
 } from "../types/contrato.types"
 
 export function getContratos(condominioId: string, filters?: ContratosFilters) {
-  return get<Contrato[]>("/contratos", { condominioId, ...filters })
+  return getPaginated<Contrato>("/contratos", { condominioId, ...filters })
 }
 
 export function getContrato(id: string) {

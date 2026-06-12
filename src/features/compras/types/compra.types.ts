@@ -64,6 +64,7 @@ export interface CreateCotacaoRequest {
 }
 
 export interface ComprasFilters {
+  search?: string
   status?: CompraStatus
   categoria?: CompraCategoria
   page?: number

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import {
   Plus, Search, AlertTriangle, RefreshCw, Eye,
@@ -23,6 +23,7 @@ import {
   TIPO_LABEL, ORIGEM_LABEL, TIPO_LOCAL_LABEL,
 } from "@/features/ocorrencias/types/ocorrencia.types"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
+import { useDebounce } from "@/hooks/useDebounce"
 
 export default function OcorrenciasPage() {
   const navigate = useNavigate()
@@ -36,39 +37,32 @@ export default function OcorrenciasPage() {
   const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
   const condoConfigured = !!condominioId
 
+  const debouncedSearch = useDebounce(search)
+
   const filters = useMemo(() => ({
+    ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}),
     ...(statusFilter ? { status: statusFilter as OcorrenciaStatus } : {}),
     ...(tipoFilter ? { tipoOcorrencia: tipoFilter as OcorrenciaTipo } : {}),
     ...(origemFilter ? { origem: origemFilter as OcorrenciaOrigem } : {}),
     page,
     pageSize: 20,
-  }), [statusFilter, tipoFilter, origemFilter, page])
+  }), [debouncedSearch, statusFilter, tipoFilter, origemFilter, page])
 
-  const { data: ocorrencias, isLoading, isError, refetch } = useOcorrencias(condominioId, filters)
+  const { data: ocorrenciasPage, isLoading, isFetching, isError, refetch } = useOcorrencias(condominioId, filters)
   const createMutation = useCreateOcorrencia()
 
   const handleCreate = (data: CreateOcorrenciaRequest) => {
     createMutation.mutate(data, { onSuccess: () => setFormOpen(false) })
   }
 
-  const ocList = useMemo(() => {
-    if (!ocorrencias) return []
-    if (!search) return ocorrencias
-    const q = search.toLowerCase()
-    return ocorrencias.filter(
-      (o) =>
-        o.descricao.toLowerCase().includes(q) ||
-        TIPO_LABEL[o.tipoOcorrencia].toLowerCase().includes(q),
-    )
-  }, [ocorrencias, search])
+  const ocList = ocorrenciasPage?.data ?? []
+  const totalCount = ocorrenciasPage?.totalCount ?? 0
+  const totalPages = Math.max(1, Math.ceil(totalCount / 20))
 
-  const counts = useMemo(() => {
-    if (!ocorrencias) return { abertas: 0, resolvidas: 0 }
-    return {
-      abertas: ocorrencias.filter((o) => o.status === "nova" || o.status === "em_andamento").length,
-      resolvidas: ocorrencias.filter((o) => o.status === "finalizada").length,
-    }
-  }, [ocorrencias])
+  const counts = useMemo(() => ({
+    abertas: ocList.filter((o) => o.status === "nova" || o.status === "em_andamento").length,
+    resolvidas: ocList.filter((o) => o.status === "finalizada").length,
+  }), [ocList])
 
   if (isLoading) {
     return (
@@ -133,9 +127,9 @@ export default function OcorrenciasPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <Input className="pl-10" placeholder="Buscar por tipo ou descrição..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input className="pl-10" placeholder="Buscar…" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
         </div>
         <Select value={statusFilter || "__all__"} onValueChange={(v) => { setStatusFilter(v === "__all__" ? "" : v as OcorrenciaStatus); setPage(1) }}>
           <SelectTrigger className="w-44"><SelectValue placeholder="Todos os Status" /></SelectTrigger>
@@ -178,7 +172,7 @@ export default function OcorrenciasPage() {
           </Button>
         </div>
       ) : (
-        <div className="rounded-xl bg-white shadow-sm">
+        <div className={`rounded-xl bg-white shadow-sm transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -219,13 +213,15 @@ export default function OcorrenciasPage() {
           </div>
           {/* Pagination */}
           <div className="flex items-center justify-between border-t px-4 py-3">
-            <p className="text-sm text-gray-500">{ocList.length} ocorrência(s)</p>
-            <div className="flex gap-2">
+            <p className="text-sm text-gray-500">
+              {totalCount} ocorrência{totalCount !== 1 ? "s" : ""}
+            </p>
+            <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="flex items-center text-sm text-gray-600">Página {page}</span>
-              <Button variant="outline" size="sm" onClick={() => setPage(page + 1)}>
+              <span className="text-sm text-gray-600">Página {page} de {totalPages}</span>
+              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>

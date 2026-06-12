@@ -38,6 +38,7 @@ import { TIPO_SERVICO_LABEL } from "@/features/contratos/types/contrato.types"
 import ContratoForm from "@/features/contratos/components/ContratoForm"
 import ContratoStatusBadge from "@/features/contratos/components/ContratoStatusBadge"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
+import { useDebounce } from "@/hooks/useDebounce"
 
 const PAGE_SIZE = 20
 
@@ -86,8 +87,10 @@ export default function ContratosPage() {
   const condominioNome = useCondominioScopeStore((s) => s.selectedCondominioNome) ?? ""
   const condoConfigured = !!condominioId
 
+  const debouncedSearch = useDebounce(search)
+
   const tableFilters = {
-    search: search.trim() || undefined,
+    search: debouncedSearch.trim() || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
     page,
     pageSize: PAGE_SIZE,
@@ -95,18 +98,18 @@ export default function ContratosPage() {
 
   const summaryFilters = { page: 1, pageSize: 2000 }
 
-  const { data: contratosRaw, isLoading, isError, refetch } = useContratos(condominioId, tableFilters)
+  const { data: contratosRaw, isLoading, isFetching, isError, refetch } = useContratos(condominioId, tableFilters)
   const { data: contratosSummaryRaw } = useContratos(condominioId, summaryFilters)
 
   const createMutation = useCreateContrato()
   const updateMutation = useUpdateContrato()
   const statusMutation = useUpdateContratoStatus()
 
-  const totalCount = (contratosRaw as unknown as { totalCount?: number })?.totalCount
-  const contratoList = Array.isArray(contratosRaw) ? contratosRaw : []
+  const contratoList = contratosRaw?.data ?? []
+  const totalCount = contratosRaw?.totalCount
   const totalPages = totalCount ? Math.ceil(totalCount / PAGE_SIZE) : 1
 
-  const summaryList = Array.isArray(contratosSummaryRaw) ? contratosSummaryRaw : []
+  const summaryList = contratosSummaryRaw?.data ?? []
   const statusCounts = useMemo(
     () => ({
       active: summaryList.filter((c) => c.status === "active").length,
@@ -229,11 +232,11 @@ export default function ContratosPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="pl-10"
-            placeholder="Buscar por fornecedor ou tipo..."
+            placeholder="Buscar…"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value)
@@ -274,7 +277,7 @@ export default function ContratosPage() {
           </Button>
         </div>
       ) : (
-        <div className="rounded-xl bg-white shadow-sm">
+        <div className={`rounded-xl bg-white shadow-sm transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -351,13 +354,12 @@ export default function ContratosPage() {
             </Table>
           </div>
 
-          {totalPages > 1 && (
+          {totalCount != null && (
             <div className="flex items-center justify-between border-t px-4 py-3">
               <p className="text-sm text-gray-500">
-                Página {page} de {totalPages}
-                {totalCount != null && ` · ${totalCount} contratos`}
+                {totalCount} contrato{totalCount !== 1 ? "s" : ""}
               </p>
-              <div className="flex gap-1">
+              <div className="flex items-center gap-1">
                 <Button
                   variant="outline"
                   size="sm"
@@ -366,6 +368,9 @@ export default function ContratosPage() {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
+                <span className="px-2 text-sm text-gray-600">
+                  Página {page} de {totalPages}
+                </span>
                 <Button
                   variant="outline"
                   size="sm"

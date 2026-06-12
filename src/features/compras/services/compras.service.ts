@@ -1,4 +1,4 @@
-import { get, post, put, patch, del } from "@/lib/api"
+import { getPaginated, get, post, put, patch, del } from "@/lib/api"
 import type {
   SolicitacaoCompra,
   CreateSolicitacaoCompraRequest,
@@ -9,7 +9,7 @@ import type {
 } from "../types/compra.types"
 
 export function getSolicitacoesCompra(condominioId: string, filters?: ComprasFilters) {
-  return get<SolicitacaoCompra[]>("/solicitacoes-compra", {
+  return getPaginated<SolicitacaoCompra>("/solicitacoes-compra", {
     condominioId,
     ...filters,
   })

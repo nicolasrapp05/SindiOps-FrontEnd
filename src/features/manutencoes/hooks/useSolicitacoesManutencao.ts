@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { toast } from "sonner"
 import {
   getSolicitacoesManutencao,
@@ -16,6 +16,7 @@ export function useSolicitacoesManutencao(condominioId: string, filters?: Solici
     queryKey: ["solicitacoes-manutencao", condominioId, filters],
     queryFn: () => getSolicitacoesManutencao(condominioId, filters),
     enabled: !!condominioId,
+    placeholderData: keepPreviousData,
   })
 }
 

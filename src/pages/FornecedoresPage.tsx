@@ -40,6 +40,7 @@ import type {
 import FornecedorForm from "@/features/fornecedores/components/FornecedorForm"
 import FornecedorExpandido from "@/features/fornecedores/components/FornecedorExpandido"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import { useDebounce } from "@/hooks/useDebounce"
 
 const SUMMARY_CARDS = [
   { label: "Total", icon: Package, color: "text-blue-600 bg-blue-50" },
@@ -56,14 +57,16 @@ export default function FornecedoresPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Fornecedor | null>(null)
 
-  const filters = { search: search || undefined, page, pageSize: 20 }
-  const { data: fornecedores, isLoading, isError, refetch } = useFornecedores(filters)
+  const debouncedSearch = useDebounce(search)
+
+  const filters = { search: debouncedSearch || undefined, page, pageSize: 20 }
+  const { data: fornecedores, isLoading, isFetching, isError, refetch } = useFornecedores(filters)
   const createMutation = useCreateFornecedor()
   const updateMutation = useUpdateFornecedor()
   const deleteMutation = useDeleteFornecedor()
 
-  const fornecedorList = Array.isArray(fornecedores) ? fornecedores : []
-  const totalCount = (fornecedores as unknown as { totalCount?: number })?.totalCount
+  const fornecedorList = fornecedores?.data ?? []
+  const totalCount = fornecedores?.totalCount
   const totalPages = totalCount ? Math.ceil(totalCount / 20) : 1
 
   const openCreate = () => {
@@ -185,11 +188,11 @@ export default function FornecedoresPage() {
 
       {/* Search */}
       <div className="flex items-center gap-3">
-        <div className="relative w-72">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="pl-10"
-            placeholder="Buscar por nome ou CNPJ..."
+            placeholder="Buscar…"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value)
@@ -213,7 +216,7 @@ export default function FornecedoresPage() {
           </Button>
         </div>
       ) : (
-        <div className="rounded-xl bg-white shadow-sm">
+        <div className={`rounded-xl bg-white shadow-sm transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -313,13 +316,12 @@ export default function FornecedoresPage() {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {totalCount != null && (
             <div className="flex items-center justify-between border-t px-4 py-3">
               <p className="text-sm text-gray-500">
-                Página {page} de {totalPages}
-                {totalCount != null && ` · ${totalCount} fornecedores`}
+                {totalCount} fornecedor{totalCount !== 1 ? "es" : ""}
               </p>
-              <div className="flex gap-1">
+              <div className="flex items-center gap-1">
                 <Button
                   variant="outline"
                   size="sm"
@@ -328,6 +330,9 @@ export default function FornecedoresPage() {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
+                <span className="px-2 text-sm text-gray-600">
+                  Página {page} de {totalPages}
+                </span>
                 <Button
                   variant="outline"
                   size="sm"

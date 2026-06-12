@@ -5,9 +5,11 @@ import {
   Hammer,
   Plus,
   RefreshCw,
+  Search,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -24,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useDebounce } from "@/hooks/useDebounce"
 import { Link } from "react-router-dom"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { SolicitacaoStatusBadge } from "@/features/manutencoes/components/SolicitacaoStatusBadge"
@@ -68,20 +71,24 @@ export default function ManutencoesPage() {
 
   const [statusTab, setStatusTab] = useState<SolicitacaoStatus | "todas">("todas")
   const [tipoFilter, setTipoFilter] = useState<SolicitacaoTipoServico | "">("")
+  const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [formOpen, setFormOpen] = useState(false)
 
+  const debouncedSearch = useDebounce(search)
+
   const filters = useMemo(
     () => ({
+      search: debouncedSearch.trim() || undefined,
       status: statusTab === "todas" ? undefined : statusTab,
       tipoServico: tipoFilter || undefined,
       page,
       pageSize: PAGE_SIZE,
     }),
-    [statusTab, tipoFilter, page],
+    [debouncedSearch, statusTab, tipoFilter, page],
   )
 
-  const { data, isLoading, isError, refetch, isFetching } = useSolicitacoesManutencao(
+  const { data, isLoading, isFetching, isError, refetch } = useSolicitacoesManutencao(
     condominioId,
     filters,
   )
@@ -89,8 +96,8 @@ export default function ManutencoesPage() {
   const createMutation = useCreateSolicitacaoManutencao()
   const updateStatusMutation = useUpdateSolicitacaoStatus()
 
-  const list = useMemo(() => (Array.isArray(data) ? data : []), [data])
-  const totalCount = (data as { totalCount?: number } | undefined)?.totalCount
+  const list = data?.data ?? []
+  const totalCount = data?.totalCount
   const totalPages =
     totalCount != null ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : 1
 
@@ -191,6 +198,18 @@ export default function ManutencoesPage() {
           ))}
         </div>
         <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar…"
+              className="pl-10"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+            />
+          </div>
           <Select
             value={tipoFilter || "__all__"}
             onValueChange={(v) => {
@@ -237,7 +256,7 @@ export default function ManutencoesPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+          <div className={`overflow-hidden rounded-xl bg-white shadow-sm transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
             <Table>
               <TableHeader>
                 <TableRow>

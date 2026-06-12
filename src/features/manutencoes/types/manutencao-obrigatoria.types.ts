@@ -51,6 +51,7 @@ export interface RealizarManutencaoRequest {
 }
 
 export interface ManutencaoFilters {
+  search?: string
   status?: ManutencaoStatus
   tipo?: ManutencaoTipo
   page?: number

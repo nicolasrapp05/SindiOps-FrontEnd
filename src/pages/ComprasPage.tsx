@@ -5,11 +5,14 @@ import {
   ChevronDown,
   ChevronRight,
   RefreshCw,
+  Search,
   ShoppingCart,
   ChevronLeft,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useDebounce } from "@/hooks/useDebounce"
 import {
   Table,
   TableBody,
@@ -76,19 +79,25 @@ export default function ComprasPage() {
 
   const [statusTab, setStatusTab] = useState<StatusTab>("todas")
   const [categoriaFilter, setCategoriaFilter] = useState<CompraCategoria | "todas">("todas")
+  const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [formOpen, setFormOpen] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
+  const debouncedSearch = useDebounce(search)
+
   const apiFilters = useMemo(
     () => ({
+      search: debouncedSearch.trim() || undefined,
       status: statusTab === "todas" ? undefined : statusTab,
       categoria: categoriaFilter === "todas" ? undefined : categoriaFilter,
+      page,
+      pageSize: PAGE_SIZE,
     }),
-    [statusTab, categoriaFilter],
+    [debouncedSearch, statusTab, categoriaFilter, page],
   )
 
-  const { data, isLoading, isError, refetch, isFetching } = useSolicitacoesCompra(
+  const { data, isLoading, isFetching, isError, refetch } = useSolicitacoesCompra(
     condominioId,
     apiFilters,
   )
@@ -99,12 +108,9 @@ export default function ComprasPage() {
   const detailId = expandedId ?? ""
   const { data: expandedDetail, isLoading: detailLoading } = useSolicitacaoCompra(detailId)
 
-  const list = Array.isArray(data) ? data : []
-  const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE))
-  const paged = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE
-    return list.slice(start, start + PAGE_SIZE)
-  }, [list, page])
+  const list = data?.data ?? []
+  const totalCount = data?.totalCount
+  const totalPages = totalCount != null ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : 1
 
   const toggleExpand = (id: string) => {
     setExpandedId((cur) => (cur === id ? null : id))
@@ -198,6 +204,18 @@ export default function ComprasPage() {
           ))}
         </div>
         <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar…"
+              className="pl-10"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+            />
+          </div>
           <Select
             value={categoriaFilter}
             onValueChange={(v) => {
@@ -243,7 +261,7 @@ export default function ComprasPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+          <div className={`overflow-hidden rounded-xl bg-white shadow-sm transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -259,7 +277,7 @@ export default function ComprasPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paged.map((row) => {
+                {list.map((row) => {
                   const open = expandedId === row.id
                   return (
                     <Fragment key={row.id}>
@@ -353,6 +371,7 @@ export default function ComprasPage() {
 
           <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
             <p className="text-sm text-muted-foreground">
+              {totalCount != null ? `${totalCount} resultado${totalCount !== 1 ? "s" : ""} · ` : ""}
               Página {page} de {totalPages}
               {isFetching ? " · Atualizando…" : ""}
             </p>

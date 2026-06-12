@@ -1,4 +1,4 @@
-import { get, post, put, del } from "@/lib/api"
+import { getPaginated, post, put, del } from "@/lib/api"
 import type {
   Morador,
   CreateMoradorRequest,
@@ -6,7 +6,7 @@ import type {
 } from "../types/morador.types"
 
 export function getMoradores(condominioId: string, filters?: MoradoresFilters) {
-  return get<Morador[]>("/moradores", { condominioId, ...filters })
+  return getPaginated<Morador>("/moradores", { condominioId, ...filters })
 }
 
 export function getMorador(id: string) {

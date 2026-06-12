@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { toast } from "sonner"
 import {
   getFornecedores,
@@ -13,6 +13,7 @@ export function useFornecedores(filters?: FornecedoresFilters) {
   return useQuery({
     queryKey: ["fornecedores", filters],
     queryFn: () => getFornecedores(filters),
+    placeholderData: keepPreviousData,
   })
 }
 

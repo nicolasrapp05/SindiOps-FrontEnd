@@ -54,6 +54,7 @@ import type {
 import MoradorForm from "@/features/moradores/components/MoradorForm"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
+import { useDebounce } from "@/hooks/useDebounce"
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   delivered: { label: "Entregue", className: "bg-emerald-100 text-emerald-700" },
@@ -83,14 +84,16 @@ export default function MoradoresPage() {
   const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
   const condoConfigured = !!condominioId
 
+  const debouncedSearch = useDebounce(search)
+
   const filters = {
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     blocoId: blocoFilter !== "all" ? blocoFilter : undefined,
     page,
     pageSize: 20,
   }
 
-  const { data: moradores, isLoading, isError, refetch } = useMoradores(condominioId, filters)
+  const { data: moradores, isLoading, isFetching, isError, refetch } = useMoradores(condominioId, filters)
   const { data: blocos } = useQuery({
     queryKey: ["condominios", condominioId, "blocos"],
     queryFn: () => getBlocos(condominioId),
@@ -143,8 +146,8 @@ export default function MoradoresPage() {
     }
   }
 
-  const totalCount = (moradores as unknown as { totalCount?: number })?.totalCount
-  const moradorList = Array.isArray(moradores) ? moradores : []
+  const moradorList = moradores?.data ?? []
+  const totalCount = moradores?.totalCount
   const totalPages = totalCount ? Math.ceil(totalCount / 20) : 1
 
   // ── Loading ─────────────────────────────────────────
@@ -221,11 +224,11 @@ export default function MoradoresPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="pl-10"
-            placeholder="Buscar por nome ou email..."
+            placeholder="Buscar…"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value)
@@ -272,7 +275,7 @@ export default function MoradoresPage() {
           </Button>
         </div>
       ) : (
-        <div className="rounded-xl bg-white shadow-sm">
+        <div className={`rounded-xl bg-white shadow-sm transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -341,13 +344,12 @@ export default function MoradoresPage() {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {totalCount != null && (
             <div className="flex items-center justify-between border-t px-4 py-3">
               <p className="text-sm text-gray-500">
-                Página {page} de {totalPages}
-                {totalCount != null && ` · ${totalCount} moradores`}
+                {totalCount} morador{totalCount !== 1 ? "es" : ""}
               </p>
-              <div className="flex gap-1">
+              <div className="flex items-center gap-1">
                 <Button
                   variant="outline"
                   size="sm"
@@ -356,6 +358,9 @@ export default function MoradoresPage() {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
+                <span className="px-2 text-sm text-gray-600">
+                  Página {page} de {totalPages}
+                </span>
                 <Button
                   variant="outline"
                   size="sm"

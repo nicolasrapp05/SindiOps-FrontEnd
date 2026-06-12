@@ -108,6 +108,7 @@ export interface CreateOcorrenciaRequest {
 }
 
 export interface OcorrenciasFilters {
+  search?: string
   status?: OcorrenciaStatus
   origem?: OcorrenciaOrigem
   tipoOcorrencia?: OcorrenciaTipo

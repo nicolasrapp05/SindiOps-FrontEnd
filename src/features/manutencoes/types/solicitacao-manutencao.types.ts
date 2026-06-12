@@ -51,6 +51,7 @@ export interface CreateSolicitacaoManutencaoRequest {
 }
 
 export interface SolicitacaoFilters {
+  search?: string
   status?: SolicitacaoStatus
   tipoServico?: SolicitacaoTipoServico
   responsavel?: "fornecedor" | "zelador"

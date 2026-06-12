@@ -1,4 +1,4 @@
-import { get, post, put, patch, del } from "@/lib/api"
+import { getPaginated, post, put, patch, del } from "@/lib/api"
 import api from "@/lib/axios"
 import type {
   Ocorrencia,
@@ -12,7 +12,7 @@ import type {
 } from "../types/comunicacao.types"
 
 export function getOcorrencias(condominioId: string, filters?: OcorrenciasFilters) {
-  return get<Ocorrencia[]>("/ocorrencias", { condominioId, ...filters })
+  return getPaginated<Ocorrencia>("/ocorrencias", { condominioId, ...filters })
 }
 
 export function getOcorrencia(id: string) {

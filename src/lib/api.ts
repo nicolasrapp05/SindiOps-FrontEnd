@@ -1,5 +1,5 @@
 import api from "./axios"
-import type { ApiResponse } from "@/types"
+import type { ApiResponse, PaginatedResponse } from "@/types"
 
 function unwrap<T>(envelope: ApiResponse<T>): T {
   if (envelope.success) {
@@ -36,4 +36,9 @@ export async function patch<T>(url: string, body?: object): Promise<T> {
 export async function del<T>(url: string): Promise<T> {
   const response = await api.delete<ApiResponse<T>>(url)
   return unwrap(response.data)
+}
+
+export async function getPaginated<T>(url: string, params?: object): Promise<PaginatedResponse<T>> {
+  const response = await api.get<PaginatedResponse<T>>(url, { params })
+  return response.data
 }
