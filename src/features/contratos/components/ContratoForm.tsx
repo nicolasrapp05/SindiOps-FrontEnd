@@ -16,13 +16,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   TIPO_SERVICO_LABEL,
   type Contrato,
   type CreateContratoRequest,
@@ -196,8 +189,7 @@ export default function ContratoForm({
                   options={fornecedoresList.map((f) => ({ value: f.id, label: f.nome }))}
                   value={field.value}
                   onValueChange={field.onChange}
-                  placeholder="Selecionar fornecedor"
-                  searchPlaceholder="Buscar fornecedor..."
+                  placeholder="Buscar fornecedor..."
                 />
               )}
             />
@@ -212,18 +204,12 @@ export default function ContratoForm({
               control={control}
               name="tipoServico"
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIPO_SERVICO_OPTIONS.map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={TIPO_SERVICO_OPTIONS.map(([value, label]) => ({ value, label }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Selecionar tipo de serviço..."
+                />
               )}
             />
             {errors.tipoServico && (

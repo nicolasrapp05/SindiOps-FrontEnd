@@ -24,13 +24,7 @@ import AlertaCard from "@/features/dashboard/components/AlertaCard"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import Combobox from "@/components/shared/Combobox"
 import {
   Table,
   TableBody,
@@ -286,36 +280,20 @@ export default function DashboardPage() {
             </Button>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Select
+            <Combobox
+              options={TIPO_FILTER_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
               value={tipoFilter}
               onValueChange={(v) => setTipoFilter(v as TipoFilter)}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                {TIPO_FILTER_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
+              placeholder="Buscar…"
+              className="w-[180px]"
+            />
+            <Combobox
+              options={STATUS_FILTER_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
               value={statusFilter}
               onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_FILTER_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Buscar…"
+              className="w-[180px]"
+            />
           </div>
         </div>
 

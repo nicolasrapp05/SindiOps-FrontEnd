@@ -7,9 +7,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select"
+import Combobox from "@/components/shared/Combobox"
 import { useOcorrencia, useUpdateOcorrenciaStatus, useUploadMidia } from "@/features/ocorrencias/hooks/useOcorrencias"
 import { deleteMidia } from "@/features/ocorrencias/services/ocorrencias.service"
 import OcorrenciaStatusBadge from "@/features/ocorrencias/components/OcorrenciaStatusBadge"
@@ -257,21 +255,18 @@ export default function OcorrenciaDetalhePage() {
             <div className="mb-3">
               <OcorrenciaStatusBadge status={oc.status} />
             </div>
-            <Select
+            <Combobox
+              options={[
+                { value: "nova", label: "Nova" },
+                { value: "em_andamento", label: "Em Andamento" },
+                { value: "finalizada", label: "Finalizada" },
+                { value: "cancelada", label: "Cancelada" },
+              ]}
               value={oc.status}
               onValueChange={handleStatusChange}
               disabled={statusMutation.isPending}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Alterar status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="nova">Nova</SelectItem>
-                <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                <SelectItem value="finalizada">Finalizada</SelectItem>
-                <SelectItem value="cancelada">Cancelada</SelectItem>
-              </SelectContent>
-            </Select>
+              placeholder="Alterar status..."
+            />
             {statusMutation.isPending && (
               <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
                 <Loader2 className="h-3 w-3 animate-spin" /> Atualizando...

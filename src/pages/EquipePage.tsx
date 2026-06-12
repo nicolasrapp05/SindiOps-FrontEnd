@@ -10,13 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import Combobox from "@/components/shared/Combobox"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   useFuncionarios,
@@ -122,28 +116,27 @@ export default function EquipePage() {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <Select value={cargoFilter} onValueChange={(v) => setCargoFilter(v as CargoFilter)}>
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Cargo" />
-          </SelectTrigger>
-          <SelectContent>
-            {CARGOS.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c === "todas" ? "Todos os cargos" : CARGO_LABEL[c]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={ativoFilter} onValueChange={(v) => setAtivoFilter(v as AtivoFilter)}>
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            <SelectItem value="ativos">Ativos</SelectItem>
-            <SelectItem value="inativos">Inativos</SelectItem>
-          </SelectContent>
-        </Select>
+        <Combobox
+          options={CARGOS.map((c) => ({
+            value: c,
+            label: c === "todas" ? "Todos os cargos" : CARGO_LABEL[c],
+          }))}
+          value={cargoFilter}
+          onValueChange={(v) => setCargoFilter(v as CargoFilter)}
+          placeholder="Buscar…"
+          className="w-full sm:w-[200px]"
+        />
+        <Combobox
+          options={[
+            { value: "todos", label: "Todos" },
+            { value: "ativos", label: "Ativos" },
+            { value: "inativos", label: "Inativos" },
+          ]}
+          value={ativoFilter}
+          onValueChange={(v) => setAtivoFilter(v as AtivoFilter)}
+          placeholder="Buscar…"
+          className="w-full sm:w-[200px]"
+        />
       </div>
 
       {list.length === 0 ? (

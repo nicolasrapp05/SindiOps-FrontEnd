@@ -12,9 +12,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog"
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select"
-import {
   ORIGEM_LABEL,
   TIPO_LABEL,
   TIPO_LOCAL_LABEL,
@@ -23,6 +20,7 @@ import type { CreateOcorrenciaRequest, OcorrenciaOrigem, OcorrenciaTipo, TipoLoc
 import { getBlocos } from "@/features/condominios/services/condominios.service"
 import type { Bloco } from "@/features/condominios/types/condominio.types"
 import { useMoradores } from "@/features/moradores/hooks/useMoradores"
+import type { Morador } from "@/features/moradores/types/morador.types"
 import Combobox from "@/components/shared/Combobox"
 
 const formSchema = z.object({
@@ -60,10 +58,8 @@ export default function OcorrenciaForm({
   const selectedBloco = blocos.find((b) => b.id === selectedBlocoId)
   const unidades = selectedBloco?.unidades ?? []
 
-  const { data: moradoresData } = useMoradores(condominioId, { pageSize: 200 })
-  const moradores = Array.isArray(moradoresData)
-    ? moradoresData
-    : (moradoresData as { items?: unknown[] } | undefined)?.items ?? []
+  const { data: moradoresData } = useMoradores(condominioId, { pageSize: 500 })
+  const moradores: Morador[] = moradoresData?.data ?? []
 
   const { register, handleSubmit, reset, control, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -79,6 +75,33 @@ export default function OcorrenciaForm({
       setSelectedBlocoId("")
     }
   }, [open, reset])
+
+  const handleMoradorChange = (moradorId: string) => {
+    setValue("moradorId", moradorId)
+    if (!moradorId) return
+    const morador = moradores.find((m) => m.id === moradorId)
+    if (!morador) return
+    setValue("blocoId", morador.bloco.id)
+    setSelectedBlocoId(morador.bloco.id)
+    setValue("unidadeId", morador.unidade.id)
+  }
+
+  const handleBlocoChange = (blocoId: string) => {
+    setValue("blocoId", blocoId)
+    setSelectedBlocoId(blocoId)
+    setValue("unidadeId", "")
+    setValue("moradorId", "")
+  }
+
+  const handleUnidadeChange = (unidadeId: string) => {
+    setValue("unidadeId", unidadeId)
+    if (!unidadeId) {
+      setValue("moradorId", "")
+      return
+    }
+    const morador = moradores.find((m) => m.unidade.id === unidadeId)
+    if (morador) setValue("moradorId", morador.id)
+  }
 
   const onFormSubmit = (data: FormData) => {
     onSubmit({
@@ -106,28 +129,24 @@ export default function OcorrenciaForm({
             <div className="space-y-1.5">
               <Label>Origem<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Controller control={control} name="origem" render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(ORIGEM_LABEL).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={Object.entries(ORIGEM_LABEL).map(([k, v]) => ({ value: k, label: v }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Selecionar origem..."
+                />
               )} />
               {errors.origem && <p className="text-xs text-destructive">{errors.origem.message}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>Tipo de Local<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Controller control={control} name="tipoLocal" render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(TIPO_LOCAL_LABEL).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={Object.entries(TIPO_LOCAL_LABEL).map(([k, v]) => ({ value: k, label: v }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Selecionar tipo de local..."
+                />
               )} />
               {errors.tipoLocal && <p className="text-xs text-destructive">{errors.tipoLocal.message}</p>}
             </div>
@@ -136,14 +155,12 @@ export default function OcorrenciaForm({
             <div className="space-y-1.5">
               <Label>Tipo de Ocorrência<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Controller control={control} name="tipoOcorrencia" render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(TIPO_LABEL).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={Object.entries(TIPO_LABEL).map(([k, v]) => ({ value: k, label: v }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Selecionar tipo..."
+                />
               )} />
               {errors.tipoOcorrencia && <p className="text-xs text-destructive">{errors.tipoOcorrencia.message}</p>}
             </div>
@@ -177,13 +194,8 @@ export default function OcorrenciaForm({
                         ...blocos.map((b) => ({ value: b.id, label: b.nome })),
                       ]}
                       value={field.value || ""}
-                      onValueChange={(v) => {
-                        field.onChange(v)
-                        setSelectedBlocoId(v)
-                        setValue("unidadeId", "")
-                      }}
-                      placeholder="Selecionar"
-                      searchPlaceholder="Buscar bloco..."
+                      onValueChange={handleBlocoChange}
+                      placeholder="Buscar bloco..."
                     />
                   )}
                 />
@@ -200,9 +212,8 @@ export default function OcorrenciaForm({
                         ...unidades.map((u) => ({ value: u.id, label: u.numero })),
                       ]}
                       value={field.value || ""}
-                      onValueChange={field.onChange}
-                      placeholder="Selecionar"
-                      searchPlaceholder="Buscar unidade..."
+                      onValueChange={handleUnidadeChange}
+                      placeholder="Buscar unidade..."
                       disabled={!selectedBlocoId}
                     />
                   )}
@@ -218,15 +229,11 @@ export default function OcorrenciaForm({
                   <Combobox
                     options={[
                       { value: "", label: "Nenhum" },
-                      ...(moradores as Array<{ id: string; nome: string }>).map((m) => ({
-                        value: m.id,
-                        label: m.nome,
-                      })),
+                      ...moradores.map((m) => ({ value: m.id, label: m.nome })),
                     ]}
                     value={field.value || ""}
-                    onValueChange={field.onChange}
-                    placeholder="Selecionar"
-                    searchPlaceholder="Buscar morador..."
+                    onValueChange={handleMoradorChange}
+                    placeholder="Buscar morador..."
                   />
                 )}
               />

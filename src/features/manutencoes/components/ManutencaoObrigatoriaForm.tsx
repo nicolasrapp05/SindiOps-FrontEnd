@@ -15,13 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import Combobox from "@/components/shared/Combobox"
 import {
   MANUTENCAO_TIPO_LABEL,
   type CreateManutencaoObrigatoriaRequest,
@@ -136,18 +130,12 @@ export default function ManutencaoObrigatoriaForm({
               name="tipo"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full" aria-invalid={!!errors.tipo}>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIPOS.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {MANUTENCAO_TIPO_LABEL[t]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={TIPOS.map((t) => ({ value: t, label: MANUTENCAO_TIPO_LABEL[t] }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Selecionar tipo..."
+                />
               )}
             />
             {errors.tipo && <p className="text-xs text-destructive">{errors.tipo.message}</p>}

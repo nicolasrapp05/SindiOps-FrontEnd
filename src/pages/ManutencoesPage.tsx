@@ -19,13 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import Combobox from "@/components/shared/Combobox"
 import { useDebounce } from "@/hooks/useDebounce"
 import { Link } from "react-router-dom"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
@@ -210,25 +204,16 @@ export default function ManutencoesPage() {
               }}
             />
           </div>
-          <Select
-            value={tipoFilter || "__all__"}
-            onValueChange={(v) => {
-              setTipoFilter(v === "__all__" ? "" : (v as SolicitacaoTipoServico))
-              setPage(1)
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-[220px]">
-              <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">Todos os tipos</SelectItem>
-              {TIPOS.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {SOLICITACAO_TIPO_LABEL[t]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            options={[
+              { value: "", label: "Todos os tipos" },
+              ...TIPOS.map((t) => ({ value: t, label: SOLICITACAO_TIPO_LABEL[t] })),
+            ]}
+            value={tipoFilter || ""}
+            onValueChange={(v) => { setTipoFilter(v as SolicitacaoTipoServico | ""); setPage(1) }}
+            placeholder="Buscar…"
+            className="w-full sm:w-[220px]"
+          />
         </div>
       </div>
 
@@ -293,22 +278,14 @@ export default function ManutencoesPage() {
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <span className="text-xs text-gray-500">Atualizar status</span>
-                        <Select
+                        <Combobox
+                          options={ALL_STATUS.map((s) => ({ value: s, label: STATUS_TAB_LABEL[s] }))}
                           value={row.status}
                           onValueChange={(v) => statusChange(row, v as SolicitacaoStatus)}
                           disabled={updateStatusMutation.isPending}
-                        >
-                          <SelectTrigger className="h-8 w-full min-w-[160px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ALL_STATUS.map((s) => (
-                              <SelectItem key={s} value={s}>
-                                {STATUS_TAB_LABEL[s]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Status"
+                          className="w-full min-w-[160px]"
+                        />
                       </div>
                     </TableCell>
                   </TableRow>

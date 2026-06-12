@@ -1,4 +1,4 @@
-import { getPaginated, post, put, patch, del } from "@/lib/api"
+import { get, getPaginated, post, put, patch, del } from "@/lib/api"
 import api from "@/lib/axios"
 import type {
   Ocorrencia,

@@ -10,9 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select"
+import Combobox from "@/components/shared/Combobox"
 import { useOcorrencias, useCreateOcorrencia } from "@/features/ocorrencias/hooks/useOcorrencias"
 import OcorrenciaStatusBadge from "@/features/ocorrencias/components/OcorrenciaStatusBadge"
 import OcorrenciaForm from "@/features/ocorrencias/components/OcorrenciaForm"
@@ -52,7 +50,12 @@ export default function OcorrenciasPage() {
   const createMutation = useCreateOcorrencia()
 
   const handleCreate = (data: CreateOcorrenciaRequest) => {
-    createMutation.mutate(data, { onSuccess: () => setFormOpen(false) })
+    createMutation.mutate(data, {
+      onSuccess: (created) => {
+        setFormOpen(false)
+        navigate(`/ocorrencias/${created.id}`)
+      },
+    })
   }
 
   const ocList = ocorrenciasPage?.data ?? []
@@ -131,34 +134,39 @@ export default function OcorrenciasPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input className="pl-10" placeholder="Buscar…" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
         </div>
-        <Select value={statusFilter || "__all__"} onValueChange={(v) => { setStatusFilter(v === "__all__" ? "" : v as OcorrenciaStatus); setPage(1) }}>
-          <SelectTrigger className="w-44"><SelectValue placeholder="Todos os Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">Todos</SelectItem>
-            <SelectItem value="nova">Nova</SelectItem>
-            <SelectItem value="em_andamento">Em Andamento</SelectItem>
-            <SelectItem value="finalizada">Finalizada</SelectItem>
-            <SelectItem value="cancelada">Cancelada</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={tipoFilter || "__all__"} onValueChange={(v) => { setTipoFilter(v === "__all__" ? "" : v as OcorrenciaTipo); setPage(1) }}>
-          <SelectTrigger className="w-44"><SelectValue placeholder="Todos os Tipos" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">Todos</SelectItem>
-            {Object.entries(TIPO_LABEL).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={origemFilter || "__all__"} onValueChange={(v) => { setOrigemFilter(v === "__all__" ? "" : v as OcorrenciaOrigem); setPage(1) }}>
-          <SelectTrigger className="w-44"><SelectValue placeholder="Todas as Origens" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">Todas</SelectItem>
-            {Object.entries(ORIGEM_LABEL).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Combobox
+          options={[
+            { value: "", label: "Todos os status" },
+            { value: "nova", label: "Nova" },
+            { value: "em_andamento", label: "Em Andamento" },
+            { value: "finalizada", label: "Finalizada" },
+            { value: "cancelada", label: "Cancelada" },
+          ]}
+          value={statusFilter || ""}
+          onValueChange={(v) => { setStatusFilter(v as OcorrenciaStatus | ""); setPage(1) }}
+          placeholder="Buscar…"
+          className="w-full sm:w-44"
+        />
+        <Combobox
+          options={[
+            { value: "", label: "Todos os tipos" },
+            ...Object.entries(TIPO_LABEL).map(([k, v]) => ({ value: k, label: v })),
+          ]}
+          value={tipoFilter || ""}
+          onValueChange={(v) => { setTipoFilter(v as OcorrenciaTipo | ""); setPage(1) }}
+          placeholder="Buscar…"
+          className="w-full sm:w-44"
+        />
+        <Combobox
+          options={[
+            { value: "", label: "Todas as origens" },
+            ...Object.entries(ORIGEM_LABEL).map(([k, v]) => ({ value: k, label: v })),
+          ]}
+          value={origemFilter || ""}
+          onValueChange={(v) => { setOrigemFilter(v as OcorrenciaOrigem | ""); setPage(1) }}
+          placeholder="Buscar…"
+          className="w-full sm:w-44"
+        />
       </div>
 
       {/* Table */}

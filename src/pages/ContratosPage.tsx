@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import Combobox from "@/components/shared/Combobox"
 import {
   useContratos,
   useCreateContrato,
@@ -244,24 +245,13 @@ export default function ContratosPage() {
             }}
           />
         </div>
-        <Select
+        <Combobox
+          options={STATUS_FILTER_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
           value={statusFilter}
-          onValueChange={(v) => {
-            setStatusFilter(v as "all" | ContratoStatus)
-            setPage(1)
-          }}
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_FILTER_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          onValueChange={(v) => { setStatusFilter(v as "all" | ContratoStatus); setPage(1) }}
+          placeholder="Buscar…"
+          className="w-[200px]"
+        />
       </div>
 
       {contratoList.length === 0 ? (

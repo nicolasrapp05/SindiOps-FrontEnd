@@ -14,13 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import Combobox from "@/components/shared/Combobox"
 import {
   COMPRA_CATEGORIA_LABEL,
   type CompraCategoria,
@@ -125,18 +119,12 @@ export default function SolicitacaoCompraForm({
               name="categoria"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIAS.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {COMPRA_CATEGORIA_LABEL[c]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={CATEGORIAS.map((c) => ({ value: c, label: COMPRA_CATEGORIA_LABEL[c] }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Selecionar categoria..."
+                />
               )}
             />
             {errors.categoria && (
@@ -182,18 +170,12 @@ export default function SolicitacaoCompraForm({
               name="tipoAprovacao"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIPOS_APROVACAO.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {TIPO_APROVACAO_LABEL[t]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={TIPOS_APROVACAO.map((t) => ({ value: t, label: TIPO_APROVACAO_LABEL[t] }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Selecionar tipo de aprovação..."
+                />
               )}
             />
             {errors.tipoAprovacao && (

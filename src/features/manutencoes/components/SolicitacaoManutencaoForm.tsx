@@ -15,13 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import {
   SOLICITACAO_TIPO_LABEL,
@@ -132,18 +125,12 @@ export default function SolicitacaoManutencaoForm({
               name="tipoServico"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full" aria-invalid={!!errors.tipoServico}>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIPOS.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {SOLICITACAO_TIPO_LABEL[t]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={TIPOS.map((t) => ({ value: t, label: SOLICITACAO_TIPO_LABEL[t] }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Selecionar tipo de serviço..."
+                />
               )}
             />
           </div>
@@ -204,8 +191,7 @@ export default function SolicitacaoManutencaoForm({
                     options={fornecedoresList.map((f) => ({ value: f.id, label: f.nome }))}
                     value={field.value || ""}
                     onValueChange={field.onChange}
-                    placeholder="Selecionar fornecedor"
-                    searchPlaceholder="Buscar fornecedor..."
+                    placeholder="Buscar fornecedor..."
                   />
                 )}
               />

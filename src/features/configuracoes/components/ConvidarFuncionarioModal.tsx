@@ -14,13 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import Combobox from "@/components/shared/Combobox"
 import {
   CARGO_LABEL,
   type ConvidarFuncionarioRequest,
@@ -114,18 +108,12 @@ export default function ConvidarFuncionarioModal({
               name="cargo"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CARGOS.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {CARGO_LABEL[c]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={CARGOS.map((c) => ({ value: c, label: CARGO_LABEL[c] }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Selecionar cargo..."
+                />
               )}
             />
             {errors.cargo && <p className="text-xs text-destructive">{errors.cargo.message}</p>}

@@ -25,13 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import Combobox from "@/components/shared/Combobox"
 import {
   Sheet,
   SheetContent,
@@ -236,25 +230,16 @@ export default function MoradoresPage() {
             }}
           />
         </div>
-        <Select
+        <Combobox
+          options={[
+            { value: "all", label: "Todos os Blocos" },
+            ...(blocos?.map((b: Bloco) => ({ value: b.id, label: b.nome })) ?? []),
+          ]}
           value={blocoFilter}
-          onValueChange={(v) => {
-            setBlocoFilter(v)
-            setPage(1)
-          }}
-        >
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="Bloco" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os Blocos</SelectItem>
-            {blocos?.map((b: Bloco) => (
-              <SelectItem key={b.id} value={b.id}>
-                {b.nome}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          onValueChange={(v) => { setBlocoFilter(v); setPage(1) }}
+          placeholder="Buscar…"
+          className="w-44"
+        />
       </div>
 
       {/* Table */}

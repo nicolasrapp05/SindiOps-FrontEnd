@@ -21,13 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import Combobox from "@/components/shared/Combobox"
 import {
   useSolicitacoesCompra,
   useSolicitacaoCompra,
@@ -234,24 +228,16 @@ export default function CotacoesPage() {
               }}
             />
           </div>
-          <Select
+          <Combobox
+            options={CATEGORIAS.map((c) => ({
+              value: c,
+              label: c === "todas" ? "Todas as categorias" : COMPRA_CATEGORIA_LABEL[c],
+            }))}
             value={categoriaFilter}
-            onValueChange={(v) => {
-              setCategoriaFilter(v as CompraCategoria | "todas")
-              setPage(1)
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-[220px]">
-              <SelectValue placeholder="Categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              {CATEGORIAS.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c === "todas" ? "Todas as categorias" : COMPRA_CATEGORIA_LABEL[c]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onValueChange={(v) => { setCategoriaFilter(v as CompraCategoria | "todas"); setPage(1) }}
+            placeholder="Buscar…"
+            className="w-full sm:w-[220px]"
+          />
         </div>
       </div>
 

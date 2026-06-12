@@ -23,13 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import Combobox from "@/components/shared/Combobox"
 import { Link } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
@@ -256,25 +250,16 @@ export default function ManutencoesObrigatoriasPage() {
               }}
             />
           </div>
-          <Select
-            value={tipoFilter || "__all__"}
-            onValueChange={(v) => {
-              setTipoFilter(v === "__all__" ? "" : (v as ManutencaoTipo))
-              setPage(1)
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-[220px]">
-              <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">Todos os tipos</SelectItem>
-              {TIPOS.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {MANUTENCAO_TIPO_LABEL[t]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            options={[
+              { value: "", label: "Todos os tipos" },
+              ...TIPOS.map((t) => ({ value: t, label: MANUTENCAO_TIPO_LABEL[t] })),
+            ]}
+            value={tipoFilter || ""}
+            onValueChange={(v) => { setTipoFilter(v as ManutencaoTipo | ""); setPage(1) }}
+            placeholder="Buscar…"
+            className="w-full sm:w-[220px]"
+          />
         </div>
       </div>
 
