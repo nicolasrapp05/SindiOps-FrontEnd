@@ -19,8 +19,7 @@ export interface Fornecedor {
   instagram?: string
   website?: string
   nomeContato?: string
-  /** Presente na listagem apenas se a API enviar; detalhe traz a lista completa. */
-  servicos?: ServicoFornecedor[]
+  servicos: ServicoFornecedor[]
   criadoEm: string
 }
 

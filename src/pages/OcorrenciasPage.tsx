@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import {
   Plus, Search, AlertTriangle, RefreshCw, Eye,
-  ChevronLeft, ChevronRight, Clock, CheckCircle2, Timer,
+  ChevronLeft, ChevronRight, Bell, Clock, CheckCircle2, XCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,6 +22,13 @@ import {
 } from "@/features/ocorrencias/types/ocorrencia.types"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { useDebounce } from "@/hooks/useDebounce"
+
+const SUMMARY_CARDS = [
+  { key: "nova",        label: "Novas",       icon: Bell,          color: "text-amber-600 bg-amber-50"    },
+  { key: "em_andamento",label: "Em Andamento", icon: Clock,         color: "text-blue-600 bg-blue-50"      },
+  { key: "finalizada",  label: "Finalizadas",  icon: CheckCircle2,  color: "text-emerald-600 bg-emerald-50"},
+  { key: "cancelada",   label: "Canceladas",   icon: XCircle,       color: "text-gray-500 bg-gray-100"     },
+] as const
 
 export default function OcorrenciasPage() {
   const navigate = useNavigate()
@@ -47,6 +54,7 @@ export default function OcorrenciasPage() {
   }), [debouncedSearch, statusFilter, tipoFilter, origemFilter, page])
 
   const { data: ocorrenciasPage, isLoading, isFetching, isError, refetch } = useOcorrencias(condominioId, filters)
+  const { data: summaryData } = useOcorrencias(condominioId, { pageSize: 500 })
   const createMutation = useCreateOcorrencia()
 
   const handleCreate = (data: CreateOcorrenciaRequest) => {
@@ -62,18 +70,25 @@ export default function OcorrenciasPage() {
   const totalCount = ocorrenciasPage?.totalCount ?? 0
   const totalPages = Math.max(1, Math.ceil(totalCount / 20))
 
-  const counts = useMemo(() => ({
-    abertas: ocList.filter((o) => o.status === "nova" || o.status === "em_andamento").length,
-    resolvidas: ocList.filter((o) => o.status === "finalizada").length,
-  }), [ocList])
+  const summaryList = summaryData?.data ?? []
+  const statusCounts = useMemo(() => ({
+    nova:         summaryList.filter((o) => o.status === "nova").length,
+    em_andamento: summaryList.filter((o) => o.status === "em_andamento").length,
+    finalizada:   summaryList.filter((o) => o.status === "finalizada").length,
+    cancelada:    summaryList.filter((o) => o.status === "cancelada").length,
+  }), [summaryList])
 
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <div className="flex gap-4">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-10 w-40" />
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-10 w-44" />
+        </div>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-xl" />
+          ))}
         </div>
         <div className="space-y-3">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -127,6 +142,28 @@ export default function OcorrenciasPage() {
           .
         </div>
       )}
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {SUMMARY_CARDS.map((card) => {
+          const Icon = card.icon
+          return (
+            <div key={card.key} className="rounded-xl bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className={`rounded-lg p-2 ${card.color}`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500">{card.label}</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {statusCounts[card.key]}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
@@ -236,31 +273,6 @@ export default function OcorrenciasPage() {
           </div>
         </div>
       )}
-
-      {/* Metric cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="flex items-center gap-3 rounded-xl border bg-white p-4">
-          <div className="rounded-lg bg-amber-100 p-2"><Clock className="h-5 w-5 text-amber-600" /></div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{counts.abertas}</p>
-            <p className="text-xs text-gray-500">Em Aberto</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-xl border bg-white p-4">
-          <div className="rounded-lg bg-emerald-100 p-2"><CheckCircle2 className="h-5 w-5 text-emerald-600" /></div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{counts.resolvidas}</p>
-            <p className="text-xs text-gray-500">Resolvidas este mês</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-xl border bg-white p-4">
-          <div className="rounded-lg bg-blue-100 p-2"><Timer className="h-5 w-5 text-blue-600" /></div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">—</p>
-            <p className="text-xs text-gray-500">Tempo Médio Resposta</p>
-          </div>
-        </div>
-      </div>
 
       {/* Form */}
       <OcorrenciaForm

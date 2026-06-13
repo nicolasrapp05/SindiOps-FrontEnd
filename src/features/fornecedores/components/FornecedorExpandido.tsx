@@ -1,14 +1,19 @@
-import { MapPin, Globe, AtSign, Wrench } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { MapPin, Globe, AtSign, Wrench, FileText, Calendar } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useFornecedor } from "../hooks/useFornecedores"
+import { useContratosPorFornecedor } from "@/features/contratos/hooks/useContratos"
+import ContratoStatusBadge from "@/features/contratos/components/ContratoStatusBadge"
+import { TIPO_SERVICO_LABEL } from "@/features/contratos/types/contrato.types"
 
 interface FornecedorExpandidoProps {
   fornecedorId: string
 }
 
 export default function FornecedorExpandido({ fornecedorId }: FornecedorExpandidoProps) {
-  const { data: fornecedor, isLoading } = useFornecedor(fornecedorId)
+  const { data: fornecedor, isLoading: loadingFornecedor } = useFornecedor(fornecedorId)
+  const { data: contratosData, isLoading: loadingContratos } = useContratosPorFornecedor(fornecedorId)
+
+  const isLoading = loadingFornecedor || loadingContratos
 
   if (isLoading) {
     return (
@@ -39,9 +44,12 @@ export default function FornecedorExpandido({ fornecedorId }: FornecedorExpandid
     .join("")
     .trim()
 
+  const contratos = contratosData?.data ?? []
+  const servicos = fornecedor.servicos ?? []
+
   return (
     <div className="grid gap-6 border-t bg-gray-50/50 p-5 md:grid-cols-2">
-      {/* Left: Contact info */}
+      {/* Esquerda: informações de contato */}
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
@@ -91,33 +99,69 @@ export default function FornecedorExpandido({ fornecedorId }: FornecedorExpandid
         )}
       </div>
 
-      {/* Right: Services & contracts */}
-      <div className="space-y-4">
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-          Contratos & Atividades
-        </h4>
+      {/* Direita: contratos e serviços */}
+      <div className="space-y-5">
+        {/* Contratos */}
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+            Contratos
+          </h4>
 
-        {(fornecedor.servicos ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">Nenhum serviço cadastrado.</p>
-        ) : (
-          <div className="space-y-2">
-            {(fornecedor.servicos ?? []).map((s) => (
-              <div
-                key={s.id}
-                className="flex items-center justify-between rounded-lg border bg-white p-3"
-              >
-                <div className="flex items-center gap-2">
-                  <Wrench className="h-4 w-4 text-gray-400" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">
-                      {s.descricao || s.tipo}
-                      {s.quantidade ? ` (Qtd: ${s.quantidade})` : ""}
-                    </p>
+          {contratos.length === 0 ? (
+            <p className="text-sm text-gray-400">Nenhum contrato cadastrado.</p>
+          ) : (
+            <div className="space-y-2">
+              {contratos.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between rounded-lg border bg-white p-3"
+                >
+                  <div className="flex items-start gap-2">
+                    <FileText className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">
+                        {TIPO_SERVICO_LABEL[c.tipoServico] ?? c.tipoServico}
+                      </p>
+                      {c.dataFim && (
+                        <p className="flex items-center gap-1 text-xs text-gray-400">
+                          <Calendar className="h-3 w-3" />
+                          até{" "}
+                          {new Date(c.dataFim).toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </p>
+                      )}
+                    </div>
                   </div>
+                  <ContratoStatusBadge status={c.status} />
                 </div>
-                <Badge className="bg-emerald-100 text-emerald-700">Vigente</Badge>
-              </div>
-            ))}
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Serviços */}
+        {servicos.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Serviços Registrados
+            </h4>
+            <div className="space-y-2">
+              {servicos.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-center gap-2 rounded-lg border bg-white p-3"
+                >
+                  <Wrench className="h-4 w-4 shrink-0 text-gray-400" />
+                  <p className="text-sm text-gray-700">
+                    {s.descricao || s.tipo}
+                    {s.quantidade ? ` (Qtd: ${s.quantidade})` : ""}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

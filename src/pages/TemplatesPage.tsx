@@ -154,7 +154,7 @@ export default function TemplatesPage() {
                     <TableCell>
                       <TemplateTipoBadge tipo={t.tipo} />
                     </TableCell>
-                    <TableCell className="max-w-xs break-words font-mono text-sm text-gray-700">
+                    <TableCell className="max-w-xs truncate text-gray-600">
                       {t.assunto}
                     </TableCell>
                     <TableCell className="text-muted-foreground">

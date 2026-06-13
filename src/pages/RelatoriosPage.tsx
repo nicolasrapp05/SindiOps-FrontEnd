@@ -11,12 +11,14 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import Combobox from "@/components/shared/Combobox"
 import { useGerarRelatorio } from "@/features/relatorios/hooks/useRelatorios"
 import {
   RELATORIO_TIPO_LABEL,
   type RelatorioFormato,
   type RelatorioTipo,
 } from "@/features/relatorios/types/relatorio.types"
+import { useCondominios } from "@/features/condominios/hooks/useCondominios"
 import { toast } from "sonner"
 
 const TIPOS: RelatorioTipo[] = [
@@ -28,6 +30,33 @@ const TIPOS: RelatorioTipo[] = [
   "manutencoes",
 ]
 
+const STATUS_OPTIONS: Partial<Record<RelatorioTipo, { value: string; label: string }[]>> = {
+  ocorrencias: [
+    { value: "nova",         label: "Nova"         },
+    { value: "em_andamento", label: "Em Andamento" },
+    { value: "finalizada",   label: "Finalizada"   },
+    { value: "cancelada",    label: "Cancelada"    },
+  ],
+  mapa_cotacoes: [
+    { value: "nova",         label: "Nova"         },
+    { value: "em_andamento", label: "Em Andamento" },
+    { value: "finalizada",   label: "Finalizada"   },
+    { value: "cancelada",    label: "Cancelada"    },
+  ],
+  lista_compras: [
+    { value: "nova",         label: "Nova"         },
+    { value: "em_andamento", label: "Em Andamento" },
+    { value: "finalizada",   label: "Finalizada"   },
+    { value: "cancelada",    label: "Cancelada"    },
+  ],
+  manutencoes: [
+    { value: "nova",         label: "Nova"         },
+    { value: "em_andamento", label: "Em Andamento" },
+    { value: "finalizada",   label: "Finalizada"   },
+    { value: "cancelada",    label: "Cancelada"    },
+  ],
+}
+
 export default function RelatoriosPage() {
   const [tipo, setTipo] = useState<RelatorioTipo>("ocorrencias")
   const [condominioId, setCondominioId] = useState("")
@@ -35,22 +64,35 @@ export default function RelatoriosPage() {
   const [dataFim, setDataFim] = useState("")
   const [statusFiltro, setStatusFiltro] = useState("")
 
+  const { data: condominios } = useCondominios()
   const gerar = useGerarRelatorio()
 
+  const statusOptions = STATUS_OPTIONS[tipo]
+  const hasStatusFilter = !!statusOptions
+
+  const condominioOptions = [
+    { value: "", label: "Selecionar condomínio…" },
+    ...(condominios ?? []).map((c) => ({ value: c.id, label: c.nome })),
+  ]
+
+  const handleTipoChange = (v: RelatorioTipo) => {
+    setTipo(v)
+    setStatusFiltro("")
+  }
+
   const buildPayload = (formato: RelatorioFormato) => {
-    const id = condominioId.trim()
-    if (!id) {
-      toast.error("Informe o ID do condomínio")
+    if (!condominioId) {
+      toast.error("Selecione um condomínio")
       return null
     }
     return {
       tipo,
-      condominioId: id,
+      condominioId,
       formato,
       filtros: {
         ...(dataInicio && { dataInicio }),
         ...(dataFim && { dataFim }),
-        ...(statusFiltro.trim() && { status: statusFiltro.trim() }),
+        ...(statusFiltro && { status: statusFiltro }),
       },
     }
   }
@@ -60,9 +102,9 @@ export default function RelatoriosPage() {
     if (payload) gerar.mutate(payload)
   }
 
-  const loadingPdf = gerar.isPending && gerar.variables?.formato === "pdf"
+  const loadingPdf   = gerar.isPending && gerar.variables?.formato === "pdf"
   const loadingExcel = gerar.isPending && gerar.variables?.formato === "excel"
-  const loadingWord = gerar.isPending && gerar.variables?.formato === "word"
+  const loadingWord  = gerar.isPending && gerar.variables?.formato === "word"
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -81,9 +123,10 @@ export default function RelatoriosPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Tipo */}
           <div className="space-y-2">
             <Label>Tipo</Label>
-            <Select value={tipo} onValueChange={(v) => setTipo(v as RelatorioTipo)}>
+            <Select value={tipo} onValueChange={(v) => handleTipoChange(v as RelatorioTipo)}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -97,16 +140,19 @@ export default function RelatoriosPage() {
             </Select>
           </div>
 
+          {/* Condomínio */}
           <div className="space-y-2">
-            <Label htmlFor="rel-condominio">Condomínio</Label>
-            <Input
-              id="rel-condominio"
-              placeholder="ID do condomínio"
+            <Label>Condomínio</Label>
+            <Combobox
+              options={condominioOptions}
               value={condominioId}
-              onChange={(e) => setCondominioId(e.target.value)}
+              onValueChange={setCondominioId}
+              placeholder="Selecionar condomínio…"
+              className="w-full"
             />
           </div>
 
+          {/* Período */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="rel-inicio">Data início</Label>
@@ -128,16 +174,24 @@ export default function RelatoriosPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="rel-status">Filtro de status (opcional)</Label>
-            <Input
-              id="rel-status"
-              placeholder="Ex.: aberto, concluído…"
-              value={statusFiltro}
-              onChange={(e) => setStatusFiltro(e.target.value)}
-            />
-          </div>
+          {/* Status — só exibe quando o tipo tem status definidos */}
+          {hasStatusFilter && (
+            <div className="space-y-2">
+              <Label>Status (opcional)</Label>
+              <Combobox
+                options={[
+                  { value: "", label: "Todos os status" },
+                  ...statusOptions,
+                ]}
+                value={statusFiltro}
+                onValueChange={setStatusFiltro}
+                placeholder="Todos os status"
+                className="w-full"
+              />
+            </div>
+          )}
 
+          {/* Botões de exportação */}
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Button
               type="button"

@@ -15,7 +15,7 @@ export default function FuncionarioStatusBadge({ ativo }: { ativo: boolean }) {
   return (
     <Badge
       variant="secondary"
-      className={cn("font-medium bg-gray-100 text-gray-600 hover:bg-gray-100")}
+      className={cn("font-medium bg-red-100 text-red-700 hover:bg-red-100")}
     >
       Inativo
     </Badge>

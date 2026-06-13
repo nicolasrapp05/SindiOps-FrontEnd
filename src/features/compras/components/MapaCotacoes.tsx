@@ -45,8 +45,9 @@ export default function MapaCotacoes({
             key={c.id}
             className={cn(
               "flex flex-col rounded-xl border bg-card p-4 shadow-sm",
-              isBest && "border-emerald-500 ring-1 ring-emerald-500/30",
-              !isBest && "border-border",
+              selected && "border-emerald-500 ring-2 ring-emerald-500/30",
+              !selected && isBest && "border-blue-500 ring-1 ring-blue-500/30",
+              !selected && !isBest && "border-border",
             )}
           >
             <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
@@ -61,13 +62,8 @@ export default function MapaCotacoes({
               <div className="flex items-center gap-1">
                 <div className="flex flex-wrap gap-1">
                   {isBest && (
-                    <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">
+                    <Badge className="bg-blue-600 text-white hover:bg-blue-600">
                       MELHOR OFERTA
-                    </Badge>
-                  )}
-                  {selected && (
-                    <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">
-                      SELECIONADA
                     </Badge>
                   )}
                 </div>
@@ -117,11 +113,14 @@ export default function MapaCotacoes({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="w-full"
+                className={cn(
+                  "w-full",
+                  selected && "border-emerald-500 text-emerald-700 cursor-default",
+                )}
                 disabled={selected || isSelecting}
-                onClick={() => onSelecionar(c.id)}
+                onClick={() => !selected && onSelecionar(c.id)}
               >
-                Selecionar
+                {selected ? "Selecionada" : "Selecionar"}
               </Button>
             </div>
           </div>

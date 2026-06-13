@@ -109,13 +109,23 @@ export function TemplateEditor({
   useEffect(() => {
     if (!open) return
     if (template && templateDetail) {
+      // Detalhe carregado: preenche todos os campos incluindo o corpo
       reset({
         nome: template.nome,
         tipo: template.tipo,
         assunto: templateDetail.assunto ?? template.assunto,
         corpo: templateDetail.corpo ?? "",
       })
-    } else if (!template) {
+    } else if (template) {
+      // Detalhe ainda carregando: pré-popula o que a listagem já tem
+      // (nome, tipo e assunto) para evitar flash de campos vazios
+      reset({
+        nome: template.nome,
+        tipo: template.tipo,
+        assunto: template.assunto ?? "",
+        corpo: "",
+      })
+    } else {
       reset(defaultValues)
     }
   }, [open, template, templateDetail, reset])

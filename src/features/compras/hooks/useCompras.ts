@@ -5,6 +5,7 @@ import {
   getSolicitacaoCompra,
   createSolicitacaoCompra,
   aprovarSolicitacao,
+  updateSolicitacaoStatus,
   selecionarCotacao,
   createCotacao,
   updateCotacao,
@@ -12,6 +13,7 @@ import {
 } from "../services/compras.service"
 import type {
   ComprasFilters,
+  CompraStatus,
   CreateSolicitacaoCompraRequest,
   CreateCotacaoRequest,
 } from "../types/compra.types"
@@ -57,6 +59,20 @@ export function useAprovarSolicitacao() {
     },
     onError: (err) =>
       toast.error(err instanceof Error ? err.message : "Erro ao aprovar solicitação"),
+  })
+}
+
+export function useUpdateStatusCompra() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: CompraStatus }) =>
+      updateSolicitacaoStatus(id, status),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["solicitacoes-compra"] })
+      toast.success("Status atualizado")
+    },
+    onError: (err) =>
+      toast.error(err instanceof Error ? err.message : "Erro ao atualizar status"),
   })
 }
 

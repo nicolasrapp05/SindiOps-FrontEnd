@@ -9,7 +9,7 @@ const STATUS_MAP: Record<
   active: { label: "Vigente", className: "bg-emerald-100 text-emerald-700" },
   expiring: { label: "Expirando", className: "bg-orange-100 text-orange-700" },
   expired: { label: "Expirado", className: "bg-red-100 text-red-700" },
-  cancelled: { label: "Cancelado", className: "bg-red-100 text-red-700" },
+  cancelled: { label: "Cancelado", className: "bg-gray-100 text-gray-600" },
 }
 
 interface ContratoStatusBadgeProps {

@@ -1,4 +1,4 @@
-import { getPaginated, post, put, del } from "@/lib/api"
+import { getPaginated, get, post, put, del } from "@/lib/api"
 import type {
   Fornecedor,
   CreateFornecedorRequest,

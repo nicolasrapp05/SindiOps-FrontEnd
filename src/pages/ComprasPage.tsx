@@ -27,6 +27,7 @@ import {
   useSolicitacaoCompra,
   useCreateSolicitacaoCompra,
   useAprovarSolicitacao,
+  useUpdateStatusCompra,
   useSelecionarCotacao,
 } from "@/features/compras/hooks/useCompras"
 import {
@@ -97,6 +98,7 @@ export default function ComprasPage() {
   )
   const createMutation = useCreateSolicitacaoCompra()
   const aprovarMutation = useAprovarSolicitacao()
+  const updateStatusMutation = useUpdateStatusCompra()
   const selecionarMutation = useSelecionarCotacao()
 
   const detailId = expandedId ?? ""
@@ -259,7 +261,6 @@ export default function ComprasPage() {
                   <TableHead>Solicitante</TableHead>
                   <TableHead>Tipo aprovação</TableHead>
                   <TableHead>Data</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -268,16 +269,21 @@ export default function ComprasPage() {
                   return (
                     <Fragment key={row.id}>
                       <TableRow
-                        className={cn(open && "bg-muted/40")}
+                        className={cn("cursor-pointer", open && "bg-muted/40")}
                         data-state={open ? "open" : undefined}
+                        onClick={() => toggleExpand(row.id)}
                       >
                         <TableCell className="align-middle">
                           <Button
                             type="button"
                             variant="ghost"
-                            size="icon-sm"
+                            size="icon"
+                            className="h-7 w-7"
                             aria-expanded={open}
-                            onClick={() => toggleExpand(row.id)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleExpand(row.id)
+                            }}
                           >
                             {open ? (
                               <ChevronDown className="h-4 w-4" />
@@ -286,7 +292,7 @@ export default function ComprasPage() {
                             )}
                           </Button>
                         </TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <CompraStatusBadge status={row.status} />
                         </TableCell>
                         <TableCell>{COMPRA_CATEGORIA_LABEL[row.categoria]}</TableCell>
@@ -297,13 +303,10 @@ export default function ComprasPage() {
                         <TableCell className="whitespace-nowrap text-muted-foreground">
                           {new Date(row.criadoEm).toLocaleDateString("pt-BR")}
                         </TableCell>
-                        <TableCell className="text-right text-muted-foreground text-xs">
-                          Expandir
-                        </TableCell>
                       </TableRow>
                       {open && (
                         <TableRow className="bg-muted/20 hover:bg-muted/20">
-                          <TableCell colSpan={9} className="p-4">
+                          <TableCell colSpan={8} className="p-4">
                             {detailLoading ? (
                               <Skeleton className="h-40 w-full rounded-xl" />
                             ) : (
@@ -318,29 +321,65 @@ export default function ComprasPage() {
                                     })
                                   }
                                 />
-                                {row.status !== "cancelada" && row.status !== "finalizada" && (
+                                {row.status !== "finalizada" && (
                                   <div className="mt-4 flex items-center justify-end gap-3 border-t pt-4">
-                                    <Button
-                                      variant="outline"
-                                      className="border-red-200 text-red-600 hover:bg-red-50"
-                                      size="sm"
-                                    >
-                                      Rejeitar Solicitação
-                                    </Button>
-                                    <Button
-                                      className="bg-emerald-700 hover:bg-emerald-800"
-                                      size="sm"
-                                      disabled={aprovarMutation.isPending}
-                                      onClick={() => aprovarMutation.mutate(row.id)}
-                                    >
-                                      {(() => {
-                                        const cotacoes = expandedDetail?.cotacoes ?? row.cotacoes ?? []
-                                        const sel = cotacoes.find((c) => c.selecionada)
-                                        return sel
-                                          ? `Aprovar Compra (${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(sel.valorTotal)})`
-                                          : "Aprovar Compra"
-                                      })()}
-                                    </Button>
+                                    {/* cancelada → em_andamento */}
+                                    {row.status === "cancelada" && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={updateStatusMutation.isPending}
+                                        onClick={() =>
+                                          updateStatusMutation.mutate({ id: row.id, status: "em_andamento" })
+                                        }
+                                      >
+                                        Reativar Solicitação
+                                      </Button>
+                                    )}
+                                    {/* nova | em_andamento → cancelada */}
+                                    {(row.status === "nova" || row.status === "em_andamento") && (
+                                      <Button
+                                        variant="outline"
+                                        className="border-red-200 text-red-600 hover:bg-red-50"
+                                        size="sm"
+                                        disabled={updateStatusMutation.isPending}
+                                        onClick={() =>
+                                          updateStatusMutation.mutate({ id: row.id, status: "cancelada" })
+                                        }
+                                      >
+                                        Cancelar Solicitação
+                                      </Button>
+                                    )}
+                                    {/* nova → em_andamento (aprovar com cotação) */}
+                                    {row.status === "nova" && (
+                                      <Button
+                                        className="bg-emerald-700 hover:bg-emerald-800"
+                                        size="sm"
+                                        disabled={aprovarMutation.isPending}
+                                        onClick={() => aprovarMutation.mutate(row.id)}
+                                      >
+                                        {(() => {
+                                          const cotacoes = expandedDetail?.cotacoes ?? row.cotacoes ?? []
+                                          const sel = cotacoes.find((c) => c.selecionada)
+                                          return sel
+                                            ? `Aprovar Compra (${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(sel.valorTotal)})`
+                                            : "Aprovar Compra"
+                                        })()}
+                                      </Button>
+                                    )}
+                                    {/* em_andamento → finalizada */}
+                                    {row.status === "em_andamento" && (
+                                      <Button
+                                        className="bg-emerald-700 hover:bg-emerald-800"
+                                        size="sm"
+                                        disabled={updateStatusMutation.isPending}
+                                        onClick={() =>
+                                          updateStatusMutation.mutate({ id: row.id, status: "finalizada" })
+                                        }
+                                      >
+                                        Finalizar Compra
+                                      </Button>
+                                    )}
                                   </div>
                                 )}
                               </>

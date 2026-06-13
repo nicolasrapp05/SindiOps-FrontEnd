@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react"
+import { Fragment, useMemo, useState } from "react"
 import { toast } from "sonner"
 import {
   Plus,
@@ -11,8 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Package,
-  CheckCircle2,
-  AlertCircle,
+  Wrench,
+  FileText,
   TrendingUp,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -33,6 +33,7 @@ import {
   useUpdateFornecedor,
   useDeleteFornecedor,
 } from "@/features/fornecedores/hooks/useFornecedores"
+import { useContratosGlobais } from "@/features/contratos/hooks/useContratos"
 import type {
   Fornecedor,
   CreateFornecedorRequest,
@@ -43,10 +44,10 @@ import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import { useDebounce } from "@/hooks/useDebounce"
 
 const SUMMARY_CARDS = [
-  { label: "Total", icon: Package, color: "text-blue-600 bg-blue-50" },
-  { label: "Vigentes", icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50" },
-  { label: "Pendências", icon: AlertCircle, color: "text-orange-600 bg-orange-50" },
-  { label: "Este Mês", icon: TrendingUp, color: "text-purple-600 bg-purple-50" },
+  { key: "total",        label: "Total",           icon: Package,    color: "text-blue-600 bg-blue-50"      },
+  { key: "comServicos",  label: "Com serviços",     icon: Wrench,     color: "text-emerald-600 bg-emerald-50"},
+  { key: "comContrato",  label: "Com contrato",     icon: FileText,   color: "text-sky-600 bg-sky-50"        },
+  { key: "esteMes",      label: "Cadastrados/mês",  icon: TrendingUp, color: "text-purple-600 bg-purple-50"  },
 ] as const
 
 export default function FornecedoresPage() {
@@ -61,6 +62,8 @@ export default function FornecedoresPage() {
 
   const filters = { search: debouncedSearch || undefined, page, pageSize: 20 }
   const { data: fornecedores, isLoading, isFetching, isError, refetch } = useFornecedores(filters)
+  const { data: summaryData } = useFornecedores({ page: 1, pageSize: 2000 })
+  const { data: contratosGlobais } = useContratosGlobais({ pageSize: 2000 })
   const createMutation = useCreateFornecedor()
   const updateMutation = useUpdateFornecedor()
   const deleteMutation = useDeleteFornecedor()
@@ -68,6 +71,23 @@ export default function FornecedoresPage() {
   const fornecedorList = fornecedores?.data ?? []
   const totalCount = fornecedores?.totalCount
   const totalPages = totalCount ? Math.ceil(totalCount / 20) : 1
+
+  const summaryValues = useMemo(() => {
+    const all = summaryData?.data ?? []
+    const now = new Date()
+    const fornecedoresComContrato = new Set(
+      (contratosGlobais?.data ?? []).map((c) => c.fornecedor.id),
+    )
+    return {
+      total:       summaryData?.totalCount ?? 0,
+      comServicos: all.filter((f) => (f.servicos?.length ?? 0) > 0).length,
+      comContrato: all.filter((f) => fornecedoresComContrato.has(f.id)).length,
+      esteMes:     all.filter((f) => {
+        const d = new Date(f.criadoEm)
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+      }).length,
+    }
+  }, [summaryData, contratosGlobais])
 
   const openCreate = () => {
     setEditingFornecedor(null)
@@ -140,13 +160,6 @@ export default function FornecedoresPage() {
     )
   }
 
-  const summaryValues = [
-    fornecedorList.length,
-    fornecedorList.filter((f) => (f.servicos?.length ?? 0) > 0).length,
-    0,
-    0,
-  ]
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -165,20 +178,17 @@ export default function FornecedoresPage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {SUMMARY_CARDS.map((card, idx) => {
+        {SUMMARY_CARDS.map((card) => {
           const Icon = card.icon
           return (
-            <div key={card.label} className="rounded-xl bg-white p-5 shadow-sm">
+            <div key={card.key} className="rounded-xl bg-white p-5 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className={`rounded-lg p-2 ${card.color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-500">{card.label}</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {idx === 3 && summaryValues[idx] > 0 ? "+" : ""}
-                    {summaryValues[idx]}
-                  </p>
+                  <p className="text-2xl font-bold text-gray-900">{summaryValues[card.key]}</p>
                 </div>
               </div>
             </div>

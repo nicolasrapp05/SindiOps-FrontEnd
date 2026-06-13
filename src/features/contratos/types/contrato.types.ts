@@ -59,6 +59,7 @@ export interface CreateContratoRequest {
 }
 
 export interface ContratosFilters {
+  fornecedorId?: string
   status?: ContratoStatus
   page?: number
   pageSize?: number

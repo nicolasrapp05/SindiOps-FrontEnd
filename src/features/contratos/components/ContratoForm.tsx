@@ -22,6 +22,7 @@ import {
   type TipoServico,
 } from "../types/contrato.types"
 import { useFornecedores } from "@/features/fornecedores/hooks/useFornecedores"
+import { useContrato } from "../hooks/useContratos"
 import Combobox from "@/components/shared/Combobox"
 
 const TIPO_SERVICO_OPTIONS = Object.entries(TIPO_SERVICO_LABEL) as [TipoServico, string][]
@@ -85,8 +86,12 @@ export default function ContratoForm({
 }: ContratoFormProps) {
   const isEdit = !!contrato
 
-  const { data: fornecedoresData } = useFornecedores(undefined)
-  const fornecedoresList = Array.isArray(fornecedoresData) ? fornecedoresData : []
+  const { data: fornecedoresData } = useFornecedores({ pageSize: 500 })
+  const fornecedoresList = fornecedoresData?.data ?? []
+
+  // Busca o detalhe do contrato para obter os campos ausentes na listagem
+  // (nomeContato, telefoneContato, indiceReajuste, condicoesRenovacao, condicoesRescisao)
+  const { data: contratoDetalhe } = useContrato(contrato?.id ?? "")
 
   const {
     register,
@@ -111,20 +116,26 @@ export default function ContratoForm({
   })
 
   useEffect(() => {
-    if (open && contrato) {
+    if (!open) return
+
+    if (contrato) {
+      // Campos disponíveis na listagem: fornecedor, tipoServico, datas, valorMensal.
+      // Campos só no detalhe: nomeContato, telefoneContato, indiceReajuste,
+      // condicoesRenovacao, condicoesRescisao.
+      const src = contratoDetalhe ?? contrato
       reset({
         fornecedorId: contrato.fornecedor.id,
         tipoServico: contrato.tipoServico,
-        nomeContato: contrato.nomeContato ?? "",
-        telefoneContato: contrato.telefoneContato ?? "",
+        nomeContato: src.nomeContato ?? "",
+        telefoneContato: src.telefoneContato ?? "",
         dataInicio: contrato.dataInicio ?? "",
         dataFim: contrato.dataFim ?? "",
         valorMensal: contrato.valorMensal,
-        indiceReajuste: contrato.indiceReajuste ?? "",
-        condicoesRenovacao: contrato.condicoesRenovacao ?? "",
-        condicoesRescisao: contrato.condicoesRescisao ?? "",
+        indiceReajuste: src.indiceReajuste ?? "",
+        condicoesRenovacao: src.condicoesRenovacao ?? "",
+        condicoesRescisao: src.condicoesRescisao ?? "",
       })
-    } else if (open) {
+    } else {
       reset({
         fornecedorId: "",
         tipoServico: "administradora",
@@ -138,7 +149,7 @@ export default function ContratoForm({
         condicoesRescisao: "",
       })
     }
-  }, [open, contrato, reset])
+  }, [open, contrato, contratoDetalhe, reset])
 
   const handleFormSubmit = (data: FormData) => {
     onSubmit({

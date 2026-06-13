@@ -18,6 +18,24 @@ export function useContratos(condominioId: string, filters?: ContratosFilters) {
   })
 }
 
+/** Busca contratos sem escopo de condomínio — retorna todos os contratos do síndico. */
+export function useContratosGlobais(filters?: ContratosFilters) {
+  return useQuery({
+    queryKey: ["contratos", "globais", filters],
+    queryFn: () => getContratos(undefined, filters),
+    placeholderData: keepPreviousData,
+  })
+}
+
+/** Busca contratos de um fornecedor específico (sem escopo de condomínio). */
+export function useContratosPorFornecedor(fornecedorId: string) {
+  return useQuery({
+    queryKey: ["contratos", "by-fornecedor", fornecedorId],
+    queryFn: () => getContratos(undefined, { fornecedorId, pageSize: 50 }),
+    enabled: !!fornecedorId,
+  })
+}
+
 export function useContrato(id: string) {
   return useQuery({
     queryKey: ["contratos", "detail", id],

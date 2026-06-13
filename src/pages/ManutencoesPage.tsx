@@ -37,6 +37,8 @@ import {
   type SolicitacaoStatus,
   type SolicitacaoTipoServico,
 } from "@/features/manutencoes/types/solicitacao-manutencao.types"
+import { proximosStatus, isStatusFinal, FLUXO_STATUS_LABEL } from "@/lib/status-transitions"
+import type { FluxoStatus } from "@/lib/status-transitions"
 
 const PAGE_SIZE = 10
 
@@ -58,7 +60,6 @@ const STATUS_TAB_LABEL: Record<SolicitacaoStatus | "todas", string> = {
   cancelada: "Cancelada",
 }
 
-const ALL_STATUS: SolicitacaoStatus[] = ["nova", "em_andamento", "finalizada", "cancelada"]
 
 export default function ManutencoesPage() {
   const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
@@ -276,17 +277,24 @@ export default function ManutencoesPage() {
                         : "—"}
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-500">Atualizar status</span>
-                        <Combobox
-                          options={ALL_STATUS.map((s) => ({ value: s, label: STATUS_TAB_LABEL[s] }))}
-                          value={row.status}
-                          onValueChange={(v) => statusChange(row, v as SolicitacaoStatus)}
-                          disabled={updateStatusMutation.isPending}
-                          placeholder="Status"
-                          className="w-full min-w-[160px]"
-                        />
-                      </div>
+                      {isStatusFinal(row.status as FluxoStatus) ? (
+                        <span className="text-xs text-gray-400">Status final</span>
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-gray-500">Mover para</span>
+                          <Combobox
+                            options={proximosStatus(row.status as FluxoStatus).map((s) => ({
+                              value: s,
+                              label: FLUXO_STATUS_LABEL[s],
+                            }))}
+                            value={undefined}
+                            onValueChange={(v) => statusChange(row, v as SolicitacaoStatus)}
+                            disabled={updateStatusMutation.isPending}
+                            placeholder="Selecionar..."
+                            className="w-full min-w-[160px]"
+                          />
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -36,6 +36,7 @@ export interface SolicitacaoCompra {
   status: CompraStatus
   aprovadoPor?: { id: string; nome: string }
   solicitadoPor: { id: string; nome: string }
+  totalCotacoes: number
   cotacoes?: Cotacao[]
   criadoEm: string
 }

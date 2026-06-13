@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import type { Fornecedor, CreateFornecedorRequest } from "../types/fornecedor.types"
+import { useFornecedor } from "../hooks/useFornecedores"
 
 function cnpjMask(value: string): string {
   const d = value.replace(/\D/g, "").slice(0, 14)
@@ -67,6 +68,10 @@ export default function FornecedorForm({
 }: FornecedorFormProps) {
   const isEdit = !!fornecedor
 
+  // Busca o detalhe completo (inclui endereço, instagram, website e serviços,
+  // que não vêm na listagem). Desativado quando é criação.
+  const { data: fornecedorDetalhe } = useFornecedor(fornecedor?.id ?? "")
+
   const {
     register,
     handleSubmit,
@@ -97,27 +102,33 @@ export default function FornecedorForm({
   const { fields, append, remove } = useFieldArray({ control, name: "servicos" })
 
   useEffect(() => {
-    if (open && fornecedor) {
+    if (!open) return
+
+    if (fornecedor) {
+      // Usa o detalhe quando disponível (tem endereço completo, instagram,
+      // website e serviços). Enquanto carrega, usa os campos que a listagem
+      // já traz (nome, cnpj, telefone, email, nomeContato).
+      const src = fornecedorDetalhe ?? fornecedor
       reset({
         nome: fornecedor.nome,
         cnpj: fornecedor.cnpj ?? "",
-        enderecoRua: fornecedor.enderecoRua ?? "",
-        enderecoNumero: fornecedor.enderecoNumero ?? "",
-        enderecoBairro: fornecedor.enderecoBairro ?? "",
-        enderecoCidade: fornecedor.enderecoCidade ?? "",
-        enderecoCep: fornecedor.enderecoCep ?? "",
+        enderecoRua: src.enderecoRua ?? "",
+        enderecoNumero: src.enderecoNumero ?? "",
+        enderecoBairro: src.enderecoBairro ?? "",
+        enderecoCidade: src.enderecoCidade ?? "",
+        enderecoCep: src.enderecoCep ?? "",
         telefone: fornecedor.telefone ?? "",
         email: fornecedor.email ?? "",
-        instagram: fornecedor.instagram ?? "",
-        website: fornecedor.website ?? "",
+        instagram: src.instagram ?? "",
+        website: src.website ?? "",
         nomeContato: fornecedor.nomeContato ?? "",
-        servicos: (fornecedor.servicos ?? []).map((s) => ({
+        servicos: (src.servicos ?? []).map((s) => ({
           tipo: s.tipo,
           descricao: s.descricao ?? "",
           quantidade: s.quantidade,
         })),
       })
-    } else if (open) {
+    } else {
       reset({
         nome: "", cnpj: "", enderecoRua: "", enderecoNumero: "",
         enderecoBairro: "", enderecoCidade: "", enderecoCep: "",
@@ -125,7 +136,7 @@ export default function FornecedorForm({
         nomeContato: "", servicos: [],
       })
     }
-  }, [open, fornecedor, reset])
+  }, [open, fornecedor, fornecedorDetalhe, reset])
 
   const cnpjValue = watch("cnpj")
 

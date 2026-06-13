@@ -289,7 +289,7 @@ export default function CotacoesPage() {
                   const cotacoes = open
                     ? (expandedDetail?.cotacoes ?? row.cotacoes ?? [])
                     : (row.cotacoes ?? [])
-                  const cotacoesCount = cotacoes.length
+                  const cotacoesCount = row.totalCotacoes
 
                   return (
                     <Fragment key={row.id}>

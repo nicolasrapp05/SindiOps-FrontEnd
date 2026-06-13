@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import { Plus, Building2, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
-import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -16,7 +15,7 @@ import type {
 } from "@/features/condominios/types/condominio.types"
 import CondominioCard from "@/features/condominios/components/CondominioCard"
 import CondominioForm from "@/features/condominios/components/CondominioForm"
-import EstruturaCondominio from "@/features/condominios/components/EstruturaCondominio"
+import EstruturaCondominioModal from "@/features/condominios/components/EstruturaCondominioModal"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 
 export default function CondominiosPage() {
@@ -24,35 +23,11 @@ export default function CondominiosPage() {
   const createMutation = useCreateCondominio()
   const updateMutation = useUpdateCondominio()
   const deleteMutation = useDeleteCondominio()
-  const scopeCondominioId = useCondominioScopeStore((s) => s.selectedCondominioId)
 
   const [formOpen, setFormOpen] = useState(false)
   const [editingCondominio, setEditingCondominio] = useState<Condominio | null>(null)
-  const [selectedCondominio, setSelectedCondominio] = useState<Condominio | null>(null)
+  const [estruturaCondominio, setEstruturaCondominio] = useState<Condominio | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Condominio | null>(null)
-
-  const lastSyncedScopeId = useRef<string | null>(null)
-
-  useEffect(() => {
-    if (!condominios?.length || !scopeCondominioId) return
-    // Only auto-selects when the sidebar selection itself changes,
-    // not a cada refetch de condominios (ex: após criar/excluir bloco/unidade)
-    if (lastSyncedScopeId.current === scopeCondominioId) return
-    lastSyncedScopeId.current = scopeCondominioId
-    const match = condominios.find((c) => c.id === scopeCondominioId)
-    if (!match) return
-    setSelectedCondominio(match)
-  }, [condominios, scopeCondominioId])
-
-  const scrollToEstrutura = () => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document
-          .getElementById("estrutura-condominio")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" })
-      })
-    })
-  }
 
   const openCreate = () => {
     setEditingCondominio(null)
@@ -73,7 +48,7 @@ export default function CondominiosPage() {
     deleteMutation.mutate(pendingDelete.id, {
       onSuccess: () => {
         toast.success("Condomínio removido com sucesso")
-        if (selectedCondominio?.id === pendingDelete.id) setSelectedCondominio(null)
+        if (estruturaCondominio?.id === pendingDelete.id) setEstruturaCondominio(null)
         setPendingDelete(null)
       },
       onError: (err) => {
@@ -190,50 +165,40 @@ export default function CondominiosPage() {
           </Button>
         </div>
       ) : (
-        <>
-          {/* Grid of cards */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            {condominios.map((c) => (
-              <CondominioCard
-                key={c.id}
-                condominio={c}
-                isSelected={selectedCondominio?.id === c.id}
-                onEdit={openEdit}
-                onDelete={handleDelete}
-                onSelect={(sel) =>
-                  setSelectedCondominio(
-                    selectedCondominio?.id === sel.id ? null : sel,
-                  )
-                }
-                onOpenBlocosUnidades={(sel) => {
-                  setSelectedCondominio(sel)
-                  scrollToEstrutura()
-                }}
-              />
-            ))}
-
-            {/* Add card */}
-            <button
-              className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-gray-200 bg-white transition hover:border-emerald-400 hover:bg-emerald-50/30"
-              onClick={openCreate}
-            >
-              <div className="rounded-full bg-gray-100 p-3">
-                <Plus className="h-6 w-6 text-gray-400" />
-              </div>
-              <span className="text-sm font-medium text-gray-500">
-                Vincular novo condomínio
-              </span>
-            </button>
-          </div>
-
-          {/* Estrutura section */}
-          {selectedCondominio && (
-            <EstruturaCondominio
-              condominioId={selectedCondominio.id}
-              condominioNome={selectedCondominio.nome}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          {condominios.map((c) => (
+            <CondominioCard
+              key={c.id}
+              condominio={c}
+              onEdit={openEdit}
+              onDelete={handleDelete}
+              onOpenBlocosUnidades={(sel) => setEstruturaCondominio(sel)}
             />
-          )}
-        </>
+          ))}
+
+          {/* Add card */}
+          <button
+            className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-gray-200 bg-white transition hover:border-emerald-400 hover:bg-emerald-50/30"
+            onClick={openCreate}
+          >
+            <div className="rounded-full bg-gray-100 p-3">
+              <Plus className="h-6 w-6 text-gray-400" />
+            </div>
+            <span className="text-sm font-medium text-gray-500">
+              Vincular novo condomínio
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* Estrutura modal */}
+      {estruturaCondominio && (
+        <EstruturaCondominioModal
+          open={!!estruturaCondominio}
+          onOpenChange={(open) => { if (!open) setEstruturaCondominio(null) }}
+          condominioId={estruturaCondominio.id}
+          condominioNome={estruturaCondominio.nome}
+        />
       )}
 
       {/* Form dialog */}

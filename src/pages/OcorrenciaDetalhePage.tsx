@@ -17,6 +17,8 @@ import {
   TIPO_LABEL, ORIGEM_LABEL, TIPO_LOCAL_LABEL,
 } from "@/features/ocorrencias/types/ocorrencia.types"
 import type { OcorrenciaStatus } from "@/features/ocorrencias/types/ocorrencia.types"
+import { proximosStatus, isStatusFinal, FLUXO_STATUS_LABEL } from "@/lib/status-transitions"
+import type { FluxoStatus } from "@/lib/status-transitions"
 import { toast } from "sonner"
 import { useQueryClient } from "@tanstack/react-query"
 
@@ -255,22 +257,26 @@ export default function OcorrenciaDetalhePage() {
             <div className="mb-3">
               <OcorrenciaStatusBadge status={oc.status} />
             </div>
-            <Combobox
-              options={[
-                { value: "nova", label: "Nova" },
-                { value: "em_andamento", label: "Em Andamento" },
-                { value: "finalizada", label: "Finalizada" },
-                { value: "cancelada", label: "Cancelada" },
-              ]}
-              value={oc.status}
-              onValueChange={handleStatusChange}
-              disabled={statusMutation.isPending}
-              placeholder="Alterar status..."
-            />
-            {statusMutation.isPending && (
-              <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
-                <Loader2 className="h-3 w-3 animate-spin" /> Atualizando...
-              </div>
+            {isStatusFinal(oc.status as FluxoStatus) ? (
+              <p className="text-xs text-gray-400">Status final · não pode ser alterado</p>
+            ) : (
+              <>
+                <Combobox
+                  options={proximosStatus(oc.status as FluxoStatus).map((s) => ({
+                    value: s,
+                    label: FLUXO_STATUS_LABEL[s],
+                  }))}
+                  value={undefined}
+                  onValueChange={handleStatusChange}
+                  disabled={statusMutation.isPending}
+                  placeholder="Mover para..."
+                />
+                {statusMutation.isPending && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Atualizando...
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

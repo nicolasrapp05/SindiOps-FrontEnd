@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -69,6 +69,11 @@ export default function PerfilPage() {
     resolver: zodResolver(alterarSenhaSchema),
     defaultValues: { novaSenha: "", confirmarSenha: "" },
   })
+
+  // Sincroniza o campo nome quando o user é carregado/atualizado no store
+  useEffect(() => {
+    perfilForm.reset({ nome: user?.nome ?? "" })
+  }, [user, perfilForm])
 
   const onSubmitPerfil = (values: EditarPerfilForm) => {
     atualizarPerfil.mutate(values.nome, {

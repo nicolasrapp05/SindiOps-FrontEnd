@@ -128,7 +128,7 @@ export default function EquipePage() {
         />
         <Combobox
           options={[
-            { value: "todos", label: "Todos" },
+            { value: "todos", label: "Todos os status" },
             { value: "ativos", label: "Ativos" },
             { value: "inativos", label: "Inativos" },
           ]}
@@ -169,8 +169,8 @@ export default function EquipePage() {
             </TableHeader>
             <TableBody>
               {list.map((f) => (
-                <TableRow key={f.id} className={cn(!f.ativo && "opacity-60")}>
-                  <TableCell>
+                <TableRow key={f.id}>
+                  <TableCell className={cn(!f.ativo && "opacity-60")}>
                     <div className="flex items-center gap-3">
                       <Avatar size="sm">
                         <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
@@ -180,12 +180,12 @@ export default function EquipePage() {
                       <span className="font-medium">{f.nome}</span>
                     </div>
                   </TableCell>
-                  <TableCell>{CARGO_LABEL[f.cargo]}</TableCell>
-                  <TableCell className="text-muted-foreground">{f.email}</TableCell>
-                  <TableCell>
+                  <TableCell className={cn(!f.ativo && "opacity-60")}>{CARGO_LABEL[f.cargo]}</TableCell>
+                  <TableCell className={cn("text-muted-foreground", !f.ativo && "opacity-60")}>{f.email}</TableCell>
+                  <TableCell className={cn(!f.ativo && "opacity-60")}>
                     <FuncionarioStatusBadge ativo={f.ativo} />
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                  <TableCell className={cn("whitespace-nowrap text-muted-foreground", !f.ativo && "opacity-60")}>
                     {new Date(f.criadoEm).toLocaleDateString("pt-BR")}
                   </TableCell>
                   <TableCell className="text-right">

@@ -41,19 +41,14 @@ interface CondominioCardProps {
   condominio: Condominio
   onEdit: (c: Condominio) => void
   onDelete: (c: Condominio) => void
-  onSelect: (c: Condominio) => void
-  /** Seleciona o condomínio e foca a seção Estrutura (blocos/unidades). */
-  onOpenBlocosUnidades?: (c: Condominio) => void
-  isSelected?: boolean
+  onOpenBlocosUnidades: (c: Condominio) => void
 }
 
 export default function CondominioCard({
   condominio,
   onEdit,
   onDelete,
-  onSelect,
   onOpenBlocosUnidades,
-  isSelected,
 }: CondominioCardProps) {
   const mandatoStatus = getMandatoStatus(condominio.vencimentoMandato)
 
@@ -66,10 +61,8 @@ export default function CondominioCard({
 
   return (
     <div
-      className={`group cursor-pointer rounded-xl border bg-white p-5 shadow-sm transition hover:shadow-md ${
-        isSelected ? "ring-2 ring-emerald-500" : ""
-      }`}
-      onClick={() => onSelect(condominio)}
+      className="group cursor-pointer rounded-xl border bg-white p-5 shadow-sm transition hover:shadow-md"
+      onClick={() => onOpenBlocosUnidades(condominio)}
     >
       {/* Header */}
       <div className="flex items-start justify-between">

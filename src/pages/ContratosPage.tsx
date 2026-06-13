@@ -8,6 +8,10 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  XCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -42,6 +46,13 @@ import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { useDebounce } from "@/hooks/useDebounce"
 
 const PAGE_SIZE = 20
+
+const SUMMARY_CARDS = [
+  { key: "active",    label: "Vigentes",   icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50" },
+  { key: "expiring",  label: "Expirando",  icon: Clock,        color: "text-orange-600 bg-orange-50"   },
+  { key: "expired",   label: "Expirados",  icon: AlertCircle,  color: "text-red-600 bg-red-50"         },
+  { key: "cancelled", label: "Cancelados", icon: XCircle,      color: "text-gray-500 bg-gray-100"      },
+] as const
 
 function formatBRL(value: number): string {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
@@ -213,23 +224,23 @@ export default function ContratosPage() {
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-emerald-800/80">Vigentes</p>
-          <p className="mt-1 text-2xl font-bold text-emerald-800">{statusCounts.active}</p>
-        </div>
-        <div className="rounded-xl border border-orange-100 bg-orange-50/60 p-4 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-orange-800/80">Expirando</p>
-          <p className="mt-1 text-2xl font-bold text-orange-800">{statusCounts.expiring}</p>
-        </div>
-        <div className="rounded-xl border border-red-100 bg-red-50/60 p-4 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-red-800/80">Expirados</p>
-          <p className="mt-1 text-2xl font-bold text-red-800">{statusCounts.expired}</p>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-600">Cancelados</p>
-          <p className="mt-1 text-2xl font-bold text-gray-700">{statusCounts.cancelled}</p>
-        </div>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {SUMMARY_CARDS.map((card) => {
+          const Icon = card.icon
+          return (
+            <div key={card.key} className="rounded-xl bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className={`rounded-lg p-2 ${card.color}`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500">{card.label}</p>
+                  <p className="text-2xl font-bold text-gray-900">{statusCounts[card.key]}</p>
+                </div>
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
