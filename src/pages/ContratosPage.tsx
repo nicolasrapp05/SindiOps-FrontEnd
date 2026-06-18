@@ -44,6 +44,7 @@ import ContratoForm from "@/features/contratos/components/ContratoForm"
 import ContratoStatusBadge from "@/features/contratos/components/ContratoStatusBadge"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { useDebounce } from "@/hooks/useDebounce"
+import { formatBRL } from "@/lib/currency"
 
 const PAGE_SIZE = 20
 
@@ -53,10 +54,6 @@ const SUMMARY_CARDS = [
   { key: "expired",   label: "Expirados",  icon: AlertCircle,  color: "text-red-600 bg-red-50"         },
   { key: "cancelled", label: "Cancelados", icon: XCircle,      color: "text-gray-500 bg-gray-100"      },
 ] as const
-
-function formatBRL(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
-}
 
 function formatDate(iso?: string): string {
   if (!iso) return "—"
@@ -110,7 +107,7 @@ export default function ContratosPage() {
 
   const summaryFilters = { page: 1, pageSize: 2000 }
 
-  const { data: contratosRaw, isLoading, isFetching, isError, refetch } = useContratos(condominioId, tableFilters)
+  const { data: contratosRaw, isLoading, isError, refetch } = useContratos(condominioId, tableFilters)
   const { data: contratosSummaryRaw } = useContratos(condominioId, summaryFilters)
 
   const createMutation = useCreateContrato()
@@ -278,7 +275,7 @@ export default function ContratosPage() {
           </Button>
         </div>
       ) : (
-        <div className={`rounded-xl bg-white shadow-sm transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
+        <div className="rounded-xl bg-white shadow-sm">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>

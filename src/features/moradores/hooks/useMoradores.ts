@@ -1,5 +1,11 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
+import {
+  removePaginatedItem,
+  setDetailCache,
+  upsertPaginatedItem,
+} from "@/lib/query-cache"
 import {
   getMoradores,
   getMorador,
@@ -10,6 +16,7 @@ import {
 import type {
   CreateMoradorRequest,
   MoradoresFilters,
+  Morador,
 } from "../types/morador.types"
 
 export function useMoradores(condominioId: string, filters?: MoradoresFilters) {
@@ -33,12 +40,12 @@ export function useCreateMorador() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: CreateMoradorRequest) => createMorador(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["moradores"] })
+    onSuccess: (morador) => {
+      upsertPaginatedItem<Morador>(qc, ["moradores"], morador, { prependIfMissing: true })
       toast.success("Morador cadastrado com sucesso")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao cadastrar morador"),
+      toast.error(getApiErrorMessage(err, "Erro ao cadastrar morador")),
   })
 }
 
@@ -47,12 +54,13 @@ export function useUpdateMorador() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<CreateMoradorRequest> }) =>
       updateMorador(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["moradores"] })
+    onSuccess: (morador) => {
+      upsertPaginatedItem<Morador>(qc, ["moradores"], morador)
+      setDetailCache(qc, ["moradores", "detail", morador.id], morador)
       toast.success("Morador atualizado com sucesso")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao atualizar morador"),
+      toast.error(getApiErrorMessage(err, "Erro ao atualizar morador")),
   })
 }
 
@@ -60,11 +68,12 @@ export function useDeleteMorador() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteMorador(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["moradores"] })
+    onSuccess: (_data, id) => {
+      removePaginatedItem<Morador>(qc, ["moradores"], id)
+      qc.removeQueries({ queryKey: ["moradores", "detail", id] })
       toast.success("Morador removido com sucesso")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao remover morador"),
+      toast.error(getApiErrorMessage(err, "Erro ao remover morador")),
   })
 }

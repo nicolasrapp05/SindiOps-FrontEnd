@@ -23,6 +23,11 @@ import {
 } from "@/components/ui/table"
 import Combobox from "@/components/shared/Combobox"
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
   useSolicitacoesCompra,
   useSolicitacaoCompra,
   useSelecionarCotacao,
@@ -40,6 +45,7 @@ import {
 import CompraStatusBadge from "@/features/compras/components/CompraStatusBadge"
 import MapaCotacoes from "@/features/compras/components/MapaCotacoes"
 import CotacaoForm from "@/features/compras/components/CotacaoForm"
+import { canManageCotacoes } from "@/features/compras/lib/compra-flow"
 import { cn } from "@/lib/utils"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 
@@ -65,13 +71,14 @@ const PAGE_SIZE = 10
 
 interface CotacaoFormState {
   solicitacaoId: string
+  quantidadeSolicitacao: number
   cotacao?: Cotacao
 }
 
 export default function CotacoesPage() {
   const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
 
-  const [statusTab, setStatusTab] = useState<StatusTab>("todas")
+  const [statusTab, setStatusTab] = useState<StatusTab>("nova")
   const [categoriaFilter, setCategoriaFilter] = useState<CompraCategoria | "todas">("todas")
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
@@ -91,7 +98,7 @@ export default function CotacoesPage() {
     [debouncedSearch, statusTab, categoriaFilter, page],
   )
 
-  const { data, isLoading, isFetching, isError, refetch } = useSolicitacoesCompra(
+  const { data, isLoading, isError, refetch } = useSolicitacoesCompra(
     condominioId,
     apiFilters,
   )
@@ -112,12 +119,12 @@ export default function CotacoesPage() {
     setExpandedId((cur) => (cur === id ? null : id))
   }
 
-  const openCreateForm = (solicitacaoId: string) => {
-    setCotacaoFormState({ solicitacaoId })
+  const openCreateForm = (solicitacaoId: string, quantidadeSolicitacao: number) => {
+    setCotacaoFormState({ solicitacaoId, quantidadeSolicitacao })
   }
 
-  const openEditForm = (solicitacaoId: string, cotacao: Cotacao) => {
-    setCotacaoFormState({ solicitacaoId, cotacao })
+  const openEditForm = (solicitacaoId: string, quantidadeSolicitacao: number, cotacao: Cotacao) => {
+    setCotacaoFormState({ solicitacaoId, quantidadeSolicitacao, cotacao })
   }
 
   const closeForm = () => {
@@ -259,7 +266,7 @@ export default function CotacoesPage() {
               variant="outline"
               className="mt-6"
               onClick={() => {
-                setStatusTab("todas")
+                setStatusTab("nova")
                 setCategoriaFilter("todas")
               }}
             >
@@ -269,7 +276,7 @@ export default function CotacoesPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className={`overflow-hidden rounded-xl bg-white shadow-sm transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
+          <div className="overflow-hidden rounded-xl bg-white shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -286,10 +293,19 @@ export default function CotacoesPage() {
               <TableBody>
                 {list.map((row) => {
                   const open = expandedId === row.id
-                  const cotacoes = open
-                    ? (expandedDetail?.cotacoes ?? row.cotacoes ?? [])
-                    : (row.cotacoes ?? [])
                   const cotacoesCount = row.totalCotacoes
+                  const podeGerenciar = canManageCotacoes(row.status)
+                  const temVencedora = row.temCotacaoSelecionada ?? false
+                  const cotacaoBadgeClass =
+                    cotacoesCount === 0
+                      ? "bg-gray-100 text-gray-500"
+                      : temVencedora
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-amber-100 text-amber-800"
+                  const cotacaoTooltip =
+                    row.status === "nova" && cotacoesCount > 0 && !temVencedora
+                      ? "Cadastre cotações e selecione uma vencedora"
+                      : null
 
                   return (
                     <Fragment key={row.id}>
@@ -327,16 +343,32 @@ export default function CotacoesPage() {
                         <TableCell className="text-right tabular-nums">{row.quantidade}</TableCell>
                         <TableCell>{row.solicitadoPor.nome}</TableCell>
                         <TableCell className="text-right tabular-nums">
-                          <span
-                            className={cn(
-                              "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium",
-                              cotacoesCount === 0
-                                ? "bg-gray-100 text-gray-500"
-                                : "bg-emerald-100 text-emerald-700",
-                            )}
-                          >
-                            {cotacoesCount}
-                          </span>
+                          {cotacaoTooltip ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span
+                                  className={cn(
+                                    "inline-flex cursor-default items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium",
+                                    cotacaoBadgeClass,
+                                  )}
+                                >
+                                  {cotacoesCount}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="left" className="max-w-[200px]">
+                                {cotacaoTooltip}
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <span
+                              className={cn(
+                                "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium",
+                                cotacaoBadgeClass,
+                              )}
+                            >
+                              {cotacoesCount}
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-muted-foreground">
                           {new Date(row.criadoEm).toLocaleDateString("pt-BR")}
@@ -350,34 +382,45 @@ export default function CotacoesPage() {
                               <Skeleton className="h-40 w-full rounded-xl" />
                             ) : (
                               <div className="space-y-4">
+                                {!podeGerenciar && (
+                                  <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
+                                    Cotações bloqueadas — solicitação já aprovada, finalizada ou
+                                    cancelada.
+                                  </div>
+                                )}
                                 <MapaCotacoes
                                   cotacoes={expandedDetail?.cotacoes ?? row.cotacoes ?? []}
-                                  isSelecting={selecionarMutation.isPending}
-                                  onSelecionar={(cotacaoId) =>
-                                    selecionarMutation.mutate({
-                                      solicitacaoId: row.id,
-                                      cotacaoId,
-                                    })
-                                  }
-                                  onEdit={(cotacao) => openEditForm(row.id, cotacao)}
-                                  onDelete={(cotacaoId) =>
-                                    deleteCotacaoMutation.mutate({
-                                      solicitacaoId: row.id,
-                                      cotacaoId,
-                                    })
-                                  }
-                                  isDeleting={deleteCotacaoMutation.isPending}
+                                  {...(podeGerenciar
+                                    ? {
+                                        isSelecting: selecionarMutation.isPending,
+                                        onSelecionar: (cotacaoId: string) =>
+                                          selecionarMutation.mutate({
+                                            solicitacaoId: row.id,
+                                            cotacaoId,
+                                          }),
+                                        onEdit: (cotacao: Cotacao) =>
+                                          openEditForm(row.id, row.quantidade, cotacao),
+                                        onDelete: (cotacaoId: string) =>
+                                          deleteCotacaoMutation.mutate({
+                                            solicitacaoId: row.id,
+                                            cotacaoId,
+                                          }),
+                                        isDeleting: deleteCotacaoMutation.isPending,
+                                      }
+                                    : {})}
                                 />
-                                <div className="flex items-center justify-end border-t pt-4">
-                                  <Button
-                                    className="bg-emerald-700 hover:bg-emerald-800"
-                                    size="sm"
-                                    onClick={() => openCreateForm(row.id)}
-                                  >
-                                    <Plus className="mr-1.5 h-4 w-4" />
-                                    Adicionar cotação
-                                  </Button>
-                                </div>
+                                {podeGerenciar && (
+                                  <div className="flex items-center justify-end border-t pt-4">
+                                    <Button
+                                      className="bg-emerald-700 hover:bg-emerald-800"
+                                      size="sm"
+                                      onClick={() => openCreateForm(row.id, row.quantidade)}
+                                    >
+                                      <Plus className="mr-1.5 h-4 w-4" />
+                                      Adicionar cotação
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </TableCell>
@@ -394,7 +437,6 @@ export default function CotacoesPage() {
             <p className="text-sm text-muted-foreground">
               {totalCount != null ? `${totalCount} resultado${totalCount !== 1 ? "s" : ""} · ` : ""}
               Página {page} de {totalPages}
-              {isFetching ? " · Atualizando…" : ""}
             </p>
             <div className="flex gap-2">
               <Button
@@ -426,6 +468,7 @@ export default function CotacoesPage() {
         open={cotacaoFormState !== null}
         onOpenChange={(open) => { if (!open) closeForm() }}
         cotacao={cotacaoFormState?.cotacao}
+        quantidadeSolicitacao={cotacaoFormState?.quantidadeSolicitacao ?? 1}
         isSubmitting={isFormSubmitting}
         onSubmit={handleFormSubmit}
       />

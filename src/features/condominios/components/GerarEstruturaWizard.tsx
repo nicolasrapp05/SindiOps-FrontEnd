@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react"
 import { Loader2, Zap, AlertCircle, Building2, Layers, Hash, Settings2 } from "lucide-react"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -549,8 +550,8 @@ export default function GerarEstruturaWizard({
       try {
         const bloco = await createBloco(condominioId, blocoPreview.nome)
         blocoId = bloco.id
-      } catch {
-        toast.error(`Erro ao criar bloco "${blocoPreview.nome}"`)
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, `Erro ao criar bloco "${blocoPreview.nome}"`))
         erros++
         continue
       }

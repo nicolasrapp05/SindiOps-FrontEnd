@@ -23,25 +23,38 @@ import {
 } from "@/components/ui/table"
 import Combobox from "@/components/shared/Combobox"
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
   useSolicitacoesCompra,
   useSolicitacaoCompra,
   useCreateSolicitacaoCompra,
   useAprovarSolicitacao,
   useUpdateStatusCompra,
-  useSelecionarCotacao,
 } from "@/features/compras/hooks/useCompras"
 import {
   COMPRA_CATEGORIA_LABEL,
   type CompraCategoria,
   type CompraStatus,
   type CreateSolicitacaoCompraRequest,
+  type SolicitacaoCompra,
   type TipoAprovacao,
 } from "@/features/compras/types/compra.types"
 import CompraStatusBadge from "@/features/compras/components/CompraStatusBadge"
 import SolicitacaoCompraForm from "@/features/compras/components/SolicitacaoCompraForm"
 import MapaCotacoes from "@/features/compras/components/MapaCotacoes"
+import AprovarCompraDialog from "@/features/compras/components/AprovarCompraDialog"
+import {
+  getAprovarBlockReason,
+  getCotacaoReadinessLabel,
+  isSindico,
+} from "@/features/compras/lib/compra-flow"
 import { cn } from "@/lib/utils"
+import { formatBRL } from "@/lib/currency"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
+import { useAuthStore } from "@/store/auth-store"
 
 const TIPO_APROVACAO_LABEL: Record<TipoAprovacao, string> = {
   sindico: "Síndico",
@@ -69,8 +82,28 @@ const CATEGORIAS: (CompraCategoria | "todas")[] = [
 
 const PAGE_SIZE = 10
 
+interface AprovarDialogState {
+  id: string
+  tipoAprovacao: TipoAprovacao
+  valorTotal?: number
+}
+
+function resolveTemCotacaoSelecionada(
+  row: SolicitacaoCompra,
+  detail?: SolicitacaoCompra,
+): boolean {
+  const source = detail ?? row
+  return (
+    source.temCotacaoSelecionada ??
+    source.cotacoes?.some((c) => c.selecionada) ??
+    false
+  )
+}
+
 export default function ComprasPage() {
   const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
+  const cargo = useAuthStore((s) => s.user?.cargo)
+  const sindico = isSindico(cargo ?? "sindico")
 
   const [statusTab, setStatusTab] = useState<StatusTab>("todas")
   const [categoriaFilter, setCategoriaFilter] = useState<CompraCategoria | "todas">("todas")
@@ -78,6 +111,7 @@ export default function ComprasPage() {
   const [page, setPage] = useState(1)
   const [formOpen, setFormOpen] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [aprovarDialog, setAprovarDialog] = useState<AprovarDialogState | null>(null)
 
   const debouncedSearch = useDebounce(search)
 
@@ -92,14 +126,13 @@ export default function ComprasPage() {
     [debouncedSearch, statusTab, categoriaFilter, page],
   )
 
-  const { data, isLoading, isFetching, isError, refetch } = useSolicitacoesCompra(
+  const { data, isLoading, isError, refetch } = useSolicitacoesCompra(
     condominioId,
     apiFilters,
   )
   const createMutation = useCreateSolicitacaoCompra()
   const aprovarMutation = useAprovarSolicitacao()
   const updateStatusMutation = useUpdateStatusCompra()
-  const selecionarMutation = useSelecionarCotacao()
 
   const detailId = expandedId ?? ""
   const { data: expandedDetail, isLoading: detailLoading } = useSolicitacaoCompra(detailId)
@@ -114,6 +147,13 @@ export default function ComprasPage() {
 
   const handleCreate = (payload: CreateSolicitacaoCompraRequest) => {
     createMutation.mutate(payload, { onSuccess: () => setFormOpen(false) })
+  }
+
+  const handleAprovarConfirm = () => {
+    if (!aprovarDialog) return
+    aprovarMutation.mutate(aprovarDialog.id, {
+      onSuccess: () => setAprovarDialog(null),
+    })
   }
 
   const condoConfigured = !!condominioId
@@ -249,7 +289,7 @@ export default function ComprasPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className={`overflow-hidden rounded-xl bg-white shadow-sm transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
+          <div className="overflow-hidden rounded-xl bg-white shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -266,6 +306,21 @@ export default function ComprasPage() {
               <TableBody>
                 {list.map((row) => {
                   const open = expandedId === row.id
+                  const detail = open ? expandedDetail : undefined
+                  const temCotacaoSelecionada = resolveTemCotacaoSelecionada(row, detail)
+                  const readiness = getCotacaoReadinessLabel(
+                    row.status,
+                    row.totalCotacoes,
+                    temCotacaoSelecionada,
+                  )
+                  const aprovarBlockReason = getAprovarBlockReason(
+                    row.status,
+                    row.totalCotacoes,
+                    temCotacaoSelecionada,
+                  )
+                  const cotacoes = detail?.cotacoes ?? row.cotacoes ?? []
+                  const cotacaoSelecionada = cotacoes.find((c) => c.selecionada)
+
                   return (
                     <Fragment key={row.id}>
                       <TableRow
@@ -293,7 +348,19 @@ export default function ComprasPage() {
                           </Button>
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
-                          <CompraStatusBadge status={row.status} />
+                          <div className="flex flex-col gap-1.5">
+                            <CompraStatusBadge status={row.status} />
+                            {readiness && (
+                              <span
+                                className={cn(
+                                  "inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                                  readiness.className,
+                                )}
+                              >
+                                {readiness.label}
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{COMPRA_CATEGORIA_LABEL[row.categoria]}</TableCell>
                         <TableCell className="max-w-[200px] truncate font-medium">{row.item}</TableCell>
@@ -311,19 +378,23 @@ export default function ComprasPage() {
                               <Skeleton className="h-40 w-full rounded-xl" />
                             ) : (
                               <>
+                                <div className="mb-3 flex items-center justify-between gap-2">
+                                  <p className="text-sm font-medium text-muted-foreground">
+                                    Mapa de cotações
+                                  </p>
+                                  <Link
+                                    to="/compras/cotacoes"
+                                    className="text-sm font-medium text-emerald-700 hover:text-emerald-800 hover:underline"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    Gerenciar cotações →
+                                  </Link>
+                                </div>
                                 <MapaCotacoes
-                                  cotacoes={expandedDetail?.cotacoes ?? row.cotacoes ?? []}
-                                  isSelecting={selecionarMutation.isPending}
-                                  onSelecionar={(cotacaoId) =>
-                                    selecionarMutation.mutate({
-                                      solicitacaoId: row.id,
-                                      cotacaoId,
-                                    })
-                                  }
+                                  cotacoes={cotacoes}
                                 />
-                                {row.status !== "finalizada" && (
+                                {row.status !== "finalizada" && sindico && (
                                   <div className="mt-4 flex items-center justify-end gap-3 border-t pt-4">
-                                    {/* cancelada → em_andamento */}
                                     {row.status === "cancelada" && (
                                       <Button
                                         variant="outline"
@@ -336,7 +407,6 @@ export default function ComprasPage() {
                                         Reativar Solicitação
                                       </Button>
                                     )}
-                                    {/* nova | em_andamento → cancelada */}
                                     {(row.status === "nova" || row.status === "em_andamento") && (
                                       <Button
                                         variant="outline"
@@ -350,24 +420,41 @@ export default function ComprasPage() {
                                         Cancelar Solicitação
                                       </Button>
                                     )}
-                                    {/* nova → em_andamento (aprovar com cotação) */}
-                                    {row.status === "nova" && (
-                                      <Button
-                                        className="bg-emerald-700 hover:bg-emerald-800"
-                                        size="sm"
-                                        disabled={aprovarMutation.isPending}
-                                        onClick={() => aprovarMutation.mutate(row.id)}
-                                      >
-                                        {(() => {
-                                          const cotacoes = expandedDetail?.cotacoes ?? row.cotacoes ?? []
-                                          const sel = cotacoes.find((c) => c.selecionada)
-                                          return sel
-                                            ? `Aprovar Compra (${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(sel.valorTotal)})`
-                                            : "Aprovar Compra"
-                                        })()}
-                                      </Button>
-                                    )}
-                                    {/* em_andamento → finalizada */}
+                                    {row.status === "nova" && (() => {
+                                      const label = cotacaoSelecionada
+                                        ? `Aprovar Compra (${formatBRL(cotacaoSelecionada.valorTotal)})`
+                                        : "Aprovar Compra"
+                                      const blocked = aprovarBlockReason !== null
+                                      const btn = (
+                                        <Button
+                                          className="bg-emerald-700 hover:bg-emerald-800"
+                                          size="sm"
+                                          disabled={aprovarMutation.isPending || blocked}
+                                          onClick={() =>
+                                            setAprovarDialog({
+                                              id: row.id,
+                                              tipoAprovacao: row.tipoAprovacao,
+                                              valorTotal: cotacaoSelecionada?.valorTotal,
+                                            })
+                                          }
+                                        >
+                                          {label}
+                                        </Button>
+                                      )
+                                      if (!blocked) return btn
+                                      return (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span tabIndex={0} className="inline-flex">
+                                              {btn}
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="max-w-[240px]">
+                                            {aprovarBlockReason}
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      )
+                                    })()}
                                     {row.status === "em_andamento" && (
                                       <Button
                                         className="bg-emerald-700 hover:bg-emerald-800"
@@ -398,7 +485,6 @@ export default function ComprasPage() {
             <p className="text-sm text-muted-foreground">
               {totalCount != null ? `${totalCount} resultado${totalCount !== 1 ? "s" : ""} · ` : ""}
               Página {page} de {totalPages}
-              {isFetching ? " · Atualizando…" : ""}
             </p>
             <div className="flex gap-2">
               <Button
@@ -433,6 +519,17 @@ export default function ComprasPage() {
         isSubmitting={createMutation.isPending}
         onSubmit={handleCreate}
       />
+
+      {aprovarDialog && (
+        <AprovarCompraDialog
+          open
+          onOpenChange={(open) => { if (!open) setAprovarDialog(null) }}
+          tipoAprovacao={aprovarDialog.tipoAprovacao}
+          valorTotal={aprovarDialog.valorTotal}
+          onConfirm={handleAprovarConfirm}
+          isPending={aprovarMutation.isPending}
+        />
+      )}
     </div>
   )
 }

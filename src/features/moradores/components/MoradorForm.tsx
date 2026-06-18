@@ -19,6 +19,7 @@ import { getBlocos } from "@/features/condominios/services/condominios.service"
 import type { Bloco } from "@/features/condominios/types/condominio.types"
 import type { Morador, CreateMoradorRequest } from "../types/morador.types"
 import Combobox from "@/components/shared/Combobox"
+import { toastFormValidationError } from "@/lib/form-utils"
 
 function phoneMask(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11)
@@ -125,7 +126,7 @@ export default function MoradorForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 py-2">
+        <form onSubmit={handleSubmit(handleFormSubmit, toastFormValidationError)} className="space-y-4 py-2">
           {/* Nome */}
           <div className="space-y-1.5">
             <Label htmlFor="nome">Nome Completo<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>

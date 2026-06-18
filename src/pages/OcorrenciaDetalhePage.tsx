@@ -16,10 +16,12 @@ import EnviarComunicacaoModal from "@/features/ocorrencias/components/EnviarComu
 import {
   TIPO_LABEL, ORIGEM_LABEL, TIPO_LOCAL_LABEL,
 } from "@/features/ocorrencias/types/ocorrencia.types"
-import type { OcorrenciaStatus } from "@/features/ocorrencias/types/ocorrencia.types"
+import type { OcorrenciaStatus, Ocorrencia } from "@/features/ocorrencias/types/ocorrencia.types"
 import { proximosStatus, isStatusFinal, FLUXO_STATUS_LABEL } from "@/lib/status-transitions"
 import type { FluxoStatus } from "@/lib/status-transitions"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
+import { patchDetailCache } from "@/lib/query-cache"
 import { useQueryClient } from "@tanstack/react-query"
 
 export default function OcorrenciaDetalhePage() {
@@ -46,10 +48,18 @@ export default function OcorrenciaDetalhePage() {
     if (!id) return
     try {
       await deleteMidia(id, midiaId)
-      qc.invalidateQueries({ queryKey: ["ocorrencias", "detail", id] })
+      patchDetailCache<Ocorrencia>(qc, ["ocorrencias", "detail", id], (old) => {
+        if (!old) return old
+        const midias = (old.midias ?? []).filter((m) => m.id !== midiaId)
+        return {
+          ...old,
+          midias,
+          totalMidias: midias.length,
+        }
+      })
       toast.success("Mídia removida")
-    } catch {
-      toast.error("Erro ao remover mídia")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Erro ao remover mídia"))
     }
   }
 

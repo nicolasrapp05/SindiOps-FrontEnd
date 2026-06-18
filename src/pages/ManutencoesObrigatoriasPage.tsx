@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
 import {
   CheckCircle2,
   ChevronLeft,
@@ -86,7 +87,7 @@ export default function ManutencoesObrigatoriasPage() {
     [debouncedSearch, statusTab, tipoFilter, page],
   )
 
-  const { data, isLoading, isFetching, isError, refetch } = useManutencoesObrigatorias(
+  const { data, isLoading, isError, refetch } = useManutencoesObrigatorias(
     condominioId,
     filters,
   )
@@ -132,7 +133,7 @@ export default function ManutencoesObrigatoriasPage() {
         setPendingDelete(null)
       },
       onError: (err) => {
-        toast.error(err instanceof Error ? err.message : "Erro ao remover")
+        toast.error(getApiErrorMessage(err, "Erro ao remover"))
         setPendingDelete(null)
       },
     })
@@ -287,7 +288,7 @@ export default function ManutencoesObrigatoriasPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className={`overflow-hidden rounded-xl bg-white shadow-sm transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
+          <div className="overflow-hidden rounded-xl bg-white shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -361,7 +362,6 @@ export default function ManutencoesObrigatoriasPage() {
           <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
             <p className="text-sm text-muted-foreground">
               Página {page} de {totalPages}
-              {isFetching ? " · Atualizando…" : ""}
             </p>
             <div className="flex gap-2">
               <Button

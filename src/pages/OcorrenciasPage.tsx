@@ -53,7 +53,7 @@ export default function OcorrenciasPage() {
     pageSize: 20,
   }), [debouncedSearch, statusFilter, tipoFilter, origemFilter, page])
 
-  const { data: ocorrenciasPage, isLoading, isFetching, isError, refetch } = useOcorrencias(condominioId, filters)
+  const { data: ocorrenciasPage, isLoading, isError, refetch } = useOcorrencias(condominioId, filters)
   const { data: summaryData } = useOcorrencias(condominioId, { pageSize: 500 })
   const createMutation = useCreateOcorrencia()
 
@@ -217,7 +217,7 @@ export default function OcorrenciasPage() {
           </Button>
         </div>
       ) : (
-        <div className={`rounded-xl bg-white shadow-sm transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
+        <div className="rounded-xl bg-white shadow-sm">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>

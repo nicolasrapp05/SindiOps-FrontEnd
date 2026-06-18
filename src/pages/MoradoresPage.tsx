@@ -1,5 +1,6 @@
 import { Fragment, useState } from "react"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
 import { Link } from "react-router-dom"
 import {
   Plus,
@@ -64,7 +65,7 @@ export default function MoradoresPage() {
     pageSize: 20,
   }
 
-  const { data: moradores, isLoading, isFetching, isError, refetch } = useMoradores(condominioId, filters)
+  const { data: moradores, isLoading, isError, refetch } = useMoradores(condominioId, filters)
   const { data: blocos } = useQuery({
     queryKey: ["condominios", condominioId, "blocos"],
     queryFn: () => getBlocos(condominioId),
@@ -97,7 +98,7 @@ export default function MoradoresPage() {
         setPendingDelete(null)
       },
       onError: (err) => {
-        toast.error(err instanceof Error ? err.message : "Erro ao remover")
+        toast.error(getApiErrorMessage(err, "Erro ao remover"))
         setPendingDelete(null)
       },
     })
@@ -234,7 +235,7 @@ export default function MoradoresPage() {
           </Button>
         </div>
       ) : (
-        <div className={`rounded-xl bg-white shadow-sm transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
+        <div className="rounded-xl bg-white shadow-sm">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>

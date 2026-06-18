@@ -1,4 +1,4 @@
-﻿import { useEffect } from "react"
+﻿import { useEffect, useMemo } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -14,17 +14,22 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import Combobox from "@/components/shared/Combobox"
+import MultiCombobox from "@/components/shared/MultiCombobox"
+import { useCondominios } from "@/features/condominios/hooks/useCondominios"
 import {
   CARGO_LABEL,
   type ConvidarFuncionarioRequest,
   type FuncionarioCargo,
 } from "../types/funcionario.types"
+import { toastFormValidationError } from "@/lib/form-utils"
 
 const schema = z.object({
   nome: z.string().min(1, "O nome é obrigatório"),
   email: z.string().min(1, "O email é obrigatório").email("Formato de email inválido"),
   cargo: z.enum(["zelador", "secretario", "porteiro", "outro"]),
+  condominioIds: z.array(z.string()).min(1, "Selecione ao menos um condomínio"),
 })
 
 type FormData = z.infer<typeof schema>
@@ -44,6 +49,13 @@ export default function ConvidarFuncionarioModal({
   onSubmit,
   isSubmitting,
 }: ConvidarFuncionarioModalProps) {
+  const { data: condominios, isLoading: condominiosLoading } = useCondominios()
+
+  const condominioOptions = useMemo(
+    () => (condominios ?? []).map((c) => ({ value: c.id, label: c.nome })),
+    [condominios],
+  )
+
   const {
     register,
     handleSubmit,
@@ -56,12 +68,13 @@ export default function ConvidarFuncionarioModal({
       nome: "",
       email: "",
       cargo: "zelador",
+      condominioIds: [],
     },
   })
 
   useEffect(() => {
     if (open) {
-      reset({ nome: "", email: "", cargo: "zelador" })
+      reset({ nome: "", email: "", cargo: "zelador", condominioIds: [] })
     }
   }, [open, reset])
 
@@ -80,13 +93,14 @@ export default function ConvidarFuncionarioModal({
         <DialogHeader className="text-center sm:text-center">
           <DialogTitle>Convidar Funcionário</DialogTitle>
           <DialogDescription>
-            Envie um convite por email para adicionar um novo membro à equipe do condomínio.
+            Envie um convite por email e defina os condomínios que o funcionário poderá acessar.
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
-          O funcionário terá acesso apenas aos módulos permitidos para o cargo selecionado.
+          O funcionário terá acesso apenas aos condomínios selecionados e aos módulos permitidos
+          para o cargo.
         </div>
-        <form onSubmit={handleSubmit(submit)} className="space-y-4">
+        <form onSubmit={handleSubmit(submit, toastFormValidationError)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="convite-nome">Nome<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Input id="convite-nome" {...register("nome")} placeholder="Nome completo" />
@@ -118,6 +132,33 @@ export default function ConvidarFuncionarioModal({
             />
             {errors.cargo && <p className="text-xs text-destructive">{errors.cargo.message}</p>}
           </div>
+          <div className="space-y-2">
+            <Label>Condomínios<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
+            {condominiosLoading ? (
+              <Skeleton className="h-8 w-full rounded-lg" />
+            ) : condominioOptions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Cadastre um condomínio antes de convidar funcionários.
+              </p>
+            ) : (
+              <Controller
+                name="condominioIds"
+                control={control}
+                render={({ field }) => (
+                  <MultiCombobox
+                    options={condominioOptions}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Selecionar condomínios..."
+                    emptyText="Nenhum condomínio encontrado"
+                  />
+                )}
+              />
+            )}
+            {errors.condominioIds && (
+              <p className="text-xs text-destructive">{errors.condominioIds.message}</p>
+            )}
+          </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
@@ -125,7 +166,7 @@ export default function ConvidarFuncionarioModal({
             <Button
               type="submit"
               className="bg-emerald-600 hover:bg-emerald-700"
-              disabled={isSubmitting}
+              disabled={isSubmitting || condominioOptions.length === 0}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Enviar Convite

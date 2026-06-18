@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { toastFormValidationError } from "@/lib/form-utils"
 import type { RealizarManutencaoRequest } from "../types/manutencao-obrigatoria.types"
 
 const schema = z.object({
@@ -84,7 +85,7 @@ export default function RealizarManutencaoModal({
             atualizado conforme as regras do condomínio.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit, toastFormValidationError)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor={`data-realizacao-${manutencaoId}`}>Data da Realização<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller

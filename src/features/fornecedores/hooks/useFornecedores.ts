@@ -1,5 +1,11 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
+import {
+  removePaginatedItem,
+  setDetailCache,
+  upsertPaginatedItem,
+} from "@/lib/query-cache"
 import {
   getFornecedores,
   getFornecedor,
@@ -7,7 +13,7 @@ import {
   updateFornecedor,
   deleteFornecedor,
 } from "../services/fornecedores.service"
-import type { CreateFornecedorRequest, FornecedoresFilters } from "../types/fornecedor.types"
+import type { CreateFornecedorRequest, FornecedoresFilters, Fornecedor } from "../types/fornecedor.types"
 
 export function useFornecedores(filters?: FornecedoresFilters) {
   return useQuery({
@@ -29,12 +35,12 @@ export function useCreateFornecedor() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: CreateFornecedorRequest) => createFornecedor(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["fornecedores"] })
+    onSuccess: (fornecedor) => {
+      upsertPaginatedItem<Fornecedor>(qc, ["fornecedores"], fornecedor, { prependIfMissing: true })
       toast.success("Fornecedor cadastrado com sucesso")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao cadastrar fornecedor"),
+      toast.error(getApiErrorMessage(err, "Erro ao cadastrar fornecedor")),
   })
 }
 
@@ -43,12 +49,13 @@ export function useUpdateFornecedor() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: CreateFornecedorRequest }) =>
       updateFornecedor(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["fornecedores"] })
+    onSuccess: (fornecedor) => {
+      upsertPaginatedItem<Fornecedor>(qc, ["fornecedores"], fornecedor)
+      setDetailCache(qc, ["fornecedores", "detail", fornecedor.id], fornecedor)
       toast.success("Fornecedor atualizado com sucesso")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao atualizar fornecedor"),
+      toast.error(getApiErrorMessage(err, "Erro ao atualizar fornecedor")),
   })
 }
 
@@ -56,15 +63,17 @@ export function useDeleteFornecedor() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteFornecedor(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["fornecedores"] })
+    onSuccess: (_data, id) => {
+      removePaginatedItem<Fornecedor>(qc, ["fornecedores"], id)
+      qc.removeQueries({ queryKey: ["fornecedores", "detail", id] })
       toast.success("Fornecedor removido com sucesso")
     },
     onError: (err) =>
       toast.error(
-        err instanceof Error
-          ? err.message
-          : "Não é possível remover o fornecedor pois existem contratos vinculados",
+        getApiErrorMessage(
+          err,
+          "Não é possível remover o fornecedor pois existem contratos vinculados",
+        ),
       ),
   })
 }

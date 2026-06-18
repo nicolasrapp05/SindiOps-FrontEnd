@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
 import { gerarRelatorio, downloadBlob } from "../services/relatorios.service"
 import type { GerarRelatorioRequest, RelatorioFormato } from "../types/relatorio.types"
 
@@ -18,6 +19,6 @@ export function useGerarRelatorio() {
       toast.success("Download iniciado")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao gerar relatório"),
+      toast.error(getApiErrorMessage(err, "Erro ao gerar relatório")),
   })
 }

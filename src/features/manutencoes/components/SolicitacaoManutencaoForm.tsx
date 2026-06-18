@@ -23,6 +23,7 @@ import {
 } from "../types/solicitacao-manutencao.types"
 import { useFornecedores } from "@/features/fornecedores/hooks/useFornecedores"
 import Combobox from "@/components/shared/Combobox"
+import { toastFormValidationError } from "@/lib/form-utils"
 
 const TIPOS = Object.keys(SOLICITACAO_TIPO_LABEL) as SolicitacaoTipoServico[]
 
@@ -84,8 +85,8 @@ export default function SolicitacaoManutencaoForm({
 
   const responsavel = watch("responsavel")
 
-  const { data: fornecedoresData } = useFornecedores(undefined)
-  const fornecedoresList = Array.isArray(fornecedoresData) ? fornecedoresData : []
+  const { data: fornecedoresData } = useFornecedores({ pageSize: 500 })
+  const fornecedoresList = fornecedoresData?.data ?? []
 
   useEffect(() => {
     if (open) {
@@ -118,7 +119,7 @@ export default function SolicitacaoManutencaoForm({
           <DialogTitle>Nova solicitação de manutenção</DialogTitle>
           <DialogDescription>Descreva o serviço e quem deve executá-lo.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(submit)} className="space-y-4">
+        <form onSubmit={handleSubmit(submit, toastFormValidationError)} className="space-y-4">
           <div className="space-y-2">
             <Label>Tipo de serviço<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller

@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
 import { supabaseClient } from "@/lib/supabase"
 import { useAuthStore } from "@/store/auth-store"
 
@@ -24,7 +25,7 @@ export function useAtualizarPerfil() {
       toast.success("Perfil atualizado com sucesso")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao atualizar perfil"),
+      toast.error(getApiErrorMessage(err, "Erro ao atualizar perfil")),
   })
 }
 
@@ -36,6 +37,6 @@ export function useAlterarSenha() {
     },
     onSuccess: () => toast.success("Senha alterada com sucesso"),
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao alterar senha"),
+      toast.error(getApiErrorMessage(err, "Erro ao alterar senha")),
   })
 }

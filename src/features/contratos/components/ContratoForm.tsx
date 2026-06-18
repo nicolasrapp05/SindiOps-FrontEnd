@@ -24,6 +24,8 @@ import {
 import { useFornecedores } from "@/features/fornecedores/hooks/useFornecedores"
 import { useContrato } from "../hooks/useContratos"
 import Combobox from "@/components/shared/Combobox"
+import CurrencyInput from "@/components/shared/CurrencyInput"
+import { optionalNumber, toastFormValidationError } from "@/lib/form-utils"
 
 const TIPO_SERVICO_OPTIONS = Object.entries(TIPO_SERVICO_LABEL) as [TipoServico, string][]
 
@@ -49,7 +51,7 @@ const contratoSchema = z
     telefoneContato: z.string().optional(),
     dataInicio: z.string().optional(),
     dataFim: z.string().optional(),
-    valorMensal: z.number().optional(),
+    valorMensal: optionalNumber,
     indiceReajuste: z.string().optional(),
     condicoesRenovacao: z.string().optional(),
     condicoesRescisao: z.string().optional(),
@@ -130,7 +132,7 @@ export default function ContratoForm({
         telefoneContato: src.telefoneContato ?? "",
         dataInicio: contrato.dataInicio ?? "",
         dataFim: contrato.dataFim ?? "",
-        valorMensal: contrato.valorMensal,
+        valorMensal: contrato.valorMensal ?? undefined,
         indiceReajuste: src.indiceReajuste ?? "",
         condicoesRenovacao: src.condicoesRenovacao ?? "",
         condicoesRescisao: src.condicoesRescisao ?? "",
@@ -160,7 +162,7 @@ export default function ContratoForm({
       telefoneContato: data.telefoneContato || undefined,
       dataInicio: data.dataInicio || undefined,
       dataFim: data.dataFim || undefined,
-      valorMensal: data.valorMensal,
+      valorMensal: data.valorMensal ?? undefined,
       indiceReajuste: data.indiceReajuste || undefined,
       condicoesRenovacao: data.condicoesRenovacao || undefined,
       condicoesRescisao: data.condicoesRescisao || undefined,
@@ -180,7 +182,7 @@ export default function ContratoForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 py-2">
+        <form onSubmit={handleSubmit(handleFormSubmit, toastFormValidationError)} className="space-y-4 py-2">
           {/* Condomínio (read-only context) */}
           <div className="space-y-1.5">
             <Label>Condomínio</Label>
@@ -252,30 +254,19 @@ export default function ContratoForm({
 
           <div className="space-y-1.5">
             <Label htmlFor="valorMensal">Valor mensal</Label>
-            <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                R$
-              </span>
-              <Controller
-                control={control}
-                name="valorMensal"
-                render={({ field }) => (
-                  <Input
-                    id="valorMensal"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="pl-10"
-                    placeholder="0,00"
-                    value={field.value === undefined || field.value === null ? "" : field.value}
-                    onChange={(e) => {
-                      const raw = e.target.value
-                      field.onChange(raw === "" ? undefined : Number(raw))
-                    }}
-                  />
-                )}
-              />
-            </div>
+            <Controller
+              control={control}
+              name="valorMensal"
+              render={({ field }) => (
+                <CurrencyInput
+                  id="valorMensal"
+                  allowEmpty
+                  value={field.value ?? undefined}
+                  onValueChange={field.onChange}
+                  aria-invalid={!!errors.valorMensal}
+                />
+              )}
+            />
             {errors.valorMensal && (
               <p className="text-xs text-destructive">{errors.valorMensal.message}</p>
             )}

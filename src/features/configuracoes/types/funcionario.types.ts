@@ -14,12 +14,14 @@ export interface Funcionario {
   cargo: FuncionarioCargo
   ativo: boolean
   criadoEm: string
+  condominios?: { id: string; nome: string }[]
 }
 
 export interface ConvidarFuncionarioRequest {
   nome: string
   email: string
   cargo: FuncionarioCargo
+  condominioIds: string[]
 }
 
 export interface FuncionarioFilters {

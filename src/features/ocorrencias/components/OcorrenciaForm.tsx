@@ -22,6 +22,7 @@ import type { Bloco } from "@/features/condominios/types/condominio.types"
 import { useMoradores } from "@/features/moradores/hooks/useMoradores"
 import type { Morador } from "@/features/moradores/types/morador.types"
 import Combobox from "@/components/shared/Combobox"
+import { toastFormValidationError } from "@/lib/form-utils"
 
 const formSchema = z.object({
   origem: z.string().min(1, "Obrigatório"),
@@ -124,7 +125,7 @@ export default function OcorrenciaForm({
           <DialogTitle>Nova Ocorrência</DialogTitle>
           <DialogDescription>Registre uma nova ocorrência no condomínio.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 py-2">
+        <form onSubmit={handleSubmit(onFormSubmit, toastFormValidationError)} className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Origem<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>

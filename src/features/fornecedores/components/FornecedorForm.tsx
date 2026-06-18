@@ -1,8 +1,9 @@
-﻿import { useEffect } from "react"
+﻿import { useEffect, useRef } from "react"
 import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Loader2, Plus, X } from "lucide-react"
+import { toastFormValidationError } from "@/lib/form-utils"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -27,15 +28,30 @@ function cnpjMask(value: string): string {
   return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`
 }
 
+function normalizeServicos(servicos: Fornecedor["servicos"] = []) {
+  return servicos.map((s) => ({
+    tipo: s.tipo,
+    descricao: s.descricao ?? "",
+    quantidade: s.quantidade ?? undefined,
+  }))
+}
+
 const servicoSchema = z.object({
-  tipo: z.string().min(1, "Tipo obrigatório"),
+  tipo: z.string(),
   descricao: z.string().optional().or(z.literal("")),
-  quantidade: z.number().optional(),
+  quantidade: z.union([z.number(), z.null()]).optional(),
 })
 
-const formSchema = z.object({
+const formSchema = z
+  .object({
   nome: z.string().min(1, "O nome é obrigatório"),
-  cnpj: z.string().optional().or(z.literal("")),
+  cnpj: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((val) => !val || val.replace(/\D/g, "").length === 14, {
+      message: "CNPJ inválido — informe 14 dígitos",
+    }),
   enderecoRua: z.string().optional().or(z.literal("")),
   enderecoNumero: z.string().optional().or(z.literal("")),
   enderecoBairro: z.string().optional().or(z.literal("")),
@@ -48,6 +64,20 @@ const formSchema = z.object({
   nomeContato: z.string().optional().or(z.literal("")),
   servicos: z.array(servicoSchema),
 })
+  .superRefine((data, ctx) => {
+    data.servicos.forEach((servico, index) => {
+      const hasOtherData =
+        !!(servico.descricao ?? "").trim() || servico.quantidade != null
+
+      if (!servico.tipo.trim() && hasOtherData) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Tipo obrigatório",
+          path: ["servicos", index, "tipo"],
+        })
+      }
+    })
+  })
 
 type FormData = z.infer<typeof formSchema>
 
@@ -100,47 +130,62 @@ export default function FornecedorForm({
   })
 
   const { fields, append, remove } = useFieldArray({ control, name: "servicos" })
+  const hydrationRef = useRef<{ id: string; withDetail: boolean } | null>(null)
 
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      hydrationRef.current = null
+      return
+    }
 
-    if (fornecedor) {
-      // Usa o detalhe quando disponível (tem endereço completo, instagram,
-      // website e serviços). Enquanto carrega, usa os campos que a listagem
-      // já traz (nome, cnpj, telefone, email, nomeContato).
-      const src = fornecedorDetalhe ?? fornecedor
-      reset({
-        nome: fornecedor.nome,
-        cnpj: fornecedor.cnpj ?? "",
-        enderecoRua: src.enderecoRua ?? "",
-        enderecoNumero: src.enderecoNumero ?? "",
-        enderecoBairro: src.enderecoBairro ?? "",
-        enderecoCidade: src.enderecoCidade ?? "",
-        enderecoCep: src.enderecoCep ?? "",
-        telefone: fornecedor.telefone ?? "",
-        email: fornecedor.email ?? "",
-        instagram: src.instagram ?? "",
-        website: src.website ?? "",
-        nomeContato: fornecedor.nomeContato ?? "",
-        servicos: (src.servicos ?? []).map((s) => ({
-          tipo: s.tipo,
-          descricao: s.descricao ?? "",
-          quantidade: s.quantidade,
-        })),
-      })
-    } else {
+    if (!fornecedor) {
+      hydrationRef.current = null
       reset({
         nome: "", cnpj: "", enderecoRua: "", enderecoNumero: "",
         enderecoBairro: "", enderecoCidade: "", enderecoCep: "",
         telefone: "", email: "", instagram: "", website: "",
         nomeContato: "", servicos: [],
       })
+      return
     }
+
+    const withDetail = !!fornecedorDetalhe
+    const alreadyHydrated =
+      hydrationRef.current?.id === fornecedor.id &&
+      hydrationRef.current.withDetail === withDetail
+
+    if (alreadyHydrated) return
+
+    const src = fornecedorDetalhe ?? fornecedor
+    reset({
+      nome: fornecedor.nome,
+      cnpj: fornecedor.cnpj ? cnpjMask(fornecedor.cnpj) : "",
+      enderecoRua: src.enderecoRua ?? "",
+      enderecoNumero: src.enderecoNumero ?? "",
+      enderecoBairro: src.enderecoBairro ?? "",
+      enderecoCidade: src.enderecoCidade ?? "",
+      enderecoCep: src.enderecoCep ?? "",
+      telefone: fornecedor.telefone ?? "",
+      email: fornecedor.email ?? "",
+      instagram: src.instagram ?? "",
+      website: src.website ?? "",
+      nomeContato: fornecedor.nomeContato ?? "",
+      servicos: normalizeServicos(src.servicos ?? []),
+    })
+    hydrationRef.current = { id: fornecedor.id, withDetail }
   }, [open, fornecedor, fornecedorDetalhe, reset])
 
   const cnpjValue = watch("cnpj")
 
   const handleFormSubmit = (data: FormData) => {
+    const servicos = data.servicos
+      .filter((s) => s.tipo.trim())
+      .map((s) => ({
+        tipo: s.tipo.trim(),
+        descricao: s.descricao || undefined,
+        quantidade: s.quantidade ?? undefined,
+      }))
+
     const payload: CreateFornecedorRequest = {
       nome: data.nome,
       cnpj: data.cnpj || undefined,
@@ -154,13 +199,7 @@ export default function FornecedorForm({
       instagram: data.instagram || undefined,
       website: data.website || undefined,
       nomeContato: data.nomeContato || undefined,
-      servicos: data.servicos.length
-        ? data.servicos.map((s) => ({
-            tipo: s.tipo,
-            descricao: s.descricao || undefined,
-            quantidade: s.quantidade || undefined,
-          }))
-        : undefined,
+      servicos: servicos.length ? servicos : undefined,
     }
     onSubmit(payload)
   }
@@ -175,7 +214,7 @@ export default function FornecedorForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 py-2">
+        <form onSubmit={handleSubmit(handleFormSubmit, toastFormValidationError)} className="space-y-4 py-2">
           {/* Nome + CNPJ */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -189,8 +228,11 @@ export default function FornecedorForm({
                 id="cnpj"
                 placeholder="XX.XXX.XXX/XXXX-XX"
                 value={cnpjValue ?? ""}
-                onChange={(e) => setValue("cnpj", cnpjMask(e.target.value))}
+                onChange={(e) =>
+                  setValue("cnpj", cnpjMask(e.target.value), { shouldValidate: true })
+                }
               />
+              {errors.cnpj && <p className="text-xs text-destructive">{errors.cnpj.message}</p>}
             </div>
           </div>
 
@@ -267,26 +309,33 @@ export default function FornecedorForm({
             )}
             <div className="space-y-2">
               {fields.map((field, idx) => (
-                <div key={field.id} className="flex items-start gap-2">
-                  <Input
-                    className="flex-1"
-                    placeholder="Tipo (ex: limpeza_geral)"
-                    {...register(`servicos.${idx}.tipo`)}
-                  />
-                  <Input
-                    className="flex-1"
-                    placeholder="Descrição"
-                    {...register(`servicos.${idx}.descricao`)}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 shrink-0 text-red-500 hover:text-red-700"
-                    onClick={() => remove(idx)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                <div key={field.id} className="space-y-1">
+                  <div className="flex items-start gap-2">
+                    <Input
+                      className="flex-1"
+                      placeholder="Tipo (ex: limpeza_geral)"
+                      {...register(`servicos.${idx}.tipo`)}
+                    />
+                    <Input
+                      className="flex-1"
+                      placeholder="Descrição"
+                      {...register(`servicos.${idx}.descricao`)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 shrink-0 text-red-500 hover:text-red-700"
+                      onClick={() => remove(idx)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {errors.servicos?.[idx]?.tipo && (
+                    <p className="text-xs text-destructive">
+                      {errors.servicos[idx]?.tipo?.message}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

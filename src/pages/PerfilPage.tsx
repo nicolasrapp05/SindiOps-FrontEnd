@@ -12,6 +12,7 @@ import {
   useAtualizarPerfil,
   useAlterarSenha,
 } from "@/features/configuracoes/hooks/usePerfil"
+import { toastFormValidationError } from "@/lib/form-utils"
 import type { UserCargo } from "@/types"
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -156,7 +157,7 @@ export default function PerfilPage() {
               </p>
             </div>
 
-            <form onSubmit={perfilForm.handleSubmit(onSubmitPerfil)} className="space-y-4">
+            <form onSubmit={perfilForm.handleSubmit(onSubmitPerfil, toastFormValidationError)} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="nome">Nome completo</Label>
                 <Input
@@ -228,7 +229,7 @@ export default function PerfilPage() {
               </div>
             </div>
 
-            <form onSubmit={senhaForm.handleSubmit(onSubmitSenha)} className="space-y-4">
+            <form onSubmit={senhaForm.handleSubmit(onSubmitSenha, toastFormValidationError)} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="novaSenha">Nova senha</Label>
                 <div className="relative">

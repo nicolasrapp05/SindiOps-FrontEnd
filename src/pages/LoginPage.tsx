@@ -4,6 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Navigate, useLocation, useNavigate } from "react-router-dom"
 import { Building, Loader2, Mail, Lock, ArrowRight } from "lucide-react"
+import { getApiErrorMessage } from "@/lib/api"
+import { toastFormValidationError } from "@/lib/form-utils"
 import { useAuth } from "@/hooks/useAuth"
 import { useAuthStore } from "@/store/auth-store"
 import { Input } from "@/components/ui/input"
@@ -50,9 +52,7 @@ export default function LoginPage() {
       await login(data.email, data.password)
       navigate(from, { replace: true })
     } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : "Erro ao realizar login",
-      )
+      setSubmitError(getApiErrorMessage(err, "Erro ao realizar login"))
     }
   }
 
@@ -103,7 +103,7 @@ export default function LoginPage() {
             Bem-vindo de volta! Por favor, insira seus dados.
           </p>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
+          <form onSubmit={handleSubmit(onSubmit, toastFormValidationError)} className="mt-8 space-y-5">
             {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

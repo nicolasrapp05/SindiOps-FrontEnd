@@ -1,5 +1,54 @@
+import axios from "axios"
 import api from "./axios"
-import type { ApiResponse, PaginatedResponse } from "@/types"
+import type { ApiResponse, ApiError, PaginatedResponse } from "@/types"
+
+function firstValidationMessage(errors: unknown): string | undefined {
+  if (!errors) return undefined
+
+  if (Array.isArray(errors)) {
+    const first = errors[0] as ApiError | string | undefined
+    if (typeof first === "string") return first
+    if (first && typeof first === "object" && "message" in first && first.message) {
+      return String(first.message)
+    }
+    return undefined
+  }
+
+  if (typeof errors === "object") {
+    for (const messages of Object.values(errors as Record<string, unknown>)) {
+      if (Array.isArray(messages) && messages.length > 0) {
+        return String(messages[0])
+      }
+      if (typeof messages === "string" && messages) {
+        return messages
+      }
+    }
+  }
+
+  return undefined
+}
+
+function extractApiErrorBody(data: unknown): string | undefined {
+  if (!data || typeof data !== "object") return undefined
+
+  const body = data as Record<string, unknown>
+  const fromErrors = firstValidationMessage(body.errors)
+  if (fromErrors) return fromErrors
+
+  if (typeof body.detail === "string" && body.detail) return body.detail
+  if (typeof body.message === "string" && body.message) return body.message
+
+  const title = typeof body.title === "string" ? body.title : undefined
+  if (title && title !== "One or more validation errors occurred.") {
+    return title
+  }
+
+  return undefined
+}
+
+function isGenericAxiosMessage(message: string): boolean {
+  return /^Request failed with status code \d+$/.test(message)
+}
 
 function unwrap<T>(envelope: ApiResponse<T>): T {
   if (envelope.success) {
@@ -11,6 +60,23 @@ function unwrap<T>(envelope: ApiResponse<T>): T {
   }
 
   throw new Error(envelope.message ?? "Erro desconhecido")
+}
+
+export function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const fromBody = extractApiErrorBody(error.response?.data)
+    if (fromBody) return fromBody
+  }
+
+  if (
+    error instanceof Error &&
+    error.message &&
+    !isGenericAxiosMessage(error.message)
+  ) {
+    return error.message
+  }
+
+  return fallback
 }
 
 export async function get<T>(url: string, params?: object): Promise<T> {

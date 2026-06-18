@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import Combobox from "@/components/shared/Combobox"
+import { toastFormValidationError } from "@/lib/form-utils"
 import {
   MANUTENCAO_TIPO_LABEL,
   type CreateManutencaoObrigatoriaRequest,
@@ -117,7 +118,7 @@ export default function ManutencaoObrigatoriaForm({
             Preencha os dados da obrigação legal ou contratual do condomínio.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(submit)} className="space-y-4">
+        <form onSubmit={handleSubmit(submit, toastFormValidationError)} className="space-y-4">
           <div className="space-y-1.5">
             <Label>Condomínio</Label>
             <div className="flex h-10 items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground">

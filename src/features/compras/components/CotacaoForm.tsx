@@ -15,6 +15,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useFornecedores } from "@/features/fornecedores/hooks/useFornecedores"
 import Combobox, { type ComboboxOption } from "@/components/shared/Combobox"
+import CurrencyInput from "@/components/shared/CurrencyInput"
+import { toastFormValidationError } from "@/lib/form-utils"
+import {
+  calcValorTotalCotacao,
+  resolveQuantidadeCotacao,
+} from "../lib/cotacao-utils"
 import type { Cotacao, CreateCotacaoRequest } from "../types/compra.types"
 
 const schema = z
@@ -23,15 +29,12 @@ const schema = z
     nomeEmpresa: z.string().optional(),
     nomeContato: z.string().optional(),
     nomeResponsavel: z.string().optional(),
-    valorUnitario: z
-      .number({ invalid_type_error: "Informe o valor unitário" })
-      .min(0.01, "Valor deve ser maior que zero"),
-    valorTotal: z
-      .number({ invalid_type_error: "Informe o valor total" })
-      .min(0.01, "Valor deve ser maior que zero"),
+    valorUnitario: z.number({ error: "Informe o valor unitário" }).min(0.01, "Valor deve ser maior que zero"),
     formaPagamento: z.string().optional(),
     descricaoProduto: z.string().optional(),
-    quantidade: z.number().optional(),
+    quantidade: z
+      .number({ error: "Informe a quantidade" })
+      .min(1, "Quantidade deve ser maior que zero"),
     unidade: z.string().optional(),
   })
   .superRefine((data, ctx) => {
@@ -50,6 +53,7 @@ interface CotacaoFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   cotacao?: Cotacao
+  quantidadeSolicitacao: number
   isSubmitting: boolean
   onSubmit: (data: CreateCotacaoRequest) => void
 }
@@ -58,13 +62,14 @@ export default function CotacaoForm({
   open,
   onOpenChange,
   cotacao,
+  quantidadeSolicitacao,
   isSubmitting,
   onSubmit,
 }: CotacaoFormProps) {
   const isEditMode = !!cotacao
 
-  const { data: fornecedores } = useFornecedores()
-  const fornecedoresList = Array.isArray(fornecedores) ? fornecedores : []
+  const { data: fornecedoresData } = useFornecedores({ pageSize: 500 })
+  const fornecedoresList = fornecedoresData?.data ?? []
 
   const fornecedorOptions: ComboboxOption[] = [
     { value: "", label: "Nenhum" },
@@ -76,6 +81,7 @@ export default function CotacaoForm({
     handleSubmit,
     reset,
     control,
+    watch,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -85,13 +91,20 @@ export default function CotacaoForm({
       nomeContato: "",
       nomeResponsavel: "",
       valorUnitario: 0,
-      valorTotal: 0,
       formaPagamento: "",
       descricaoProduto: "",
-      quantidade: undefined,
+      quantidade: quantidadeSolicitacao,
       unidade: "",
     },
   })
+
+  const valorUnitario = watch("valorUnitario")
+  const quantidade = watch("quantidade")
+  const quantidadeEfetiva = resolveQuantidadeCotacao(quantidade, quantidadeSolicitacao)
+  const valorTotalCalculado = calcValorTotalCotacao(
+    Number.isFinite(valorUnitario) ? valorUnitario : 0,
+    quantidadeEfetiva,
+  )
 
   useEffect(() => {
     if (open) {
@@ -102,10 +115,9 @@ export default function CotacaoForm({
           nomeContato: cotacao.nomeContato ?? "",
           nomeResponsavel: cotacao.nomeResponsavel ?? "",
           valorUnitario: cotacao.valorUnitario,
-          valorTotal: cotacao.valorTotal,
           formaPagamento: cotacao.formaPagamento ?? "",
           descricaoProduto: cotacao.descricaoProduto ?? "",
-          quantidade: cotacao.quantidade ?? undefined,
+          quantidade: cotacao.quantidade ?? quantidadeSolicitacao,
           unidade: cotacao.unidade ?? "",
         })
       } else {
@@ -115,27 +127,27 @@ export default function CotacaoForm({
           nomeContato: "",
           nomeResponsavel: "",
           valorUnitario: 0,
-          valorTotal: 0,
           formaPagamento: "",
           descricaoProduto: "",
-          quantidade: undefined,
+          quantidade: quantidadeSolicitacao,
           unidade: "",
         })
       }
     }
-  }, [open, cotacao, reset])
+  }, [open, cotacao, quantidadeSolicitacao, reset])
 
   const submit = (data: FormData) => {
+    const qtd = resolveQuantidadeCotacao(data.quantidade, quantidadeSolicitacao)
     onSubmit({
       fornecedorId: data.fornecedorId?.trim() || undefined,
       nomeEmpresa: data.nomeEmpresa?.trim() || undefined,
       nomeContato: data.nomeContato?.trim() || undefined,
       nomeResponsavel: data.nomeResponsavel?.trim() || undefined,
       valorUnitario: data.valorUnitario,
-      valorTotal: data.valorTotal,
+      valorTotal: calcValorTotalCotacao(data.valorUnitario, qtd),
       formaPagamento: data.formaPagamento?.trim() || undefined,
       descricaoProduto: data.descricaoProduto?.trim() || undefined,
-      quantidade: data.quantidade ?? undefined,
+      quantidade: qtd,
       unidade: data.unidade?.trim() || undefined,
     })
   }
@@ -146,7 +158,7 @@ export default function CotacaoForm({
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Editar cotação" : "Nova cotação"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(submit)} className="space-y-4">
+        <form onSubmit={handleSubmit(submit, toastFormValidationError)} className="space-y-4">
           <div className="space-y-2">
             <Label>Fornecedor cadastrado</Label>
             <Controller
@@ -158,7 +170,6 @@ export default function CotacaoForm({
                   value={field.value || ""}
                   onValueChange={field.onChange}
                   placeholder="Selecione (opcional)"
-                  searchPlaceholder="Buscar fornecedor..."
                 />
               )}
             />
@@ -197,33 +208,22 @@ export default function CotacaoForm({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="valorUnitario">Valor unitário<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
-              <Input
-                id="valorUnitario"
-                type="number"
-                min={0.01}
-                step={0.01}
-                {...register("valorUnitario", { valueAsNumber: true })}
+              <Controller
+                name="valorUnitario"
+                control={control}
+                render={({ field }) => (
+                  <CurrencyInput
+                    id="valorUnitario"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    aria-invalid={!!errors.valorUnitario}
+                  />
+                )}
               />
               {errors.valorUnitario && (
                 <p className="text-xs text-destructive">{errors.valorUnitario.message}</p>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="valorTotal">Valor total<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
-              <Input
-                id="valorTotal"
-                type="number"
-                min={0.01}
-                step={0.01}
-                {...register("valorTotal", { valueAsNumber: true })}
-              />
-              {errors.valorTotal && (
-                <p className="text-xs text-destructive">{errors.valorTotal.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="quantidade">Quantidade</Label>
               <Input
@@ -233,11 +233,29 @@ export default function CotacaoForm({
                 step={1}
                 {...register("quantidade", { valueAsNumber: true })}
               />
+              {errors.quantidade && (
+                <p className="text-xs text-destructive">{errors.quantidade.message}</p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="unidade">Unidade</Label>
-              <Input id="unidade" {...register("unidade")} placeholder="Ex: unidade, kg, L" />
-            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="valorTotal">Valor total</Label>
+            <CurrencyInput
+              id="valorTotal"
+              readOnly
+              tabIndex={-1}
+              value={valorTotalCalculado}
+              className="bg-muted/50 font-medium"
+            />
+            <p className="text-xs text-muted-foreground">
+              Calculado automaticamente: unitário × quantidade
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="unidade">Unidade</Label>
+            <Input id="unidade" {...register("unidade")} placeholder="Ex: unidade, kg, L" />
           </div>
 
           <div className="space-y-2">

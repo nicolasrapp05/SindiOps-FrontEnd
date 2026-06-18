@@ -162,6 +162,7 @@ export default function EquipePage() {
                 <TableHead>Nome</TableHead>
                 <TableHead>Cargo</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Condomínios</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Data de cadastro</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -182,6 +183,15 @@ export default function EquipePage() {
                   </TableCell>
                   <TableCell className={cn(!f.ativo && "opacity-60")}>{CARGO_LABEL[f.cargo]}</TableCell>
                   <TableCell className={cn("text-muted-foreground", !f.ativo && "opacity-60")}>{f.email}</TableCell>
+                  <TableCell className={cn("max-w-[200px]", !f.ativo && "opacity-60")}>
+                    {f.condominios?.length ? (
+                      <span className="line-clamp-2 text-sm text-muted-foreground">
+                        {f.condominios.map((c) => c.nome).join(", ")}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Todos</span>
+                    )}
+                  </TableCell>
                   <TableCell className={cn(!f.ativo && "opacity-60")}>
                     <FuncionarioStatusBadge ativo={f.ativo} />
                   </TableCell>

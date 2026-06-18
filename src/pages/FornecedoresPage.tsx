@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from "react"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
 import {
   Plus,
   Search,
@@ -61,7 +62,7 @@ export default function FornecedoresPage() {
   const debouncedSearch = useDebounce(search)
 
   const filters = { search: debouncedSearch || undefined, page, pageSize: 20 }
-  const { data: fornecedores, isLoading, isFetching, isError, refetch } = useFornecedores(filters)
+  const { data: fornecedores, isLoading, isError, refetch } = useFornecedores(filters)
   const { data: summaryData } = useFornecedores({ page: 1, pageSize: 2000 })
   const { data: contratosGlobais } = useContratosGlobais({ pageSize: 2000 })
   const createMutation = useCreateFornecedor()
@@ -109,7 +110,7 @@ export default function FornecedoresPage() {
         setPendingDelete(null)
       },
       onError: (err) => {
-        toast.error(err instanceof Error ? err.message : "Erro ao remover")
+        toast.error(getApiErrorMessage(err, "Erro ao remover"))
         setPendingDelete(null)
       },
     })
@@ -226,7 +227,7 @@ export default function FornecedoresPage() {
           </Button>
         </div>
       ) : (
-        <div className={`rounded-xl bg-white shadow-sm transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
+        <div className="rounded-xl bg-white shadow-sm">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -360,7 +361,10 @@ export default function FornecedoresPage() {
       {/* Form dialog */}
       <FornecedorForm
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open)
+          if (!open) setEditingFornecedor(null)
+        }}
         fornecedor={editingFornecedor}
         onSubmit={handleFormSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}

@@ -2,15 +2,13 @@ import { Pencil, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { brl, getMenorValorUnitario } from "../lib/cotacao-utils"
 import type { Cotacao } from "../types/compra.types"
-
-const brl = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
 interface MapaCotacoesProps {
   cotacoes: Cotacao[]
-  onSelecionar: (cotacaoId: string) => void
-  isSelecting: boolean
+  onSelecionar?: (cotacaoId: string) => void
+  isSelecting?: boolean
   onEdit?: (cotacao: Cotacao) => void
   onDelete?: (cotacaoId: string) => void
   isDeleting?: boolean
@@ -19,13 +17,12 @@ interface MapaCotacoesProps {
 export default function MapaCotacoes({
   cotacoes,
   onSelecionar,
-  isSelecting,
+  isSelecting = false,
   onEdit,
   onDelete,
   isDeleting,
 }: MapaCotacoesProps) {
-  const lowestTotal =
-    cotacoes.length > 0 ? Math.min(...cotacoes.map((c) => c.valorTotal)) : null
+  const menorValorUnitario = getMenorValorUnitario(cotacoes)
 
   if (cotacoes.length === 0) {
     return (
@@ -38,7 +35,7 @@ export default function MapaCotacoes({
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {cotacoes.map((c) => {
-        const isBest = lowestTotal !== null && c.valorTotal === lowestTotal
+        const isBest = menorValorUnitario !== null && c.valorUnitario === menorValorUnitario
         const selected = c.selecionada
         return (
           <div
@@ -64,6 +61,11 @@ export default function MapaCotacoes({
                   {isBest && (
                     <Badge className="bg-blue-600 text-white hover:bg-blue-600">
                       MELHOR OFERTA
+                    </Badge>
+                  )}
+                  {selected && !onSelecionar && (
+                    <Badge className="border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+                      Selecionada
                     </Badge>
                   )}
                 </div>
@@ -108,21 +110,23 @@ export default function MapaCotacoes({
                 </div>
               )}
             </dl>
-            <div className="mt-4">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "w-full",
-                  selected && "border-emerald-500 text-emerald-700 cursor-default",
-                )}
-                disabled={selected || isSelecting}
-                onClick={() => !selected && onSelecionar(c.id)}
-              >
-                {selected ? "Selecionada" : "Selecionar"}
-              </Button>
-            </div>
+            {onSelecionar && (
+              <div className="mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "w-full",
+                    selected && "border-emerald-500 text-emerald-700 cursor-default",
+                  )}
+                  disabled={selected || isSelecting}
+                  onClick={() => !selected && onSelecionar(c.id)}
+                >
+                  {selected ? "Selecionada" : "Selecionar"}
+                </Button>
+              </div>
+            )}
           </div>
         )
       })}

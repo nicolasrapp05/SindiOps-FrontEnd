@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Upload, X, Loader2, Download, ZoomIn, AlertCircle, Play, ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
 import { createPortal } from "react-dom"
 import type { MidiaOcorrencia } from "../types/ocorrencia.types"
 
@@ -86,8 +87,8 @@ function Lightbox({
       a.download = `midia-${state.index + 1}.${ext}`
       a.click()
       if (!blobSrc) URL.revokeObjectURL(objectUrl)
-    } catch {
-      toast.error("Erro ao baixar o arquivo")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Erro ao baixar o arquivo"))
     }
   }
 

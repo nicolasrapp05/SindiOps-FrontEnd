@@ -83,7 +83,7 @@ export default function ManutencoesPage() {
     [debouncedSearch, statusTab, tipoFilter, page],
   )
 
-  const { data, isLoading, isFetching, isError, refetch } = useSolicitacoesManutencao(
+  const { data, isLoading, isError, refetch } = useSolicitacoesManutencao(
     condominioId,
     filters,
   )
@@ -242,7 +242,7 @@ export default function ManutencoesPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className={`overflow-hidden rounded-xl bg-white shadow-sm transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
+          <div className="overflow-hidden rounded-xl bg-white shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -305,7 +305,6 @@ export default function ManutencoesPage() {
           <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
             <p className="text-sm text-muted-foreground">
               Página {page} de {totalPages}
-              {isFetching ? " · Atualizando…" : ""}
             </p>
             <div className="flex gap-2">
               <Button

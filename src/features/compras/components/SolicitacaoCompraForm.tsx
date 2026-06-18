@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import Combobox from "@/components/shared/Combobox"
+import { toastFormValidationError } from "@/lib/form-utils"
 import {
   COMPRA_CATEGORIA_LABEL,
   type CompraCategoria,
@@ -112,7 +113,7 @@ export default function SolicitacaoCompraForm({
         <DialogHeader>
           <DialogTitle>Nova solicitação de compra</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(submit)} className="space-y-4">
+        <form onSubmit={handleSubmit(submit, toastFormValidationError)} className="space-y-4">
           <div className="space-y-2">
             <Label>Categoria<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller

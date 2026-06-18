@@ -14,6 +14,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { toastFormValidationError } from "@/lib/form-utils"
 import type { Condominio, CreateCondominioRequest } from "../types/condominio.types"
 
 const optionalDate = z
@@ -22,7 +23,8 @@ const optionalDate = z
   .optional()
   .or(z.literal(""))
 
-const condominioSchema = z.object({
+const condominioSchema = z
+  .object({
   nome: z.string().min(1, "O nome é obrigatório"),
   enderecoRua: z.string().optional().or(z.literal("")),
   enderecoNumero: z.string().optional().or(z.literal("")),
@@ -32,6 +34,19 @@ const condominioSchema = z.object({
   dataEleicao: optionalDate,
   vencimentoMandato: optionalDate,
 })
+  .superRefine((data, ctx) => {
+    if (!data.dataEleicao || !data.vencimentoMandato) return
+
+    const eleicao = new Date(data.dataEleicao)
+    const vencimento = new Date(data.vencimentoMandato)
+    if (vencimento <= eleicao) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Vencimento do mandato deve ser posterior à data de eleição",
+        path: ["vencimentoMandato"],
+      })
+    }
+  })
 
 type FormData = z.infer<typeof condominioSchema>
 
@@ -126,7 +141,7 @@ export default function CondominioForm({
         </DialogHeader>
 
         <form
-          onSubmit={handleSubmit(handleFormSubmit)}
+          onSubmit={handleSubmit(handleFormSubmit, toastFormValidationError)}
           className="space-y-4 py-2"
         >
           {/* Nome */}

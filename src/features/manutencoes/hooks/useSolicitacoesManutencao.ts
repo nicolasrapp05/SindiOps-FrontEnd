@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
+import { upsertPaginatedItem } from "@/lib/query-cache"
 import {
   getSolicitacoesManutencao,
   createSolicitacaoManutencao,
@@ -8,6 +10,7 @@ import {
 import type {
   CreateSolicitacaoManutencaoRequest,
   SolicitacaoFilters,
+  SolicitacaoManutencao,
   SolicitacaoStatus,
 } from "../types/solicitacao-manutencao.types"
 
@@ -24,12 +27,14 @@ export function useCreateSolicitacaoManutencao() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: CreateSolicitacaoManutencaoRequest) => createSolicitacaoManutencao(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["solicitacoes-manutencao"] })
+    onSuccess: (solicitacao) => {
+      upsertPaginatedItem<SolicitacaoManutencao>(qc, ["solicitacoes-manutencao"], solicitacao, {
+        prependIfMissing: true,
+      })
       toast.success("Solicitação criada com sucesso")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao criar solicitação"),
+      toast.error(getApiErrorMessage(err, "Erro ao criar solicitação")),
   })
 }
 
@@ -45,11 +50,11 @@ export function useUpdateSolicitacaoStatus() {
       status: SolicitacaoStatus
       dataConclusao?: string
     }) => updateSolicitacaoStatus(id, status, dataConclusao),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["solicitacoes-manutencao"] })
+    onSuccess: (solicitacao) => {
+      upsertPaginatedItem<SolicitacaoManutencao>(qc, ["solicitacoes-manutencao"], solicitacao)
       toast.success("Status atualizado")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao atualizar status"),
+      toast.error(getApiErrorMessage(err, "Erro ao atualizar status")),
   })
 }

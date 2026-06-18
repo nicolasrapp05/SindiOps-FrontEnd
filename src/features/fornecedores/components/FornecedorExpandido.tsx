@@ -1,5 +1,6 @@
 import { MapPin, Globe, AtSign, Wrench, FileText, Calendar } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { toExternalUrl, toInstagramUrl } from "@/lib/utils"
 import { useFornecedor } from "../hooks/useFornecedores"
 import { useContratosPorFornecedor } from "@/features/contratos/hooks/useContratos"
 import ContratoStatusBadge from "@/features/contratos/components/ContratoStatusBadge"
@@ -76,7 +77,7 @@ export default function FornecedorExpandido({ fornecedorId }: FornecedorExpandid
 
         {fornecedor.website && (
           <a
-            href={fornecedor.website}
+            href={toExternalUrl(fornecedor.website)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-sm text-emerald-700 hover:underline"
@@ -88,7 +89,7 @@ export default function FornecedorExpandido({ fornecedorId }: FornecedorExpandid
 
         {fornecedor.instagram && (
           <a
-            href={`https://instagram.com/${fornecedor.instagram.replace("@", "")}`}
+            href={toInstagramUrl(fornecedor.instagram)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"

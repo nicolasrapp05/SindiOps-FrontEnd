@@ -12,6 +12,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -96,10 +97,14 @@ function AddUnidadesPopover({ blocoId, condominioId, onClose }: AddUnidadesPopov
 
   async function handleIndividual() {
     if (!numero.trim()) return
-    await createUnidade.mutateAsync({ blocoId, numero: numero.trim() })
-    toast.success(`Unidade ${numero.trim()} criada`)
-    setNumero("")
-    onClose()
+    try {
+      await createUnidade.mutateAsync({ blocoId, numero: numero.trim() })
+      toast.success(`Unidade ${numero.trim()} criada`)
+      setNumero("")
+      onClose()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Erro ao criar unidade"))
+    }
   }
 
   async function handleLote() {
@@ -109,11 +114,15 @@ function AddUnidadesPopover({ blocoId, condominioId, onClose }: AddUnidadesPopov
       toast.error("Intervalo inválido")
       return
     }
-    for (let i = start; i <= end; i++) {
-      await createUnidade.mutateAsync({ blocoId, numero: `${prefix}${i}` })
+    try {
+      for (let i = start; i <= end; i++) {
+        await createUnidade.mutateAsync({ blocoId, numero: `${prefix}${i}` })
+      }
+      toast.success(`${end - start + 1} unidades criadas`)
+      onClose()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Erro ao criar unidades"))
     }
-    toast.success(`${end - start + 1} unidades criadas`)
-    onClose()
   }
 
   return (
@@ -226,11 +235,12 @@ function UnidadeChip({ unidade, blocoId, condominioId }: UnidadeChipProps) {
       {
         onSuccess: () => toast.success(`Unidade ${unidade.numero} removida`),
         onError: (err: unknown) => {
-          const msg =
-            err instanceof Error && err.message.includes("moradores")
+          const apiMsg = getApiErrorMessage(err, "Erro ao remover unidade")
+          toast.error(
+            apiMsg.includes("moradores")
               ? "Não é possível remover: há moradores vinculados a esta unidade"
-              : "Erro ao remover unidade"
-          toast.error(msg)
+              : apiMsg,
+          )
         },
       },
     )
@@ -249,7 +259,8 @@ function UnidadeChip({ unidade, blocoId, condominioId }: UnidadeChipProps) {
                 toast.success("Unidade renomeada")
                 setEditando(false)
               },
-              onError: () => toast.error("Erro ao renomear unidade"),
+              onError: (err) =>
+                toast.error(getApiErrorMessage(err, "Erro ao renomear unidade")),
             },
           )
         }
@@ -304,11 +315,12 @@ function BlocoRow({ bloco, condominioId, autoExpand }: BlocoRowProps) {
     deleteBloco.mutate(bloco.id, {
       onSuccess: () => toast.success(`Bloco ${bloco.nome} removido`),
       onError: (err: unknown) => {
-        const msg =
-          err instanceof Error && err.message.includes("moradores")
+        const apiMsg = getApiErrorMessage(err, "Erro ao remover bloco")
+        toast.error(
+          apiMsg.includes("moradores")
             ? "Não é possível remover: há moradores vinculados a este bloco"
-            : "Erro ao remover bloco"
-        toast.error(msg)
+            : apiMsg,
+        )
         setConfirmDeleteBloco(false)
       },
     })
@@ -340,7 +352,8 @@ function BlocoRow({ bloco, condominioId, autoExpand }: BlocoRowProps) {
                       toast.success("Bloco renomeado")
                       setEditandoNome(false)
                     },
-                    onError: () => toast.error("Erro ao renomear bloco"),
+                    onError: (err) =>
+                      toast.error(getApiErrorMessage(err, "Erro ao renomear bloco")),
                   },
                 )
               }
@@ -467,7 +480,7 @@ export default function EstruturaCondominio({
         setAddingBloco(false)
         toast.success("Bloco criado com sucesso")
       },
-      onError: () => toast.error("Erro ao criar bloco"),
+      onError: (err) => toast.error(getApiErrorMessage(err, "Erro ao criar bloco")),
     })
   }
 

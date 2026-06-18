@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select"
 import { get } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import { toastFormValidationError } from "@/lib/form-utils"
 import {
   Tooltip,
   TooltipContent,
@@ -146,13 +147,15 @@ export function TemplateEditor({
         </DialogHeader>
 
         <form
-          onSubmit={handleSubmit((data) =>
-            onSubmit({
-              nome: data.nome,
-              tipo: data.tipo,
-              assunto: data.assunto,
-              corpo: data.corpo,
-            }),
+          onSubmit={handleSubmit(
+            (data) =>
+              onSubmit({
+                nome: data.nome,
+                tipo: data.tipo,
+                assunto: data.assunto,
+                corpo: data.corpo,
+              }),
+            toastFormValidationError,
           )}
           className="space-y-4"
         >

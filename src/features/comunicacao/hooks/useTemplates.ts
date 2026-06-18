@@ -1,5 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
+import { removeListItem, setDetailCache, upsertListItem } from "@/lib/query-cache"
 import {
   getTemplates,
   getTemplate,
@@ -7,12 +9,13 @@ import {
   updateTemplate,
   deleteTemplate,
 } from "../services/templates.service"
-import type { CreateTemplateRequest } from "../types/template.types"
+import type { CreateTemplateRequest, EmailTemplate } from "../types/template.types"
 
 export function useTemplates(tipo?: string) {
   return useQuery({
     queryKey: ["email-templates", tipo],
     queryFn: () => getTemplates(tipo),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -28,12 +31,12 @@ export function useCreateTemplate() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: CreateTemplateRequest) => createTemplate(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["email-templates"] })
+    onSuccess: (template) => {
+      upsertListItem<EmailTemplate>(qc, ["email-templates"], template, { prependIfMissing: true })
       toast.success("Template criado com sucesso")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao criar template"),
+      toast.error(getApiErrorMessage(err, "Erro ao criar template")),
   })
 }
 
@@ -42,12 +45,13 @@ export function useUpdateTemplate() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: CreateTemplateRequest }) =>
       updateTemplate(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["email-templates"] })
+    onSuccess: (template) => {
+      upsertListItem<EmailTemplate>(qc, ["email-templates"], template)
+      setDetailCache(qc, ["email-templates", "detail", template.id], template)
       toast.success("Template atualizado com sucesso")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao atualizar template"),
+      toast.error(getApiErrorMessage(err, "Erro ao atualizar template")),
   })
 }
 
@@ -55,11 +59,12 @@ export function useDeleteTemplate() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteTemplate(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["email-templates"] })
+    onSuccess: (_data, id) => {
+      removeListItem<EmailTemplate>(qc, ["email-templates"], id)
+      qc.removeQueries({ queryKey: ["email-templates", "detail", id] })
       toast.success("Template removido com sucesso")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao remover template"),
+      toast.error(getApiErrorMessage(err, "Erro ao remover template")),
   })
 }

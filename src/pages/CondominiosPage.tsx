@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Plus, Building2, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -52,7 +53,7 @@ export default function CondominiosPage() {
         setPendingDelete(null)
       },
       onError: (err) => {
-        toast.error(err instanceof Error ? err.message : "Erro ao remover")
+        toast.error(getApiErrorMessage(err, "Erro ao remover"))
         setPendingDelete(null)
       },
     })
@@ -68,7 +69,7 @@ export default function CondominiosPage() {
             setFormOpen(false)
           },
           onError: (err) =>
-            toast.error(err instanceof Error ? err.message : "Erro ao atualizar"),
+            toast.error(getApiErrorMessage(err, "Erro ao atualizar")),
         },
       )
     } else {
@@ -78,7 +79,7 @@ export default function CondominiosPage() {
           setFormOpen(false)
         },
         onError: (err) =>
-          toast.error(err instanceof Error ? err.message : "Erro ao cadastrar"),
+          toast.error(getApiErrorMessage(err, "Erro ao cadastrar")),
       })
     }
   }

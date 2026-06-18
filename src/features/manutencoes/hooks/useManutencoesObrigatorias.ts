@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { getApiErrorMessage } from "@/lib/api"
+import {
+  removePaginatedItem,
+  upsertPaginatedItem,
+} from "@/lib/query-cache"
 import {
   getManutencoesObrigatorias,
   createManutencaoObrigatoria,
@@ -10,6 +15,7 @@ import {
 import type {
   CreateManutencaoObrigatoriaRequest,
   ManutencaoFilters,
+  ManutencaoObrigatoria,
   RealizarManutencaoRequest,
 } from "../types/manutencao-obrigatoria.types"
 
@@ -30,12 +36,14 @@ export function useCreateManutencaoObrigatoria() {
   return useMutation({
     mutationFn: (data: CreateManutencaoObrigatoriaRequest) =>
       createManutencaoObrigatoria(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["manutencoes-obrigatorias"] })
+    onSuccess: (manutencao) => {
+      upsertPaginatedItem<ManutencaoObrigatoria>(qc, ["manutencoes-obrigatorias"], manutencao, {
+        prependIfMissing: true,
+      })
       toast.success("Manutenção cadastrada com sucesso")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao cadastrar manutenção"),
+      toast.error(getApiErrorMessage(err, "Erro ao cadastrar manutenção")),
   })
 }
 
@@ -44,12 +52,12 @@ export function useUpdateManutencaoObrigatoria() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: CreateManutencaoObrigatoriaRequest }) =>
       updateManutencaoObrigatoria(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["manutencoes-obrigatorias"] })
+    onSuccess: (manutencao) => {
+      upsertPaginatedItem<ManutencaoObrigatoria>(qc, ["manutencoes-obrigatorias"], manutencao)
       toast.success("Manutenção atualizada com sucesso")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao atualizar manutenção"),
+      toast.error(getApiErrorMessage(err, "Erro ao atualizar manutenção")),
   })
 }
 
@@ -58,12 +66,12 @@ export function useRealizarManutencao() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: RealizarManutencaoRequest }) =>
       realizarManutencao(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["manutencoes-obrigatorias"] })
+    onSuccess: (manutencao) => {
+      upsertPaginatedItem<ManutencaoObrigatoria>(qc, ["manutencoes-obrigatorias"], manutencao)
       toast.success("Manutenção registrada com sucesso")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao registrar realização"),
+      toast.error(getApiErrorMessage(err, "Erro ao registrar realização")),
   })
 }
 
@@ -71,11 +79,11 @@ export function useDeleteManutencaoObrigatoria() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteManutencaoObrigatoria(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["manutencoes-obrigatorias"] })
+    onSuccess: (_data, id) => {
+      removePaginatedItem<ManutencaoObrigatoria>(qc, ["manutencoes-obrigatorias"], id)
       toast.success("Manutenção removida com sucesso")
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Erro ao remover manutenção"),
+      toast.error(getApiErrorMessage(err, "Erro ao remover manutenção")),
   })
 }

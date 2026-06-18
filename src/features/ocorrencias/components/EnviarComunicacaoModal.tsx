@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import CurrencyInput from "@/components/shared/CurrencyInput"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
@@ -60,7 +61,7 @@ export default function EnviarComunicacaoModal({
   const [selectedTemplateId, setSelectedTemplateId] = useState("")
   const [assunto, setAssunto] = useState("")
   const [corpo, setCorpo] = useState("")
-  const [valorMulta, setValorMulta] = useState("")
+  const [valorMulta, setValorMulta] = useState<number | undefined>()
   const [prazoResposta, setPrazoResposta] = useState("")
 
   // ── Queries ────────────────────────────────────────────────────────────────
@@ -94,7 +95,7 @@ export default function EnviarComunicacaoModal({
       setSelectedTemplateId("")
       setAssunto("")
       setCorpo("")
-      setValorMulta("")
+      setValorMulta(undefined)
       setPrazoResposta("")
     }
   }, [open])
@@ -103,7 +104,7 @@ export default function EnviarComunicacaoModal({
   useEffect(() => {
     setAssunto("")
     setCorpo("")
-    setValorMulta("")
+    setValorMulta(undefined)
     setPrazoResposta("")
   }, [selectedTemplateId])
 
@@ -126,7 +127,7 @@ export default function EnviarComunicacaoModal({
 
   // Tokens whose values are provided via dedicated input fields — resolved by backend
   const inputProvidedTokens: Record<string, boolean> = {
-    "{{valor_multa}}": !!valorMulta,
+    "{{valor_multa}}": valorMulta != null && valorMulta > 0,
     "{{prazo_resposta}}": !!prazoResposta,
   }
   const unresolvedVars = VARIAVEIS.filter((v) => corpo.includes(v) && !inputProvidedTokens[v])
@@ -146,7 +147,7 @@ export default function EnviarComunicacaoModal({
           moradorId: moradorPadrao.id,
           assuntoEditado: assunto,
           corpoEditado: corpo,
-          ...(valorMulta ? { valorMulta: parseFloat(valorMulta) } : {}),
+          ...(valorMulta != null && valorMulta > 0 ? { valorMulta } : {}),
           ...(prazoResposta ? { prazoResposta } : {}),
         },
       },
@@ -273,14 +274,11 @@ export default function EnviarComunicacaoModal({
 
             {selectedTemplate?.tipo === "multa" && (
               <div className="space-y-1.5">
-                <Label>Valor da Multa (R$)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0,00"
+                <Label>Valor da multa</Label>
+                <CurrencyInput
+                  allowEmpty
                   value={valorMulta}
-                  onChange={(e) => setValorMulta(e.target.value)}
+                  onValueChange={setValorMulta}
                 />
               </div>
             )}
