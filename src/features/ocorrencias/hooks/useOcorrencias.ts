@@ -93,10 +93,13 @@ export function useUploadMidia() {
 }
 
 export function useEnviarComunicacao() {
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ ocorrenciaId, data }: { ocorrenciaId: string; data: EnviarComunicacaoRequest }) =>
       enviarComunicacao(ocorrenciaId, data),
-    onSuccess: () => {
+    onSuccess: (_data, { ocorrenciaId }) => {
+      qc.invalidateQueries({ queryKey: ["email-logs"] })
+      qc.invalidateQueries({ queryKey: ["ocorrencias", "detail", ocorrenciaId] })
       toast.success("Email enviado com sucesso")
     },
     onError: (err) =>

@@ -70,38 +70,53 @@ export function removePaginatedItem<T extends HasStringId>(
   )
 }
 
-/** Atualiza ou insere um item em listas simples (não paginadas). */
+/** Atualiza ou insere um item em listas simples (não paginadas) — query key exata. */
 export function upsertListItem<T extends HasStringId>(
   qc: QueryClient,
-  queryKeyPrefix: QueryKey,
+  queryKey: QueryKey,
   item: T,
   options?: { prependIfMissing?: boolean },
 ) {
-  qc.setQueriesData<T[]>(
-    { queryKey: queryKeyPrefix },
-    (old) => {
-      if (!old) return old
-      const idx = old.findIndex((x) => x.id === item.id)
-      if (idx >= 0) {
-        const next = [...old]
-        next[idx] = item
-        return next
-      }
-      if (!options?.prependIfMissing) return old
-      return [item, ...old]
-    },
-  )
+  qc.setQueryData<T[]>(queryKey, (old) => {
+    if (!Array.isArray(old)) {
+      return options?.prependIfMissing ? [item] : old
+    }
+    const idx = old.findIndex((x) => x.id === item.id)
+    if (idx >= 0) {
+      const next = [...old]
+      next[idx] = item
+      return next
+    }
+    if (!options?.prependIfMissing) return old
+    return [item, ...old]
+  })
 }
 
-/** Remove um item de listas simples. */
+/** Aplica patch parcial em um item de lista simples — query key exata. */
+export function patchListItem<T extends HasStringId>(
+  qc: QueryClient,
+  queryKey: QueryKey,
+  id: string,
+  patch: Partial<T>,
+) {
+  qc.setQueryData<T[]>(queryKey, (old) => {
+    if (!Array.isArray(old)) return old
+    const idx = old.findIndex((x) => x.id === id)
+    if (idx < 0) return old
+    const next = [...old]
+    next[idx] = { ...next[idx], ...patch }
+    return next
+  })
+}
+
+/** Remove um item de listas simples — query key exata. */
 export function removeListItem<T extends HasStringId>(
   qc: QueryClient,
-  queryKeyPrefix: QueryKey,
+  queryKey: QueryKey,
   id: string,
 ) {
-  qc.setQueriesData<T[]>(
-    { queryKey: queryKeyPrefix },
-    (old) => (old ? old.filter((x) => x.id !== id) : old),
+  qc.setQueryData<T[]>(queryKey, (old) =>
+    Array.isArray(old) ? old.filter((x) => x.id !== id) : old,
   )
 }
 

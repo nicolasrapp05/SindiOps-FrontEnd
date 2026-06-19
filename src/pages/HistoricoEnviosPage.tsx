@@ -11,7 +11,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -21,22 +20,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import Combobox from "@/components/shared/Combobox"
 import { TemplateTipoBadge } from "@/features/comunicacao/components/TemplateTipoBadge"
-import type { TemplateTipo } from "@/features/comunicacao/types/template.types"
+import { TEMPLATE_TIPO_LABEL, type TemplateTipo } from "@/features/comunicacao/types/template.types"
 import { StatusEntregaBadge } from "@/features/comunicacao/components/StatusEntregaBadge"
 import { useEmailLogs, useEmailLog } from "@/features/comunicacao/hooks/useEmailLogs"
-import { useTemplates } from "@/features/comunicacao/hooks/useTemplates"
-import type { EmailLogFilters, StatusEntrega } from "@/features/comunicacao/types/email-log.types"
-
-import type { EmailLog } from "@/features/comunicacao/types/email-log.types"
+import type { EmailLog, StatusEntrega } from "@/features/comunicacao/types/email-log.types"
+import { useDebounce } from "@/hooks/useDebounce"
 
 function ExpandedLogRow({ logId, log }: { logId: string; log: EmailLog }) {
   const { data: detail } = useEmailLog(logId)
@@ -83,89 +74,72 @@ const STATUS_OPTIONS: { value: StatusEntrega; label: string }[] = [
 ]
 
 export default function HistoricoEnviosPage() {
-  const [draftSearch, setDraftSearch] = useState("")
-  const [draftTemplateId, setDraftTemplateId] = useState("")
-  const [draftStatus, setDraftStatus] = useState<StatusEntrega | "">("")
-  const [draftDataInicio, setDraftDataInicio] = useState("")
-  const [draftDataFim, setDraftDataFim] = useState("")
-
-  const [appliedSearch, setAppliedSearch] = useState("")
-  const [appliedTemplateId, setAppliedTemplateId] = useState("")
-  const [appliedApi, setAppliedApi] = useState<EmailLogFilters>({
-    page: 1,
-    pageSize: PAGE_SIZE,
-  })
+  const [search, setSearch] = useState("")
+  const [templateTipo, setTemplateTipo] = useState<TemplateTipo | "">("")
+  const [statusFilter, setStatusFilter] = useState<StatusEntrega | "">("")
+  const [dataInicio, setDataInicio] = useState("")
+  const [dataFim, setDataFim] = useState("")
   const [page, setPage] = useState(1)
-
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const apiFilters: EmailLogFilters = useMemo(
+  const debouncedSearch = useDebounce(search)
+
+  const filters = useMemo(
     () => ({
-      ...appliedApi,
+      ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}),
+      ...(templateTipo ? { templateTipo } : {}),
+      ...(statusFilter ? { statusEntrega: statusFilter } : {}),
+      ...(dataInicio ? { dataInicio } : {}),
+      ...(dataFim ? { dataFim } : {}),
       page,
       pageSize: PAGE_SIZE,
     }),
-    [appliedApi, page],
+    [debouncedSearch, templateTipo, statusFilter, dataInicio, dataFim, page],
   )
 
-  const { data, isLoading, isError, refetch } = useEmailLogs(apiFilters)
-  const { data: templates } = useTemplates()
+  const { data, isLoading, isError, refetch, isFetching } = useEmailLogs(filters)
 
-  const logsFromApi = useMemo(() => (Array.isArray(data) ? data : []), [data])
-  const totalCount = (data as { totalCount?: number } | undefined)?.totalCount
+  const logs = data?.data ?? []
+  const totalCount = data?.totalCount ?? 0
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
-  const displayLogs = useMemo(() => {
-    let list = logsFromApi
-    if (appliedSearch.trim()) {
-      const q = appliedSearch.trim().toLowerCase()
-      list = list.filter(
-        (l) =>
-          l.morador.nome.toLowerCase().includes(q) ||
-          l.emailDestinatario.toLowerCase().includes(q),
-      )
-    }
-    if (appliedTemplateId) {
-      list = list.filter((l) => l.template?.id === appliedTemplateId)
-    }
-    return list
-  }, [logsFromApi, appliedSearch, appliedTemplateId])
+  const templateTipoOptions = useMemo(
+    () => [
+      { value: "", label: "Todos os templates" },
+      ...(Object.entries(TEMPLATE_TIPO_LABEL) as [TemplateTipo, string][]).map(
+        ([value, label]) => ({ value, label }),
+      ),
+    ],
+    [],
+  )
 
-  const totalPages =
-    totalCount != null ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : 1
+  const statusOptions = useMemo(
+    () => [
+      { value: "", label: "Todos os status" },
+      ...STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+    ],
+    [],
+  )
 
   const pctFmt = new Intl.NumberFormat("pt-BR", {
     style: "percent",
     maximumFractionDigits: 1,
   })
 
-  const totalEntregues = displayLogs.filter((l) => l.statusEntrega === "delivered").length
-  const falhasCriticas = displayLogs.filter((l) => l.statusEntrega === "failed").length
-  const taxaSucesso =
-    displayLogs.length > 0 ? totalEntregues / displayLogs.length : 0
+  const totalEntregues = logs.filter((l) => l.statusEntrega === "delivered").length
+  const falhasCriticas = logs.filter((l) => l.statusEntrega === "failed").length
+  const taxaSucesso = logs.length > 0 ? totalEntregues / logs.length : 0
 
-  const applyFilters = () => {
-    setAppliedSearch(draftSearch)
-    setAppliedTemplateId(draftTemplateId)
-    setAppliedApi({
-      statusEntrega: draftStatus || undefined,
-      dataInicio: draftDataInicio || undefined,
-      dataFim: draftDataFim || undefined,
-      page: 1,
-      pageSize: PAGE_SIZE,
-    })
-    setPage(1)
-  }
+  const resetPage = () => setPage(1)
 
-  const templateList = Array.isArray(templates) ? templates : []
-
-  if (isLoading) {
+  if (isLoading && !data) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-10 w-32" />
         </div>
-        <Skeleton className="h-24 rounded-xl" />
+        <Skeleton className="h-12 w-full max-w-3xl" />
         <Skeleton className="h-96 rounded-xl" />
       </div>
     )
@@ -196,91 +170,65 @@ export default function HistoricoEnviosPage() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <div className="space-y-2 xl:col-span-2">
-            <Label>Buscar (morador ou e-mail)</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <Input
-                className="pl-10"
-                placeholder="Nome ou e-mail..."
-                value={draftSearch}
-                onChange={(e) => setDraftSearch(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Template</Label>
-            <Select
-              value={draftTemplateId || "__all__"}
-              onValueChange={(v) => setDraftTemplateId(v === "__all__" ? "" : v)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">Todos os templates</SelectItem>
-                {templateList.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select
-              value={draftStatus || "__all__"}
-              onValueChange={(v) =>
-                setDraftStatus(v === "__all__" ? "" : (v as StatusEntrega))
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">Todos</SelectItem>
-                {STATUS_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="de">De</Label>
-            <Input
-              id="de"
-              type="date"
-              value={draftDataInicio}
-              onChange={(e) => setDraftDataInicio(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="ate">Até</Label>
-            <Input
-              id="ate"
-              type="date"
-              value={draftDataFim}
-              onChange={(e) => setDraftDataFim(e.target.value)}
-            />
-          </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="pl-10"
+            placeholder="Buscar morador ou e-mail…"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              resetPage()
+            }}
+          />
         </div>
-        <div>
-          <Button
-            type="button"
-            className="bg-emerald-700 hover:bg-emerald-800"
-            onClick={applyFilters}
-          >
-            Filtrar
-          </Button>
-        </div>
+        <Combobox
+          options={templateTipoOptions}
+          value={templateTipo}
+          onValueChange={(v) => {
+            setTemplateTipo(v as TemplateTipo | "")
+            resetPage()
+          }}
+          placeholder="Tipo de template…"
+          className="w-full sm:w-52"
+        />
+        <Combobox
+          options={statusOptions}
+          value={statusFilter}
+          onValueChange={(v) => {
+            setStatusFilter(v as StatusEntrega | "")
+            resetPage()
+          }}
+          placeholder="Buscar status…"
+          className="w-full sm:w-44"
+        />
+        <Input
+          type="date"
+          aria-label="Data inicial"
+          value={dataInicio}
+          onChange={(e) => {
+            setDataInicio(e.target.value)
+            resetPage()
+          }}
+          className="w-full sm:w-40"
+        />
+        <Input
+          type="date"
+          aria-label="Data final"
+          value={dataFim}
+          onChange={(e) => {
+            setDataFim(e.target.value)
+            resetPage()
+          }}
+          className="w-full sm:w-40"
+        />
+        {isFetching && (
+          <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+        )}
       </div>
 
-      {displayLogs.length === 0 ? (
+      {logs.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20 text-center">
           <div className="rounded-full bg-gray-100 p-4">
             <Mail className="h-8 w-8 text-gray-400" />
@@ -304,7 +252,7 @@ export default function HistoricoEnviosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {displayLogs.map((log) => (
+                {logs.map((log) => (
                   <Fragment key={log.id}>
                     <TableRow className="hover:bg-gray-50">
                       <TableCell>
@@ -377,7 +325,7 @@ export default function HistoricoEnviosPage() {
             <div className="flex items-center justify-between border-t px-4 py-3">
               <p className="text-sm text-gray-500">
                 Página {page} de {totalPages}
-                {totalCount != null && ` · ${totalCount} registros`}
+                {totalCount > 0 && ` · ${totalCount} registros`}
               </p>
               <div className="flex gap-1">
                 <Button

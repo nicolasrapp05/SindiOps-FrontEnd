@@ -1,6 +1,13 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+  type QueryClient,
+} from "@tanstack/react-query"
 import {
   patchDetailCache,
+  patchListItem,
   removeListItem,
   setDetailCache,
   upsertListItem,
@@ -21,9 +28,59 @@ import {
 } from "../services/condominios.service"
 import type { Bloco, Condominio, CreateCondominioRequest, Unidade } from "../types/condominio.types"
 
+const LIST_KEY = ["condominios"] as const
+
+function blocosKey(condominioId: string) {
+  return ["condominios", condominioId, "blocos"] as const
+}
+
+function detailKey(condominioId: string) {
+  return ["condominios", condominioId] as const
+}
+
+function getCondominioFromList(qc: QueryClient, condominioId: string) {
+  return qc.getQueryData<Condominio[]>(LIST_KEY)?.find((c) => c.id === condominioId)
+}
+
+/** Refetch blocos e lista após operações em massa (ex.: Configuração Rápida). */
+export function invalidateCondominioEstrutura(qc: QueryClient, condominioId: string) {
+  void qc.invalidateQueries({ queryKey: blocosKey(condominioId) })
+  void qc.invalidateQueries({ queryKey: LIST_KEY, exact: true })
+}
+
+function syncCondominioList(qc: QueryClient, condominio: Condominio) {
+  upsertListItem<Condominio>(qc, LIST_KEY, condominio)
+  setDetailCache(qc, detailKey(condominio.id), condominio)
+}
+
+function patchBlocosCache(
+  qc: QueryClient,
+  condominioId: string,
+  updater: (blocos: Bloco[]) => Bloco[],
+) {
+  const key = blocosKey(condominioId)
+  const old = qc.getQueryData<Bloco[]>(key)
+  if (old) {
+    qc.setQueryData<Bloco[]>(key, updater(old))
+  } else {
+    void qc.invalidateQueries({ queryKey: key })
+  }
+}
+
+function patchCondominioTotals(
+  qc: QueryClient,
+  condominioId: string,
+  patch: Partial<Pick<Condominio, "totalBlocos" | "totalUnidades">>,
+) {
+  patchListItem<Condominio>(qc, LIST_KEY, condominioId, patch)
+  patchDetailCache<Condominio>(qc, detailKey(condominioId), (old) =>
+    old ? { ...old, ...patch } : old,
+  )
+}
+
 export function useCondominios() {
   return useQuery({
-    queryKey: ["condominios"],
+    queryKey: LIST_KEY,
     queryFn: getCondominios,
     placeholderData: keepPreviousData,
   })
@@ -31,39 +88,10 @@ export function useCondominios() {
 
 export function useCondominio(id: string) {
   return useQuery({
-    queryKey: ["condominios", id],
+    queryKey: detailKey(id),
     queryFn: () => getCondominio(id),
     enabled: !!id,
   })
-}
-
-function syncCondominioList(qc: ReturnType<typeof useQueryClient>, condominio: Condominio) {
-  upsertListItem<Condominio>(qc, ["condominios"], condominio)
-  setDetailCache(qc, ["condominios", condominio.id], condominio)
-}
-
-function patchBlocosCache(
-  qc: ReturnType<typeof useQueryClient>,
-  condominioId: string,
-  updater: (blocos: Bloco[]) => Bloco[],
-) {
-  qc.setQueryData<Bloco[]>(["condominios", condominioId, "blocos"], (old) =>
-    old ? updater(old) : old,
-  )
-}
-
-function patchCondominioTotals(
-  qc: ReturnType<typeof useQueryClient>,
-  condominioId: string,
-  patch: Partial<Pick<Condominio, "totalBlocos" | "totalUnidades">>,
-) {
-  qc.setQueriesData<Condominio[]>({ queryKey: ["condominios"] }, (old) => {
-    if (!old) return old
-    return old.map((c) => (c.id === condominioId ? { ...c, ...patch } : c))
-  })
-  patchDetailCache<Condominio>(qc, ["condominios", condominioId], (old) =>
-    old ? { ...old, ...patch } : old,
-  )
 }
 
 export function useCreateCondominio() {
@@ -71,7 +99,7 @@ export function useCreateCondominio() {
   return useMutation({
     mutationFn: (data: CreateCondominioRequest) => createCondominio(data),
     onSuccess: (condominio) => {
-      upsertListItem<Condominio>(qc, ["condominios"], condominio, { prependIfMissing: true })
+      upsertListItem<Condominio>(qc, LIST_KEY, condominio, { prependIfMissing: true })
     },
   })
 }
@@ -92,16 +120,16 @@ export function useDeleteCondominio() {
   return useMutation({
     mutationFn: (id: string) => deleteCondominio(id),
     onSuccess: (_data, id) => {
-      removeListItem<Condominio>(qc, ["condominios"], id)
-      qc.removeQueries({ queryKey: ["condominios", id] })
-      qc.removeQueries({ queryKey: ["condominios", id, "blocos"] })
+      removeListItem<Condominio>(qc, LIST_KEY, id)
+      qc.removeQueries({ queryKey: detailKey(id) })
+      qc.removeQueries({ queryKey: blocosKey(id) })
     },
   })
 }
 
 export function useBlocos(condominioId: string) {
   return useQuery({
-    queryKey: ["condominios", condominioId, "blocos"],
+    queryKey: blocosKey(condominioId),
     queryFn: () => getBlocos(condominioId),
     enabled: !!condominioId,
     placeholderData: keepPreviousData,
@@ -115,7 +143,7 @@ export function useCreateBloco(condominioId: string) {
     onSuccess: (bloco) => {
       patchBlocosCache(qc, condominioId, (blocos) => [...blocos, bloco])
       patchCondominioTotals(qc, condominioId, {
-        totalBlocos: (qc.getQueryData<Condominio>(["condominios", condominioId])?.totalBlocos ?? 0) + 1,
+        totalBlocos: (getCondominioFromList(qc, condominioId)?.totalBlocos ?? 0) + 1,
       })
     },
   })
@@ -139,20 +167,14 @@ export function useDeleteBloco(condominioId: string) {
   return useMutation({
     mutationFn: (blocoId: string) => deleteBloco(condominioId, blocoId),
     onSuccess: (_data, blocoId) => {
-      const blocos = qc.getQueryData<Bloco[]>(["condominios", condominioId, "blocos"])
+      const blocos = qc.getQueryData<Bloco[]>(blocosKey(condominioId))
       const removed = blocos?.find((b) => b.id === blocoId)
       patchBlocosCache(qc, condominioId, (items) => items.filter((b) => b.id !== blocoId))
       if (removed) {
+        const current = getCondominioFromList(qc, condominioId)
         patchCondominioTotals(qc, condominioId, {
-          totalBlocos: Math.max(
-            0,
-            (qc.getQueryData<Condominio>(["condominios", condominioId])?.totalBlocos ?? 1) - 1,
-          ),
-          totalUnidades: Math.max(
-            0,
-            (qc.getQueryData<Condominio>(["condominios", condominioId])?.totalUnidades ?? 0) -
-              removed.unidades.length,
-          ),
+          totalBlocos: Math.max(0, (current?.totalBlocos ?? 1) - 1),
+          totalUnidades: Math.max(0, (current?.totalUnidades ?? 0) - removed.unidades.length),
         })
       }
     },
@@ -171,8 +193,7 @@ export function useCreateUnidade(condominioId: string) {
         ),
       )
       patchCondominioTotals(qc, condominioId, {
-        totalUnidades:
-          (qc.getQueryData<Condominio>(["condominios", condominioId])?.totalUnidades ?? 0) + 1,
+        totalUnidades: (getCondominioFromList(qc, condominioId)?.totalUnidades ?? 0) + 1,
       })
     },
   })
@@ -221,7 +242,7 @@ export function useDeleteUnidade(condominioId: string) {
       patchCondominioTotals(qc, condominioId, {
         totalUnidades: Math.max(
           0,
-          (qc.getQueryData<Condominio>(["condominios", condominioId])?.totalUnidades ?? 1) - 1,
+          (getCondominioFromList(qc, condominioId)?.totalUnidades ?? 1) - 1,
         ),
       })
     },

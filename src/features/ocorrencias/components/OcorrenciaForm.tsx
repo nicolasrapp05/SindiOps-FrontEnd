@@ -182,6 +182,24 @@ export default function OcorrenciaForm({
             <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
               Localização e morador (opcional)
             </p>
+            <div className="space-y-1.5">
+              <Label>Morador</Label>
+              <Controller
+                control={control}
+                name="moradorId"
+                render={({ field }) => (
+                  <Combobox
+                    options={[
+                      { value: "", label: "Nenhum" },
+                      ...moradores.map((m) => ({ value: m.id, label: m.nome })),
+                    ]}
+                    value={field.value || ""}
+                    onValueChange={handleMoradorChange}
+                    placeholder="Buscar morador..."
+                  />
+                )}
+              />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Bloco</Label>
@@ -220,24 +238,6 @@ export default function OcorrenciaForm({
                   )}
                 />
               </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Morador</Label>
-              <Controller
-                control={control}
-                name="moradorId"
-                render={({ field }) => (
-                  <Combobox
-                    options={[
-                      { value: "", label: "Nenhum" },
-                      ...moradores.map((m) => ({ value: m.id, label: m.nome })),
-                    ]}
-                    value={field.value || ""}
-                    onValueChange={handleMoradorChange}
-                    placeholder="Buscar morador..."
-                  />
-                )}
-              />
             </div>
           </div>
 

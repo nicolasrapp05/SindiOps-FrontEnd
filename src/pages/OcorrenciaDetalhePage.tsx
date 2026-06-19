@@ -236,7 +236,7 @@ export default function OcorrenciaDetalhePage() {
               <div className="mt-3 space-y-1 border-t pt-3">
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <Phone className="h-3 w-3" />
-                  <span>—</span>
+                  <span>{oc.morador.telefone || "—"}</span>
                 </div>
                 <Button variant="link" size="sm" className="h-auto p-0 text-xs text-emerald-700" onClick={() => navigate(`/moradores`)}>
                   Ver perfil completo

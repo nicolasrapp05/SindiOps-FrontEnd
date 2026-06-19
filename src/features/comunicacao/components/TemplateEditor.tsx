@@ -87,8 +87,8 @@ export function TemplateEditor({
   const tokenTextareaRef = useRef<TokenTextareaHandle>(null)
 
   const { data: templateDetail, isLoading: isLoadingDetail } = useQuery({
-    queryKey: ["email-template-detail", template?.id],
-    queryFn: () => get<{ corpo: string; assunto: string }>(`/email-templates/${template!.id}`),
+    queryKey: ["email-templates", "detail", template?.id],
+    queryFn: () => get<EmailTemplate>(`/email-templates/${template!.id}`),
     enabled: open && !!template?.id,
     staleTime: 0,
   })
@@ -225,6 +225,11 @@ export function TemplateEditor({
                   control={control}
                   render={({ field }) => (
                     <TokenTextarea
+                      key={
+                        isEdit
+                          ? `${template?.id}-${templateDetail ? "ready" : "loading"}`
+                          : "new"
+                      }
                       ref={tokenTextareaRef}
                       value={field.value}
                       onChange={field.onChange}

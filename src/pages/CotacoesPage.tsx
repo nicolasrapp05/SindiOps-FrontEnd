@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDebounce } from "@/hooks/useDebounce"
+import { formatCargoLabel } from "@/types"
 import {
   Table,
   TableBody,
@@ -341,7 +342,16 @@ export default function CotacoesPage() {
                           {row.item}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">{row.quantidade}</TableCell>
-                        <TableCell>{row.solicitadoPor.nome}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-0.5">
+                            <span>{row.solicitadoPor.nome}</span>
+                            {row.solicitadoPor.cargo ? (
+                              <span className="text-xs text-muted-foreground">
+                                {formatCargoLabel(row.solicitadoPor.cargo)}
+                              </span>
+                            ) : null}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right tabular-nums">
                           {cotacaoTooltip ? (
                             <Tooltip>

@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import { supabaseClient, isSupabaseConfigured } from "@/lib/supabase"
+import { authUserFromPerfil, authUserFromSupabase } from "@/lib/auth-user"
 import type { AuthUser } from "@/types"
 
 interface AuthState {
@@ -11,11 +12,17 @@ interface AuthState {
   setSession: (user: AuthUser, token: string, refreshToken: string) => void
   clearSession: () => void
   initSession: () => Promise<void>
+  hydrateUserFromApi: () => Promise<void>
 }
 
 const REFRESH_TOKEN_KEY = "sindiops_refresh_token"
 
-export const useAuthStore = create<AuthState>((set) => ({
+async function fetchPerfilFromApi() {
+  const { getPerfil } = await import("@/features/configuracoes/services/perfil.service")
+  return getPerfil()
+}
+
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   accessToken: null,
   isAuthenticated: false,
@@ -31,6 +38,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user: null, accessToken: null, isAuthenticated: false })
   },
 
+  hydrateUserFromApi: async () => {
+    if (!get().accessToken) return
+    try {
+      const perfil = await fetchPerfilFromApi()
+      set({ user: authUserFromPerfil(perfil) })
+    } catch {
+      /* mantém dados da sessão Supabase como fallback */
+    }
+  },
+
   initSession: async () => {
     if (!isSupabaseConfigured) {
       set({ isLoading: false })
@@ -40,17 +57,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data } = await supabaseClient.auth.getSession()
       if (data.session) {
-        const meta = data.session.user.user_metadata
+        const user = authUserFromSupabase(data.session.user)
         set({
-          user: {
-            id: data.session.user.id,
-            email: data.session.user.email ?? "",
-            nome: (meta?.nome as string) ?? "",
-            cargo: (meta?.cargo as AuthUser["cargo"]) ?? "sindico",
-          },
+          user,
           accessToken: data.session.access_token,
           isAuthenticated: true,
         })
+        await get().hydrateUserFromApi()
       }
     } catch {
       /* session inválida — permanece deslogado */

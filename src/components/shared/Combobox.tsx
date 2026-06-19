@@ -74,6 +74,7 @@ export default function Combobox({
     onValueChange(optionValue)
     setOpen(false)
     setSearch("")
+    inputRef.current?.blur()
   }
 
   // Quando fechado: mostra o label selecionado; quando aberto: mostra o termo de busca

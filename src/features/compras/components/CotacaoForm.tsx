@@ -38,10 +38,18 @@ const schema = z
     unidade: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    if (!data.fornecedorId && !data.nomeEmpresa?.trim()) {
+    const hasFornecedor = !!data.fornecedorId?.trim()
+    if (!hasFornecedor && !data.nomeEmpresa?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Informe o nome da empresa ou selecione um fornecedor cadastrado",
+        path: ["nomeEmpresa"],
+      })
+    }
+    if (hasFornecedor && data.nomeEmpresa?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Nome da empresa não deve ser informado quando um fornecedor está selecionado",
         path: ["nomeEmpresa"],
       })
     }
@@ -82,6 +90,7 @@ export default function CotacaoForm({
     reset,
     control,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -100,6 +109,9 @@ export default function CotacaoForm({
 
   const valorUnitario = watch("valorUnitario")
   const quantidade = watch("quantidade")
+  const fornecedorId = watch("fornecedorId")
+  const selectedFornecedor = fornecedoresList.find((f) => f.id === fornecedorId)
+  const hasFornecedor = !!fornecedorId?.trim()
   const quantidadeEfetiva = resolveQuantidadeCotacao(quantidade, quantidadeSolicitacao)
   const valorTotalCalculado = calcValorTotalCotacao(
     Number.isFinite(valorUnitario) ? valorUnitario : 0,
@@ -111,7 +123,7 @@ export default function CotacaoForm({
       if (cotacao) {
         reset({
           fornecedorId: cotacao.fornecedor?.id ?? "",
-          nomeEmpresa: cotacao.nomeEmpresa ?? "",
+          nomeEmpresa: cotacao.fornecedor?.id ? "" : (cotacao.nomeEmpresa ?? ""),
           nomeContato: cotacao.nomeContato ?? "",
           nomeResponsavel: cotacao.nomeResponsavel ?? "",
           valorUnitario: cotacao.valorUnitario,
@@ -136,11 +148,26 @@ export default function CotacaoForm({
     }
   }, [open, cotacao, quantidadeSolicitacao, reset])
 
+  const applyFornecedorSelection = (id: string) => {
+    setValue("nomeEmpresa", "")
+
+    if (!id) {
+      setValue("nomeContato", "")
+      return
+    }
+
+    const fornecedor = fornecedoresList.find((f) => f.id === id)
+    if (!fornecedor) return
+
+    setValue("nomeContato", fornecedor.nomeContato ?? "")
+  }
+
   const submit = (data: FormData) => {
     const qtd = resolveQuantidadeCotacao(data.quantidade, quantidadeSolicitacao)
+    const linkedFornecedor = !!data.fornecedorId?.trim()
     onSubmit({
-      fornecedorId: data.fornecedorId?.trim() || undefined,
-      nomeEmpresa: data.nomeEmpresa?.trim() || undefined,
+      fornecedorId: linkedFornecedor ? data.fornecedorId!.trim() : undefined,
+      nomeEmpresa: linkedFornecedor ? undefined : data.nomeEmpresa?.trim() || undefined,
       nomeContato: data.nomeContato?.trim() || undefined,
       nomeResponsavel: data.nomeResponsavel?.trim() || undefined,
       valorUnitario: data.valorUnitario,
@@ -168,7 +195,10 @@ export default function CotacaoForm({
                 <Combobox
                   options={fornecedorOptions}
                   value={field.value || ""}
-                  onValueChange={field.onChange}
+                  onValueChange={(id) => {
+                    field.onChange(id)
+                    applyFornecedorSelection(id)
+                  }}
                   placeholder="Selecione (opcional)"
                 />
               )}
@@ -176,15 +206,31 @@ export default function CotacaoForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="nomeEmpresa">
+            <Label htmlFor={hasFornecedor ? undefined : "nomeEmpresa"}>
               Nome da empresa{" "}
-              <span className="text-xs text-muted-foreground">(obrigatório se sem fornecedor)</span>
+              {!hasFornecedor && (
+                <span className="text-xs text-muted-foreground">(obrigatório se sem fornecedor)</span>
+              )}
             </Label>
-            <Input
-              id="nomeEmpresa"
-              {...register("nomeEmpresa")}
-              placeholder="Ex: Distribuidora ABC"
-            />
+            {hasFornecedor ? (
+              <>
+                <div
+                  id="nomeEmpresa"
+                  className="flex h-8 items-center rounded-lg border border-input bg-muted/50 px-2.5 text-sm text-foreground"
+                >
+                  {selectedFornecedor?.nome ?? cotacao?.fornecedor?.nome ?? "—"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Vinculado ao fornecedor selecionado
+                </p>
+              </>
+            ) : (
+              <Input
+                id="nomeEmpresa"
+                {...register("nomeEmpresa")}
+                placeholder="Ex: Distribuidora ABC"
+              />
+            )}
             {errors.nomeEmpresa && (
               <p className="text-xs text-destructive">{errors.nomeEmpresa.message}</p>
             )}

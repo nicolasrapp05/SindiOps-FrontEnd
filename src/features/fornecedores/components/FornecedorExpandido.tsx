@@ -1,6 +1,6 @@
 import { MapPin, Globe, AtSign, Wrench, FileText, Calendar } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { toExternalUrl, toInstagramUrl } from "@/lib/utils"
+import { cn, toExternalUrl, toInstagramUrl } from "@/lib/utils"
 import { useFornecedor } from "../hooks/useFornecedores"
 import { useContratosPorFornecedor } from "@/features/contratos/hooks/useContratos"
 import ContratoStatusBadge from "@/features/contratos/components/ContratoStatusBadge"
@@ -153,13 +153,29 @@ export default function FornecedorExpandido({ fornecedorId }: FornecedorExpandid
               {servicos.map((s) => (
                 <div
                   key={s.id}
-                  className="flex items-center gap-2 rounded-lg border bg-white p-3"
+                  className="flex items-start gap-2 rounded-lg border bg-white p-3"
                 >
-                  <Wrench className="h-4 w-4 shrink-0 text-gray-400" />
-                  <p className="text-sm text-gray-700">
-                    {s.descricao || s.tipo}
-                    {s.quantidade ? ` (Qtd: ${s.quantidade})` : ""}
-                  </p>
+                  <Wrench className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                  <div className="min-w-0 flex-1">
+                    {s.tipo ? (
+                      <p className="break-words text-sm font-medium text-gray-800">{s.tipo}</p>
+                    ) : null}
+                    {s.descricao ? (
+                      <p
+                        className={cn(
+                          "break-words text-sm whitespace-pre-wrap",
+                          s.tipo ? "mt-1 text-gray-600" : "font-medium text-gray-800",
+                        )}
+                      >
+                        {s.descricao}
+                      </p>
+                    ) : !s.tipo ? (
+                      <p className="text-sm font-medium text-gray-800">Serviço</p>
+                    ) : null}
+                    {s.quantidade != null && (
+                      <p className="mt-1 text-xs text-gray-400">Qtd: {s.quantidade}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

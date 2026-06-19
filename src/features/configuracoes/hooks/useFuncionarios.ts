@@ -51,7 +51,11 @@ export function useAtivarFuncionario() {
   return useMutation({
     mutationFn: (id: string) => ativarFuncionario(id),
     onSuccess: (funcionario) => {
-      upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario)
+      if (funcionario) {
+        upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario)
+      } else {
+        qc.invalidateQueries({ queryKey: ["funcionarios"] })
+      }
       toast.success("Funcionário ativado")
     },
     onError: (err) =>
@@ -64,7 +68,11 @@ export function useDesativarFuncionario() {
   return useMutation({
     mutationFn: (id: string) => desativarFuncionario(id),
     onSuccess: (funcionario) => {
-      upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario)
+      if (funcionario) {
+        upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario)
+      } else {
+        qc.invalidateQueries({ queryKey: ["funcionarios"] })
+      }
       toast.success("Funcionário desativado")
     },
     onError: (err) =>

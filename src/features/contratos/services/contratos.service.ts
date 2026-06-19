@@ -1,7 +1,6 @@
 import { getPaginated, get, post, put, patch } from "@/lib/api"
 import type {
   Contrato,
-  ContratoStatus,
   ContratosFilters,
   CreateContratoRequest,
 } from "../types/contrato.types"
@@ -25,6 +24,10 @@ export function updateContrato(id: string, data: CreateContratoRequest) {
   return put<Contrato>(`/contratos/${id}`, data)
 }
 
-export function updateContratoStatus(id: string, status: ContratoStatus) {
-  return patch<Contrato>(`/contratos/${id}/status`, { status })
+export function cancelarContrato(id: string) {
+  return patch<Contrato>(`/contratos/${id}/status`, { status: "cancelled" })
+}
+
+export function reativarContrato(id: string) {
+  return patch<Contrato>(`/contratos/${id}/reativar`, {})
 }

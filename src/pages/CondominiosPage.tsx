@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Plus, Building2, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api"
@@ -27,8 +27,13 @@ export default function CondominiosPage() {
 
   const [formOpen, setFormOpen] = useState(false)
   const [editingCondominio, setEditingCondominio] = useState<Condominio | null>(null)
-  const [estruturaCondominio, setEstruturaCondominio] = useState<Condominio | null>(null)
+  const [estruturaCondominioId, setEstruturaCondominioId] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Condominio | null>(null)
+
+  const estruturaCondominio = useMemo(
+    () => condominios?.find((c) => c.id === estruturaCondominioId) ?? null,
+    [condominios, estruturaCondominioId],
+  )
 
   const openCreate = () => {
     setEditingCondominio(null)
@@ -49,7 +54,7 @@ export default function CondominiosPage() {
     deleteMutation.mutate(pendingDelete.id, {
       onSuccess: () => {
         toast.success("Condomínio removido com sucesso")
-        if (estruturaCondominio?.id === pendingDelete.id) setEstruturaCondominio(null)
+        if (estruturaCondominioId === pendingDelete.id) setEstruturaCondominioId(null)
         setPendingDelete(null)
       },
       onError: (err) => {
@@ -173,7 +178,7 @@ export default function CondominiosPage() {
               condominio={c}
               onEdit={openEdit}
               onDelete={handleDelete}
-              onOpenBlocosUnidades={(sel) => setEstruturaCondominio(sel)}
+              onOpenBlocosUnidades={(sel) => setEstruturaCondominioId(sel.id)}
             />
           ))}
 
@@ -193,10 +198,12 @@ export default function CondominiosPage() {
       )}
 
       {/* Estrutura modal */}
-      {estruturaCondominio && (
+      {estruturaCondominioId && estruturaCondominio && (
         <EstruturaCondominioModal
-          open={!!estruturaCondominio}
-          onOpenChange={(open) => { if (!open) setEstruturaCondominio(null) }}
+          open
+          onOpenChange={(open) => {
+            if (!open) setEstruturaCondominioId(null)
+          }}
           condominioId={estruturaCondominio.id}
           condominioNome={estruturaCondominio.nome}
         />

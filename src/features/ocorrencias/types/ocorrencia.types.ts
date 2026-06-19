@@ -85,7 +85,7 @@ export interface Ocorrencia {
   descricao: string
   status: OcorrenciaStatus
   ocorreuEm: string
-  morador?: { id: string; nome: string; email: string; unidade: { numero: string } }
+  morador?: { id: string; nome: string; email: string; telefone?: string; unidade: { numero: string } }
   bloco?: { id: string; nome: string }
   unidade?: { id: string; numero: string }
   registradoPor: { id: string; nome: string }

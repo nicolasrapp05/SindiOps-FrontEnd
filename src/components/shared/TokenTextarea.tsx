@@ -50,22 +50,29 @@ function templateToHTML(template: string | null | undefined, tokens: TokenDef[])
 function domToTemplate(root: HTMLElement): string {
   let out = ""
 
-  function walk(node: ChildNode) {
+  function walk(node: Node) {
     if (node.nodeType === Node.TEXT_NODE) {
       out += node.textContent ?? ""
       return
     }
     if (node.nodeType !== Node.ELEMENT_NODE) return
+
     const el = node as HTMLElement
     const tag = el.tagName
 
-    if (tag === "BR") { out += "\n"; return }
+    if (el.dataset.token) {
+      out += el.dataset.token
+      return
+    }
 
-    // chip span
-    if (el.dataset.token) { out += el.dataset.token; return }
+    if (tag === "BR") {
+      out += "\n"
+      return
+    }
 
-    // browser wraps new lines in <div> or <p>
-    if ((tag === "DIV" || tag === "P") && out && !out.endsWith("\n")) out += "\n"
+    if ((tag === "DIV" || tag === "P") && out.length > 0 && !out.endsWith("\n")) {
+      out += "\n"
+    }
 
     el.childNodes.forEach(walk)
   }
@@ -84,12 +91,16 @@ const TokenTextarea = forwardRef<TokenTextareaHandle, TokenTextareaProps>(
     const divRef = useRef<HTMLDivElement>(null)
     const lastValueRef = useRef(value)
     const isComposingRef = useRef(false)
+    const isSyncingRef = useRef(false)
 
     // Set innerHTML from template string (preserves cursor only when called externally)
     const syncDOM = useCallback(
       (template: string | null | undefined) => {
         if (!divRef.current) return
+        isSyncingRef.current = true
         divRef.current.innerHTML = templateToHTML(template, tokens)
+        lastValueRef.current = template ?? ""
+        isSyncingRef.current = false
       },
       [tokens],
     )
@@ -112,7 +123,7 @@ const TokenTextarea = forwardRef<TokenTextareaHandle, TokenTextareaProps>(
 
     // Read DOM → emit template string
     const handleInput = useCallback(() => {
-      if (!divRef.current || isComposingRef.current) return
+      if (!divRef.current || isComposingRef.current || isSyncingRef.current) return
       const newValue = domToTemplate(divRef.current)
       lastValueRef.current = newValue
       onChange(newValue)

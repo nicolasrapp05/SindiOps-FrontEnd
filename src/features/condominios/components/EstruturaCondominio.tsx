@@ -13,8 +13,10 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   useBlocos,
@@ -26,7 +28,9 @@ import {
   useDeleteUnidade,
 } from "../hooks/useCondominios"
 import type { Bloco, Unidade } from "../types/condominio.types"
+import { normalizeNumeroUnidade } from "../utils/estrutura-numeracao"
 import GerarEstruturaWizard from "./GerarEstruturaWizard"
+import GerarUnidadesLoteForm from "./GerarUnidadesLoteForm"
 
 interface EstruturaCondominioProps {
   condominioId: string
@@ -82,24 +86,36 @@ function RenameInput({ initialValue, onConfirm, onCancel, isPending }: RenameInp
 // ── Add-units popover ────────────────────────────────────────────────────────
 interface AddUnidadesPopoverProps {
   blocoId: string
+  blocoNome: string
   condominioId: string
+  numerosExistentes: string[]
   onClose: () => void
 }
 
-function AddUnidadesPopover({ blocoId, condominioId, onClose }: AddUnidadesPopoverProps) {
+function AddUnidadesPopover({
+  blocoId,
+  blocoNome,
+  condominioId,
+  numerosExistentes,
+  onClose,
+}: AddUnidadesPopoverProps) {
   const [modo, setModo] = useState<"individual" | "lote">("individual")
   const [numero, setNumero] = useState("")
-  const [de, setDe] = useState("")
-  const [ate, setAte] = useState("")
-  const [prefix, setPrefix] = useState("")
 
   const createUnidade = useCreateUnidade(condominioId)
 
   async function handleIndividual() {
-    if (!numero.trim()) return
+    const valor = numero.trim()
+    if (!valor) return
+
+    if (numerosExistentes.some((n) => normalizeNumeroUnidade(n) === normalizeNumeroUnidade(valor))) {
+      toast.error("Já existe uma unidade com este número neste bloco")
+      return
+    }
+
     try {
-      await createUnidade.mutateAsync({ blocoId, numero: numero.trim() })
-      toast.success(`Unidade ${numero.trim()} criada`)
+      await createUnidade.mutateAsync({ blocoId, numero: valor })
+      toast.success(`Unidade ${valor} criada`)
       setNumero("")
       onClose()
     } catch (err) {
@@ -107,18 +123,18 @@ function AddUnidadesPopover({ blocoId, condominioId, onClose }: AddUnidadesPopov
     }
   }
 
-  async function handleLote() {
-    const start = parseInt(de)
-    const end = parseInt(ate)
-    if (isNaN(start) || isNaN(end) || start > end) {
-      toast.error("Intervalo inválido")
-      return
-    }
+  async function handleLote(numerosParaCriar: string[], ignorados: number) {
     try {
-      for (let i = start; i <= end; i++) {
-        await createUnidade.mutateAsync({ blocoId, numero: `${prefix}${i}` })
+      for (const n of numerosParaCriar) {
+        await createUnidade.mutateAsync({ blocoId, numero: n })
       }
-      toast.success(`${end - start + 1} unidades criadas`)
+
+      const msg =
+        ignorados > 0
+          ? `${numerosParaCriar.length} unidade${numerosParaCriar.length !== 1 ? "s" : ""} criada${numerosParaCriar.length !== 1 ? "s" : ""} · ${ignorados} ignorada${ignorados !== 1 ? "s" : ""} (já existente${ignorados !== 1 ? "s" : ""})`
+          : `${numerosParaCriar.length} unidade${numerosParaCriar.length !== 1 ? "s" : ""} criada${numerosParaCriar.length !== 1 ? "s" : ""}`
+
+      toast.success(msg)
       onClose()
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Erro ao criar unidades"))
@@ -126,16 +142,31 @@ function AddUnidadesPopover({ blocoId, condominioId, onClose }: AddUnidadesPopov
   }
 
   return (
-    <div className="mt-2 rounded-lg border bg-white p-3 shadow-md" onClick={(e) => e.stopPropagation()}>
-      <div className="mb-2.5 flex gap-3 border-b pb-2">
+    <div
+      className="mt-2 rounded-lg border border-gray-200 bg-white p-2.5"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="mb-2.5 inline-flex rounded-md bg-gray-100 p-0.5">
         <button
-          className={`text-xs font-medium transition ${modo === "individual" ? "text-emerald-700" : "text-gray-400 hover:text-gray-600"}`}
+          type="button"
+          className={cn(
+            "rounded px-2.5 py-1 text-xs font-medium transition",
+            modo === "individual"
+              ? "bg-white text-emerald-700 shadow-sm"
+              : "text-gray-500 hover:text-gray-700",
+          )}
           onClick={() => setModo("individual")}
         >
           Individual
         </button>
         <button
-          className={`text-xs font-medium transition ${modo === "lote" ? "text-emerald-700" : "text-gray-400 hover:text-gray-600"}`}
+          type="button"
+          className={cn(
+            "rounded px-2.5 py-1 text-xs font-medium transition",
+            modo === "lote"
+              ? "bg-white text-emerald-700 shadow-sm"
+              : "text-gray-500 hover:text-gray-700",
+          )}
           onClick={() => setModo("lote")}
         >
           Em lote
@@ -143,75 +174,50 @@ function AddUnidadesPopover({ blocoId, condominioId, onClose }: AddUnidadesPopov
       </div>
 
       {modo === "individual" ? (
-        <div className="flex items-center gap-1.5">
-          <Input
-            className="h-7 w-24 text-xs"
-            placeholder="Número"
-            value={numero}
-            onChange={(e) => setNumero(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleIndividual()
-              if (e.key === "Escape") onClose()
-            }}
-            autoFocus
-          />
+        <div className="flex items-end gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs font-normal text-gray-500">Número</Label>
+            <Input
+              className="h-8 w-24 text-xs"
+              placeholder="Ex: 101"
+              value={numero}
+              onChange={(e) => setNumero(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleIndividual()
+                if (e.key === "Escape") onClose()
+              }}
+              autoFocus
+            />
+          </div>
           <Button
             size="sm"
-            className="h-7 bg-emerald-700 px-2 text-xs hover:bg-emerald-800"
+            className="h-8 bg-emerald-700 px-2.5 text-xs hover:bg-emerald-800"
             disabled={createUnidade.isPending || !numero.trim()}
             onClick={handleIndividual}
           >
-            {createUnidade.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Adicionar"}
+            {createUnidade.isPending ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              "Adicionar"
+            )}
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={onClose}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 px-2 text-xs text-gray-500"
+            onClick={onClose}
+          >
             Cancelar
           </Button>
         </div>
       ) : (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5">
-            <Input
-              className="h-7 w-16 text-xs"
-              placeholder="Prefixo"
-              value={prefix}
-              onChange={(e) => setPrefix(e.target.value)}
-            />
-            <span className="text-xs text-gray-400">+</span>
-            <Input
-              className="h-7 w-16 text-xs"
-              placeholder="De"
-              type="number"
-              value={de}
-              onChange={(e) => setDe(e.target.value)}
-            />
-            <span className="text-xs text-gray-400">até</span>
-            <Input
-              className="h-7 w-16 text-xs"
-              placeholder="Até"
-              type="number"
-              value={ate}
-              onChange={(e) => setAte(e.target.value)}
-            />
-          </div>
-          {de && ate && !isNaN(parseInt(de)) && !isNaN(parseInt(ate)) && (
-            <p className="text-xs text-gray-500">
-              Criará: {prefix}{de}, {prefix}{String(parseInt(de) + 1)}… {prefix}{ate} ({Math.max(0, parseInt(ate) - parseInt(de) + 1)} unidades)
-            </p>
-          )}
-          <div className="flex gap-1.5">
-            <Button
-              size="sm"
-              className="h-7 bg-emerald-700 px-2 text-xs hover:bg-emerald-800"
-              disabled={createUnidade.isPending || !de || !ate}
-              onClick={handleLote}
-            >
-              {createUnidade.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Gerar"}
-            </Button>
-            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={onClose}>
-              Cancelar
-            </Button>
-          </div>
-        </div>
+        <GerarUnidadesLoteForm
+          blocoNome={blocoNome}
+          numerosExistentes={numerosExistentes}
+          isPending={createUnidade.isPending}
+          onCancel={onClose}
+          onGenerate={handleLote}
+        />
       )}
     </div>
   )
@@ -441,7 +447,9 @@ function BlocoRow({ bloco, condominioId, autoExpand }: BlocoRowProps) {
           {addingUnidade ? (
             <AddUnidadesPopover
               blocoId={bloco.id}
+              blocoNome={bloco.nome}
               condominioId={condominioId}
+              numerosExistentes={bloco.unidades.map((u) => u.numero)}
               onClose={() => setAddingUnidade(false)}
             />
           ) : (

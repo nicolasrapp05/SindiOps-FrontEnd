@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react"
-import { Loader2, Zap, AlertCircle, Building2, Layers, Hash, Settings2 } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
+import { Loader2, Zap, AlertCircle, Building2, Layers, Hash } from "lucide-react"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api"
 import { Button } from "@/components/ui/button"
@@ -26,6 +27,14 @@ import type {
   IdentificacaoBloco,
   CustomPatternConfig,
 } from "../types/condominio.types"
+import {
+  DEFAULT_CUSTOM_PATTERN,
+  PADRAO_NUMERACAO_OPTIONS,
+  computeUnidadesBloco,
+  gerarNomesBlocos,
+} from "../utils/estrutura-numeracao"
+import CustomPatternBuilder from "./CustomPatternBuilder"
+import { invalidateCondominioEstrutura } from "../hooks/useCondominios"
 
 interface GerarEstruturaWizardProps {
   open: boolean
@@ -44,60 +53,6 @@ interface ProgressState {
   current: number
   total: number
   message: string
-}
-
-const DEFAULT_CUSTOM_PATTERN: CustomPatternConfig = {
-  prefix: "",
-  incluirAndar: true,
-  andarFormato: "raw",
-  andarDigitos: 2,
-  separador: "0",
-  seqFormato: "raw",
-  seqDigitos: 2,
-  suffix: "",
-}
-
-function applyCustomPattern(
-  cfg: CustomPatternConfig,
-  andar: number | null,
-  seq: number,
-): string {
-  let result = cfg.prefix
-
-  if (cfg.incluirAndar && andar !== null) {
-    result +=
-      cfg.andarFormato === "padded"
-        ? String(andar).padStart(cfg.andarDigitos, "0")
-        : String(andar)
-  }
-
-  result += cfg.separador
-
-  result +=
-    cfg.seqFormato === "padded"
-      ? String(seq).padStart(cfg.seqDigitos, "0")
-      : String(seq)
-
-  result += cfg.suffix
-  return result
-}
-
-function gerarNomesBlocos(
-  tipo: IdentificacaoBloco,
-  quantidade: number,
-  customNames: string,
-): string[] {
-  if (tipo === "letras") {
-    return Array.from({ length: quantidade }, (_, i) => String.fromCharCode(65 + i))
-  }
-  if (tipo === "numeros") {
-    return Array.from({ length: quantidade }, (_, i) => String(i + 1))
-  }
-  return customNames
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, Math.max(quantidade, 1))
 }
 
 function computePreview(
@@ -120,320 +75,19 @@ function computePreview(
     ? gerarNomesBlocos(identificacaoBloco, quantidadeBlocos, customBlocoNames)
     : [edificioNome?.trim() || "Edifício"]
 
-  return nomesBlocos.map((nomeBlocoRaw) => {
-    const unidades: string[] = []
-    let seqGlobal = 1
-
-    if (incluiTerreo) {
-      for (let u = 1; u <= unidadesPorAndar; u++) {
-        if (padrao === "sequencial") {
-          unidades.push(`T${String(seqGlobal).padStart(2, "0")}`)
-          seqGlobal++
-        } else if (padrao === "letras") {
-          unidades.push(`T${String.fromCharCode(64 + u)}`)
-        } else if (padrao === "prefixoBloco") {
-          const prefix = nomeBlocoRaw.slice(0, 2).toUpperCase()
-          unidades.push(`${prefix}T${String(u).padStart(2, "0")}`)
-        } else if (padrao === "personalizado") {
-          // Térreo: use prefix "T" for floor label
-          const cfg: CustomPatternConfig = {
-            ...customCfg,
-            prefix: customCfg.prefix + "T",
-            incluirAndar: false,
-          }
-          unidades.push(applyCustomPattern(cfg, null, u))
-        }
-      }
-    }
-
-    for (let andar = andarInicial; andar < andarInicial + totalAndares; andar++) {
-      for (let u = 1; u <= unidadesPorAndar; u++) {
-        if (padrao === "personalizado") {
-          unidades.push(applyCustomPattern(customCfg, andar, u))
-        } else if (padrao === "sequencial") {
-          unidades.push(String(seqGlobal))
-          seqGlobal++
-        } else if (padrao === "prefixoBloco") {
-          const prefix = nomeBlocoRaw.slice(0, 2).toUpperCase()
-          unidades.push(`${prefix}${andar * 100 + u}`)
-        } else if (padrao === "letras") {
-          unidades.push(`${andar}${String.fromCharCode(64 + u)}`)
-        }
-      }
-    }
-
-    if (incluiCobertura) {
-      for (let u = 1; u <= unidadesPorAndar; u++) {
-        if (padrao === "sequencial") {
-          unidades.push(`COB${String(seqGlobal).padStart(2, "0")}`)
-          seqGlobal++
-        } else if (padrao === "letras") {
-          unidades.push(`COB${String.fromCharCode(64 + u)}`)
-        } else if (padrao === "prefixoBloco") {
-          const prefix = nomeBlocoRaw.slice(0, 2).toUpperCase()
-          unidades.push(`${prefix}COB${String(u).padStart(2, "0")}`)
-        } else if (padrao === "personalizado") {
-          const cfg: CustomPatternConfig = {
-            ...customCfg,
-            prefix: customCfg.prefix + "COB",
-            incluirAndar: false,
-          }
-          unidades.push(applyCustomPattern(cfg, null, u))
-        }
-      }
-    }
-
-    return { nome: nomeBlocoRaw, unidades }
-  })
-}
-
-// ── Custom pattern builder ───────────────────────────────────────────────────
-interface CustomPatternBuilderProps {
-  cfg: CustomPatternConfig
-  onChange: (cfg: CustomPatternConfig) => void
-  andarInicial: number
-}
-
-function CustomPatternBuilder({ cfg, onChange, andarInicial }: CustomPatternBuilderProps) {
-  const update = (partial: Partial<CustomPatternConfig>) =>
-    onChange({ ...cfg, ...partial })
-
-  const sample1 = applyCustomPattern(cfg, andarInicial, 1)
-  const sample2 = applyCustomPattern(cfg, andarInicial, 2)
-  const sample3 = applyCustomPattern(cfg, andarInicial + 1, 1)
-
-  return (
-    <div className="mt-3 space-y-4 rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
-      <div className="flex items-center gap-1.5">
-        <Settings2 className="h-3.5 w-3.5 text-emerald-600" />
-        <span className="text-xs font-semibold text-emerald-700">
-          Construtor de padrão personalizado
-        </span>
-      </div>
-
-      {/* Formula preview row */}
-      <div className="flex flex-wrap items-center gap-1.5 rounded-md bg-white px-3 py-2.5 text-sm font-mono ring-1 ring-gray-200">
-        {cfg.prefix && (
-          <span className="rounded bg-violet-100 px-1.5 py-0.5 text-xs text-violet-700">
-            "{cfg.prefix}"
-          </span>
-        )}
-        {cfg.incluirAndar && (
-          <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
-            andar
-            {cfg.andarFormato === "padded" ? `(${cfg.andarDigitos}d)` : ""}
-          </span>
-        )}
-        {cfg.separador && (
-          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">
-            "{cfg.separador}"
-          </span>
-        )}
-        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700">
-          seq{cfg.seqFormato === "padded" ? `(${cfg.seqDigitos}d)` : ""}
-        </span>
-        {cfg.suffix && (
-          <span className="rounded bg-violet-100 px-1.5 py-0.5 text-xs text-violet-700">
-            "{cfg.suffix}"
-          </span>
-        )}
-        <span className="ml-auto text-gray-400">→</span>
-        <span className="font-semibold text-gray-800">
-          {sample1}, {sample2}, {sample3}…
-        </span>
-      </div>
-
-      {/* Builder grid */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
-        {/* Prefix */}
-        <div className="space-y-1">
-          <Label className="text-xs text-gray-600">Prefixo (texto)</Label>
-          <Input
-            className="h-8 text-xs"
-            placeholder='ex: "AP", "SALA"'
-            value={cfg.prefix}
-            onChange={(e) => update({ prefix: e.target.value })}
-          />
-        </div>
-
-        {/* Include floor toggle */}
-        <div className="space-y-1">
-          <Label className="text-xs text-gray-600">Número do andar</Label>
-          <div className="flex items-center gap-2 pt-1.5">
-            <label className="flex cursor-pointer items-center gap-1.5 text-xs">
-              <input
-                type="checkbox"
-                checked={cfg.incluirAndar}
-                onChange={(e) => update({ incluirAndar: e.target.checked })}
-                className="accent-emerald-600"
-              />
-              Incluir andar
-            </label>
-          </div>
-        </div>
-
-        {/* Floor format */}
-        {cfg.incluirAndar && (
-          <div className="space-y-1">
-            <Label className="text-xs text-gray-600">Formato do andar</Label>
-            <Select
-              value={cfg.andarFormato}
-              onValueChange={(v) => update({ andarFormato: v as "raw" | "padded" })}
-            >
-              <SelectTrigger className="h-8 w-full text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                <SelectItem value="raw">Sem zeros (1, 2…)</SelectItem>
-                <SelectItem value="padded">Com zeros (01, 02…)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Floor padding digits */}
-        {cfg.incluirAndar && cfg.andarFormato === "padded" && (
-          <div className="space-y-1">
-            <Label className="text-xs text-gray-600">Dígitos do andar</Label>
-            <Input
-              type="number"
-              min={1}
-              max={4}
-              className="h-8 text-xs"
-              value={cfg.andarDigitos}
-              onChange={(e) =>
-                update({ andarDigitos: Math.min(4, Math.max(1, Number(e.target.value))) })
-              }
-            />
-          </div>
-        )}
-
-        {/* Separator */}
-        <div className="space-y-1">
-          <Label className="text-xs text-gray-600">Separador (texto)</Label>
-          <Input
-            className="h-8 text-xs"
-            placeholder='ex: "0", "-", vazio'
-            value={cfg.separador}
-            onChange={(e) => update({ separador: e.target.value })}
-          />
-        </div>
-
-        {/* Seq format */}
-        <div className="space-y-1">
-          <Label className="text-xs text-gray-600">Formato da sequência</Label>
-          <Select
-            value={cfg.seqFormato}
-            onValueChange={(v) => update({ seqFormato: v as "raw" | "padded" })}
-          >
-            <SelectTrigger className="h-8 w-full text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              <SelectItem value="raw">Sem zeros (1, 2…)</SelectItem>
-              <SelectItem value="padded">Com zeros (01, 02…)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Seq padding digits */}
-        {cfg.seqFormato === "padded" && (
-          <div className="space-y-1">
-            <Label className="text-xs text-gray-600">Dígitos da sequência</Label>
-            <Input
-              type="number"
-              min={1}
-              max={4}
-              className="h-8 text-xs"
-              value={cfg.seqDigitos}
-              onChange={(e) =>
-                update({ seqDigitos: Math.min(4, Math.max(1, Number(e.target.value))) })
-              }
-            />
-          </div>
-        )}
-
-        {/* Suffix */}
-        <div className="space-y-1">
-          <Label className="text-xs text-gray-600">Sufixo (texto)</Label>
-          <Input
-            className="h-8 text-xs"
-            placeholder='ex: "A", "-APT"'
-            value={cfg.suffix}
-            onChange={(e) => update({ suffix: e.target.value })}
-          />
-        </div>
-      </div>
-
-      {/* Quick presets */}
-      <div className="flex flex-wrap gap-1.5 border-t border-emerald-200 pt-3">
-        <span className="self-center text-xs text-gray-400">Atalhos:</span>
-        {[
-          { label: "101, 102, 201…", cfg: { ...DEFAULT_CUSTOM_PATTERN } },
-          {
-            label: "0101, 0102…",
-            cfg: {
-              prefix: "",
-              incluirAndar: true,
-              andarFormato: "padded" as const,
-              andarDigitos: 2,
-              separador: "",
-              seqFormato: "padded" as const,
-              seqDigitos: 2,
-              suffix: "",
-            },
-          },
-          {
-            label: "AP-101, AP-102…",
-            cfg: {
-              prefix: "AP-",
-              incluirAndar: true,
-              andarFormato: "raw" as const,
-              andarDigitos: 2,
-              separador: "",
-              seqFormato: "padded" as const,
-              seqDigitos: 2,
-              suffix: "",
-            },
-          },
-          {
-            label: "1-01, 1-02…",
-            cfg: {
-              prefix: "",
-              incluirAndar: true,
-              andarFormato: "raw" as const,
-              andarDigitos: 2,
-              separador: "-",
-              seqFormato: "padded" as const,
-              seqDigitos: 2,
-              suffix: "",
-            },
-          },
-          {
-            label: "1, 2, 3…",
-            cfg: {
-              prefix: "",
-              incluirAndar: false,
-              andarFormato: "raw" as const,
-              andarDigitos: 2,
-              separador: "",
-              seqFormato: "raw" as const,
-              seqDigitos: 2,
-              suffix: "",
-            },
-          },
-        ].map((preset) => (
-          <button
-            key={preset.label}
-            className="rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-xs text-gray-600 transition hover:border-emerald-400 hover:text-emerald-700"
-            onClick={() => onChange(preset.cfg)}
-          >
-            {preset.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
+  return nomesBlocos.map((nomeBlocoRaw) => ({
+    nome: nomeBlocoRaw,
+    unidades: computeUnidadesBloco(
+      nomeBlocoRaw,
+      andarInicial,
+      totalAndares,
+      unidadesPorAndar,
+      incluiTerreo,
+      incluiCobertura,
+      padrao,
+      customCfg,
+    ),
+  }))
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
@@ -444,6 +98,8 @@ export default function GerarEstruturaWizard({
   condominioNome,
   onSuccess,
 }: GerarEstruturaWizardProps) {
+  const qc = useQueryClient()
+
   // Block config
   const [temBlocos, setTemBlocos] = useState(true)
   const [identificacaoBloco, setIdentificacaoBloco] = useState<IdentificacaoBloco>("letras")
@@ -572,6 +228,10 @@ export default function GerarEstruturaWizard({
     }
 
     setIsGenerating(false)
+
+    if (criados > 0) {
+      invalidateCondominioEstrutura(qc, condominioId)
+    }
 
     if (erros > 0 && criados === 0) {
       toast.error("Falha ao gerar a estrutura. Verifique e tente novamente.")
@@ -777,57 +437,33 @@ export default function GerarEstruturaWizard({
               </h3>
 
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {(
-                  [
-                    {
-                      value: "personalizado",
-                      label: "Personalizado",
-                      example: "configure abaixo",
-                      disabled: false,
-                    },
-                    {
-                      value: "sequencial",
-                      label: "Sequencial simples",
-                      example: "1, 2, 3, 4…",
-                      disabled: false,
-                    },
-                    {
-                      value: "prefixoBloco",
-                      label: "Prefixo do bloco",
-                      example: "A101, A102, B101…",
-                      disabled: !temBlocos,
-                    },
-                    {
-                      value: "letras",
-                      label: "Letras por unidade",
-                      example: "1A, 1B, 2A, 2B…",
-                      disabled: false,
-                    },
-                  ] as const
-                ).map((opt) => (
-                  <label
-                    key={opt.value}
-                    className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 transition-colors ${
-                      padrao === opt.value
-                        ? "border-emerald-500 bg-emerald-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    } ${opt.disabled ? "cursor-not-allowed opacity-50" : ""}`}
-                  >
-                    <input
-                      type="radio"
-                      name="padrao"
-                      value={opt.value}
-                      checked={padrao === opt.value}
-                      disabled={opt.disabled}
-                      onChange={() => !opt.disabled && setPadrao(opt.value)}
-                      className="mt-0.5 accent-emerald-600"
-                    />
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{opt.label}</p>
-                      <p className="text-xs text-gray-500">{opt.example}</p>
-                    </div>
-                  </label>
-                ))}
+                {PADRAO_NUMERACAO_OPTIONS.map((opt) => {
+                  const disabled = opt.value === "prefixoBloco" && !temBlocos
+                  return (
+                    <label
+                      key={opt.value}
+                      className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 transition-colors ${
+                        padrao === opt.value
+                          ? "border-emerald-500 bg-emerald-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
+                    >
+                      <input
+                        type="radio"
+                        name="padrao"
+                        value={opt.value}
+                        checked={padrao === opt.value}
+                        disabled={disabled}
+                        onChange={() => !disabled && setPadrao(opt.value)}
+                        className="mt-0.5 accent-emerald-600"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{opt.label}</p>
+                        <p className="text-xs text-gray-500">{opt.example}</p>
+                      </div>
+                    </label>
+                  )
+                })}
               </div>
 
               {padrao === "personalizado" && (

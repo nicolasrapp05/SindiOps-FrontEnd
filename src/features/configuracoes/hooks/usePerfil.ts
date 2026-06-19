@@ -1,27 +1,20 @@
 import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api"
+import { authUserFromPerfil } from "@/lib/auth-user"
 import { supabaseClient } from "@/lib/supabase"
+import { updatePerfil } from "../services/perfil.service"
 import { useAuthStore } from "@/store/auth-store"
 
 export function useAtualizarPerfil() {
   return useMutation({
     mutationFn: async (nome: string) => {
-      const { data, error } = await supabaseClient.auth.updateUser({
-        data: { nome },
-      })
-      if (error) throw error
-      return data.user
+      const perfil = await updatePerfil({ nome })
+      await supabaseClient.auth.refreshSession()
+      return perfil
     },
-    onSuccess: (supabaseUser) => {
-      if (supabaseUser) {
-        const meta = supabaseUser.user_metadata
-        useAuthStore.setState((state) => ({
-          user: state.user
-            ? { ...state.user, nome: (meta?.nome as string) ?? state.user.nome }
-            : state.user,
-        }))
-      }
+    onSuccess: (perfil) => {
+      useAuthStore.setState({ user: authUserFromPerfil(perfil) })
       toast.success("Perfil atualizado com sucesso")
     },
     onError: (err) =>

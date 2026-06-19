@@ -17,6 +17,9 @@ export interface EmailLogFilters {
   condominioId?: string
   moradorId?: string
   ocorrenciaId?: string
+  templateId?: string
+  templateTipo?: string
+  search?: string
   statusEntrega?: StatusEntrega
   dataInicio?: string
   dataFim?: string

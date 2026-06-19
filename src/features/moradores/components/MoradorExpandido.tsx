@@ -56,7 +56,7 @@ export default function MoradorExpandido({ moradorId }: MoradorExpandidoProps) {
           <div>
             <p className="font-semibold text-gray-900">{morador.nome}</p>
             <p className="text-sm text-gray-500">
-              {morador.bloco.nome} · Unidade {morador.unidade.numero}
+              Bloco {morador.bloco.nome} · Unidade {morador.unidade.numero}
             </p>
           </div>
         </div>
@@ -80,7 +80,7 @@ export default function MoradorExpandido({ moradorId }: MoradorExpandidoProps) {
 
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Building2 className="h-4 w-4 shrink-0 text-gray-400" />
-            <span>{morador.bloco.nome}</span>
+            <span>Bloco {morador.bloco.nome}</span>
           </div>
 
           <div className="flex items-center gap-2 text-sm text-gray-600">

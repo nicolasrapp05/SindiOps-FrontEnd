@@ -37,27 +37,36 @@ export default function MapaCotacoes({
       {cotacoes.map((c) => {
         const isBest = menorValorUnitario !== null && c.valorUnitario === menorValorUnitario
         const selected = c.selecionada
+        const fornecedorNome = c.nomeEmpresa ?? c.fornecedor?.nome ?? "—"
         return (
           <div
             key={c.id}
             className={cn(
-              "flex flex-col rounded-xl border bg-card p-4 shadow-sm",
+              "flex flex-col overflow-hidden rounded-xl border bg-card p-4 shadow-sm",
               selected && "border-emerald-500 ring-2 ring-emerald-500/30",
               !selected && isBest && "border-blue-500 ring-1 ring-blue-500/30",
               !selected && !isBest && "border-border",
             )}
           >
-            <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+            <div className="mb-3 flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <p className="font-semibold text-foreground">
-                  {c.nomeEmpresa ?? c.fornecedor?.nome ?? "—"}
+                <p
+                  className="truncate font-semibold text-foreground"
+                  title={fornecedorNome}
+                >
+                  {fornecedorNome}
                 </p>
                 {c.nomeResponsavel && (
-                  <p className="text-xs text-muted-foreground">{c.nomeResponsavel}</p>
+                  <p
+                    className="truncate text-xs text-muted-foreground"
+                    title={c.nomeResponsavel}
+                  >
+                    {c.nomeResponsavel}
+                  </p>
                 )}
               </div>
-              <div className="flex items-center gap-1">
-                <div className="flex flex-wrap gap-1">
+              <div className="flex shrink-0 items-center gap-1">
+                <div className="flex flex-wrap justify-end gap-1">
                   {isBest && (
                     <Badge className="bg-blue-600 text-white hover:bg-blue-600">
                       MELHOR OFERTA

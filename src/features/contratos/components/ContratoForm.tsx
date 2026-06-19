@@ -100,6 +100,7 @@ export default function ContratoForm({
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(contratoSchema),
@@ -153,6 +154,20 @@ export default function ContratoForm({
     }
   }, [open, contrato, contratoDetalhe, reset])
 
+  const applyFornecedorSelection = (id: string) => {
+    if (!id) {
+      setValue("nomeContato", "")
+      setValue("telefoneContato", "")
+      return
+    }
+
+    const fornecedor = fornecedoresList.find((f) => f.id === id)
+    if (!fornecedor) return
+
+    setValue("nomeContato", fornecedor.nomeContato ?? "")
+    setValue("telefoneContato", fornecedor.telefone ?? "")
+  }
+
   const handleFormSubmit = (data: FormData) => {
     onSubmit({
       condominioId,
@@ -201,7 +216,10 @@ export default function ContratoForm({
                 <Combobox
                   options={fornecedoresList.map((f) => ({ value: f.id, label: f.nome }))}
                   value={field.value}
-                  onValueChange={field.onChange}
+                  onValueChange={(id) => {
+                    field.onChange(id)
+                    applyFornecedorSelection(id)
+                  }}
                   placeholder="Buscar fornecedor..."
                 />
               )}
@@ -272,10 +290,12 @@ export default function ContratoForm({
             )}
           </div>
 
+          {/* Índice de reajuste — oculto temporariamente (campo opcional)
           <div className="space-y-1.5">
             <Label htmlFor="indiceReajuste">Índice de reajuste</Label>
             <Input id="indiceReajuste" {...register("indiceReajuste")} />
           </div>
+          */}
 
           <div className="space-y-1.5">
             <Label htmlFor="condicoesRenovacao">Condições de renovação</Label>

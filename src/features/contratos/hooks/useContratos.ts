@@ -10,9 +10,11 @@ import {
   getContrato,
   createContrato,
   updateContrato,
-  updateContratoStatus,
+  cancelarContrato,
+  reativarContrato,
 } from "../services/contratos.service"
-import type { Contrato, ContratoStatus, ContratosFilters, CreateContratoRequest } from "../types/contrato.types"
+import type { Contrato, ContratosFilters, CreateContratoRequest } from "../types/contrato.types"
+import { CONTRATO_STATUS_LABEL } from "../lib/contrato-status"
 
 export function useContratos(condominioId: string, filters?: ContratosFilters) {
   return useQuery({
@@ -81,16 +83,30 @@ export function useUpdateContrato() {
   })
 }
 
-export function useUpdateContratoStatus() {
+export function useCancelarContrato() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: ContratoStatus }) =>
-      updateContratoStatus(id, status),
+    mutationFn: (id: string) => cancelarContrato(id),
     onSuccess: (contrato) => {
       syncContratoCache(qc, contrato)
-      toast.success("Status do contrato atualizado")
+      toast.success("Contrato cancelado com sucesso")
     },
     onError: (err) =>
-      toast.error(getApiErrorMessage(err, "Erro ao atualizar status")),
+      toast.error(getApiErrorMessage(err, "Erro ao cancelar contrato")),
+  })
+}
+
+export function useReativarContrato() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => reativarContrato(id),
+    onSuccess: (contrato) => {
+      syncContratoCache(qc, contrato)
+      toast.success(
+        `Contrato reativado — status: ${CONTRATO_STATUS_LABEL[contrato.status]}`,
+      )
+    },
+    onError: (err) =>
+      toast.error(getApiErrorMessage(err, "Erro ao reativar contrato")),
   })
 }

@@ -12,6 +12,8 @@ import {
   Clock,
   AlertCircle,
   XCircle,
+  Ban,
+  RotateCcw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,24 +26,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import Combobox from "@/components/shared/Combobox"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import {
   useContratos,
   useCreateContrato,
   useUpdateContrato,
-  useUpdateContratoStatus,
+  useCancelarContrato,
+  useReativarContrato,
 } from "@/features/contratos/hooks/useContratos"
 import type { Contrato, ContratoStatus, CreateContratoRequest } from "@/features/contratos/types/contrato.types"
 import { TIPO_SERVICO_LABEL } from "@/features/contratos/types/contrato.types"
 import ContratoForm from "@/features/contratos/components/ContratoForm"
 import ContratoStatusBadge from "@/features/contratos/components/ContratoStatusBadge"
+import {
+  CONTRATO_STATUS_FILTER_OPTIONS,
+  contratoRowHighlightClass,
+  podeCancelarContrato,
+  podeReativarContrato,
+} from "@/features/contratos/lib/contrato-status"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { useDebounce } from "@/hooks/useDebounce"
 import { formatBRL } from "@/lib/currency"
@@ -60,37 +63,13 @@ function formatDate(iso?: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR")
 }
 
-function isFimWithinNext30Days(iso?: string): boolean {
-  if (!iso) return false
-  const end = new Date(`${iso}T00:00:00`)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const horizon = new Date(today)
-  horizon.setDate(horizon.getDate() + 30)
-  return end >= today && end <= horizon
-}
-
-const STATUS_FILTER_OPTIONS: { value: "all" | ContratoStatus; label: string }[] = [
-  { value: "all", label: "Todos os status" },
-  { value: "active", label: "Vigentes" },
-  { value: "expiring", label: "Expirando" },
-  { value: "expired", label: "Expirados" },
-  { value: "cancelled", label: "Cancelados" },
-]
-
-const ROW_STATUS_OPTIONS: { value: ContratoStatus; label: string }[] = [
-  { value: "active", label: "Vigente" },
-  { value: "expiring", label: "Expirando" },
-  { value: "expired", label: "Expirado" },
-  { value: "cancelled", label: "Cancelado" },
-]
-
 export default function ContratosPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | ContratoStatus>("all")
   const [page, setPage] = useState(1)
   const [formOpen, setFormOpen] = useState(false)
   const [editingContrato, setEditingContrato] = useState<Contrato | null>(null)
+  const [pendingCancel, setPendingCancel] = useState<Contrato | null>(null)
 
   const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
   const condominioNome = useCondominioScopeStore((s) => s.selectedCondominioNome) ?? ""
@@ -112,7 +91,8 @@ export default function ContratosPage() {
 
   const createMutation = useCreateContrato()
   const updateMutation = useUpdateContrato()
-  const statusMutation = useUpdateContratoStatus()
+  const cancelMutation = useCancelarContrato()
+  const reativarMutation = useReativarContrato()
 
   const contratoList = contratosRaw?.data ?? []
   const totalCount = contratosRaw?.totalCount
@@ -148,6 +128,13 @@ export default function ContratosPage() {
     } else {
       createMutation.mutate(data, { onSuccess: () => setFormOpen(false) })
     }
+  }
+
+  const handleConfirmCancel = () => {
+    if (!pendingCancel) return
+    cancelMutation.mutate(pendingCancel.id, {
+      onSuccess: () => setPendingCancel(null),
+    })
   }
 
   if (isLoading) {
@@ -254,7 +241,7 @@ export default function ContratosPage() {
           />
         </div>
         <Combobox
-          options={STATUS_FILTER_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+          options={CONTRATO_STATUS_FILTER_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
           value={statusFilter}
           onValueChange={(v) => { setStatusFilter(v as "all" | ContratoStatus); setPage(1) }}
           placeholder="Buscar…"
@@ -292,15 +279,16 @@ export default function ContratosPage() {
               </TableHeader>
               <TableBody>
                 {contratoList.map((c) => {
-                  const warnRow = isFimWithinNext30Days(c.dataFim)
                   const contato =
                     [c.nomeContato, c.telefoneContato].filter(Boolean).join(" · ") || "—"
-                  const statusBusy =
-                    statusMutation.isPending && statusMutation.variables?.id === c.id
+                  const actionBusy =
+                    (cancelMutation.isPending && cancelMutation.variables === c.id) ||
+                    (reativarMutation.isPending && reativarMutation.variables === c.id)
+                  const rowHighlight = contratoRowHighlightClass(c.status)
                   return (
                     <TableRow
                       key={c.id}
-                      className={warnRow ? "bg-orange-50/50 hover:bg-orange-50/70" : undefined}
+                      className={rowHighlight}
                     >
                       <TableCell className="font-medium text-gray-900">
                         {TIPO_SERVICO_LABEL[c.tipoServico]}
@@ -317,24 +305,30 @@ export default function ContratosPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex flex-wrap items-center justify-end gap-2">
-                          <Select
-                            value={c.status}
-                            disabled={statusBusy}
-                            onValueChange={(v) => {
-                              statusMutation.mutate({ id: c.id, status: v as ContratoStatus })
-                            }}
-                          >
-                            <SelectTrigger className="h-8 w-[130px]" size="sm">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {ROW_STATUS_OPTIONS.map((o) => (
-                                <SelectItem key={o.value} value={o.value}>
-                                  {o.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          {podeCancelarContrato(c.status) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-gray-600"
+                              disabled={actionBusy}
+                              onClick={() => setPendingCancel(c)}
+                            >
+                              <Ban className="mr-1.5 h-3.5 w-3.5" />
+                              Cancelar
+                            </Button>
+                          )}
+                          {podeReativarContrato(c.status) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-emerald-700"
+                              disabled={actionBusy}
+                              onClick={() => reativarMutation.mutate(c.id)}
+                            >
+                              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                              Reativar
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -391,6 +385,16 @@ export default function ContratosPage() {
         contrato={editingContrato}
         onSubmit={handleFormSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={!!pendingCancel}
+        onOpenChange={(open) => !open && setPendingCancel(null)}
+        title="Cancelar contrato"
+        description={`Tem certeza que deseja cancelar o contrato de ${TIPO_SERVICO_LABEL[pendingCancel?.tipoServico ?? "outro"]} com ${pendingCancel?.fornecedor.nome ?? "este fornecedor"}? O status vigente, expirando e expirado continuará sendo calculado pela data de término após reativar.`}
+        confirmLabel="Cancelar contrato"
+        onConfirm={handleConfirmCancel}
+        isPending={cancelMutation.isPending}
       />
     </div>
   )

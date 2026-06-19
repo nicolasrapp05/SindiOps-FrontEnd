@@ -4,6 +4,9 @@ import RoleGuard from "./RoleGuard"
 import AppLayout from "@/components/shared/AppLayout"
 
 import LoginPage from "@/pages/LoginPage"
+import CadastroPage from "@/pages/CadastroPage"
+import EsqueciSenhaPage from "@/pages/EsqueciSenhaPage"
+import RedefinirSenhaPage from "@/pages/RedefinirSenhaPage"
 import PrimeiroAcessoPage from "@/pages/PrimeiroAcessoPage"
 import DashboardPage from "@/pages/DashboardPage"
 import CondominiosPage from "@/pages/CondominiosPage"
@@ -29,6 +32,9 @@ const SINDICO_ONLY = ["sindico"] as const
 export const router = createBrowserRouter([
   /* ─── Rotas públicas ─── */
   { path: "/login", element: <LoginPage /> },
+  { path: "/cadastro", element: <CadastroPage /> },
+  { path: "/esqueci-senha", element: <EsqueciSenhaPage /> },
+  { path: "/redefinir-senha", element: <RedefinirSenhaPage /> },
   { path: "/primeiro-acesso", element: <PrimeiroAcessoPage /> },
 
   /* ─── Rotas protegidas ─── */
