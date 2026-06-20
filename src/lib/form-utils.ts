@@ -5,7 +5,14 @@ import { toast } from "sonner"
 export function getFirstFormError(errors: FieldErrors<FieldValues>): string | undefined {
   for (const value of Object.values(errors)) {
     if (!value || typeof value !== "object") continue
+
     if ("message" in value && value.message) return String(value.message)
+
+    if ("root" in value && value.root && typeof value.root === "object") {
+      const root = value.root as FieldErrors<FieldValues>[string]
+      if (root && "message" in root && root.message) return String(root.message)
+    }
+
     const nested = getFirstFormError(value as FieldErrors<FieldValues>)
     if (nested) return nested
   }
@@ -13,7 +20,8 @@ export function getFirstFormError(errors: FieldErrors<FieldValues>): string | un
 }
 
 export function toastFormValidationError(errors: FieldErrors<FieldValues>) {
-  toast.error(getFirstFormError(errors) ?? "Verifique os campos do formulário")
+  const message = getFirstFormError(errors)
+  toast.error(message ?? "Preencha os campos obrigatórios antes de continuar.")
 }
 
 /** Aceita number, null ou undefined — útil para campos carregados da API. */

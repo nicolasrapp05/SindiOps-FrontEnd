@@ -30,6 +30,7 @@ const CARGO_LABEL: Record<UserCargo, string> = {
   secretario: "Secretário(a)",
   zelador: "Zelador",
   porteiro: "Porteiro",
+  outro: "Outro",
 }
 
 // ─── schemas ─────────────────────────────────────────────────────────────────

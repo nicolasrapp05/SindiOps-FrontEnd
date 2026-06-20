@@ -18,7 +18,7 @@ export interface PaginatedResponse<T> {
   pageSize: number
 }
 
-export type UserCargo = "sindico" | "secretario" | "zelador" | "porteiro"
+export type UserCargo = "sindico" | "secretario" | "zelador" | "porteiro" | "outro"
 
 export const USER_CARGO_LABEL: Record<UserCargo | "outro", string> = {
   sindico: "Síndico",

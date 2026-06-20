@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { Plus, RefreshCw, Users } from "lucide-react"
+import { Plus, RefreshCw, Users, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -17,6 +17,7 @@ import {
   useConvidarFuncionario,
   useAtivarFuncionario,
   useDesativarFuncionario,
+  useReenviarConviteFuncionario,
 } from "@/features/configuracoes/hooks/useFuncionarios"
 import {
   CARGO_LABEL,
@@ -61,6 +62,7 @@ export default function EquipePage() {
   const convidar = useConvidarFuncionario()
   const ativar = useAtivarFuncionario()
   const desativar = useDesativarFuncionario()
+  const reenviarConvite = useReenviarConviteFuncionario()
 
   const list = Array.isArray(data) ? data : []
 
@@ -193,33 +195,47 @@ export default function EquipePage() {
                     )}
                   </TableCell>
                   <TableCell className={cn(!f.ativo && "opacity-60")}>
-                    <FuncionarioStatusBadge ativo={f.ativo} />
+                    <FuncionarioStatusBadge ativo={f.ativo} convitePendente={f.convitePendente} />
                   </TableCell>
                   <TableCell className={cn("whitespace-nowrap text-muted-foreground", !f.ativo && "opacity-60")}>
                     {new Date(f.criadoEm).toLocaleDateString("pt-BR")}
                   </TableCell>
                   <TableCell className="text-right">
-                    {f.ativo ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={desativar.isPending}
-                        onClick={() => desativar.mutate(f.id)}
-                      >
-                        Desativar
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={ativar.isPending}
-                        onClick={() => ativar.mutate(f.id)}
-                      >
-                        Reativar
-                      </Button>
-                    )}
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      {f.ativo && f.convitePendente && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={reenviarConvite.isPending}
+                          onClick={() => reenviarConvite.mutate(f.id)}
+                        >
+                          <Mail className="mr-1.5 h-3.5 w-3.5" />
+                          Reenviar convite
+                        </Button>
+                      )}
+                      {f.ativo ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={desativar.isPending}
+                          onClick={() => desativar.mutate(f.id)}
+                        >
+                          Desativar
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={ativar.isPending}
+                          onClick={() => ativar.mutate(f.id)}
+                        >
+                          Reativar
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

@@ -18,7 +18,8 @@ export function resolveCargoFromMetadata(
     cargo === "sindico" ||
     cargo === "secretario" ||
     cargo === "zelador" ||
-    cargo === "porteiro"
+    cargo === "porteiro" ||
+    cargo === "outro"
   ) {
     return cargo
   }
