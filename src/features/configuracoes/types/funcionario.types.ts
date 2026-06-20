@@ -15,6 +15,8 @@ export interface Funcionario {
   ativo: boolean
   criadoEm: string
   condominios?: { id: string; nome: string }[]
+  conviteEnviado?: boolean
+  convitePendente?: boolean
 }
 
 export interface ConvidarFuncionarioRequest {

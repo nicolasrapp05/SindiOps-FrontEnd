@@ -18,12 +18,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 import Combobox from "@/components/shared/Combobox"
 import MultiCombobox from "@/components/shared/MultiCombobox"
 import { useCondominios } from "@/features/condominios/hooks/useCondominios"
+import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import {
   CARGO_LABEL,
   type ConvidarFuncionarioRequest,
   type FuncionarioCargo,
 } from "../types/funcionario.types"
 import { toastFormValidationError } from "@/lib/form-utils"
+import { toast } from "sonner"
 
 const schema = z.object({
   nome: z.string().min(1, "O nome é obrigatório"),
@@ -50,11 +52,24 @@ export default function ConvidarFuncionarioModal({
   isSubmitting,
 }: ConvidarFuncionarioModalProps) {
   const { data: condominios, isLoading: condominiosLoading } = useCondominios()
+  const selectedCondominioId = useCondominioScopeStore((s) => s.selectedCondominioId)
 
   const condominioOptions = useMemo(
     () => (condominios ?? []).map((c) => ({ value: c.id, label: c.nome })),
     [condominios],
   )
+
+  const defaultCondominioIds = useMemo(() => {
+    if (condominioOptions.length === 0) return [] as string[]
+    if (
+      selectedCondominioId &&
+      condominioOptions.some((c) => c.value === selectedCondominioId)
+    ) {
+      return [selectedCondominioId]
+    }
+    if (condominioOptions.length === 1) return [condominioOptions[0].value]
+    return [] as string[]
+  }, [condominioOptions, selectedCondominioId])
 
   const {
     register,
@@ -74,11 +89,24 @@ export default function ConvidarFuncionarioModal({
 
   useEffect(() => {
     if (open) {
-      reset({ nome: "", email: "", cargo: "zelador", condominioIds: [] })
+      reset({
+        nome: "",
+        email: "",
+        cargo: "zelador",
+        condominioIds: defaultCondominioIds,
+      })
     }
-  }, [open, reset])
+  }, [open, reset, defaultCondominioIds])
 
   const submit = (data: FormData) => {
+    if (condominioOptions.length === 0) {
+      toast.error("Cadastre ao menos um condomínio antes de convidar funcionários.")
+      return
+    }
+    if (data.condominioIds.length === 0) {
+      toast.error("Selecione ao menos um condomínio para o funcionário.")
+      return
+    }
     onSubmit(data)
   }
 
@@ -137,9 +165,9 @@ export default function ConvidarFuncionarioModal({
             {condominiosLoading ? (
               <Skeleton className="h-8 w-full rounded-lg" />
             ) : condominioOptions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Cadastre um condomínio antes de convidar funcionários.
-              </p>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                Cadastre ao menos um condomínio antes de convidar funcionários.
+              </div>
             ) : (
               <Controller
                 name="condominioIds"

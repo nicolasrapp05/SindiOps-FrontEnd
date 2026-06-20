@@ -51,7 +51,7 @@ export default function EsqueciSenhaPage() {
   return (
     <AuthShell
       title="Esqueci minha senha"
-      subtitle="Informe seu email e enviaremos um link para redefinir sua senha."
+      subtitle="Informe seu email e enviaremos instruções para redefinir sua senha."
       footer={
         <p className="text-center text-sm text-gray-500">
           <Link to="/login" className="inline-flex items-center gap-1 font-medium text-emerald-700 hover:underline">
@@ -69,12 +69,9 @@ export default function EsqueciSenhaPage() {
               <p className="font-medium">Verifique sua caixa de entrada</p>
               <p className="leading-relaxed text-emerald-900/80">
                 Se existir uma conta com <strong>{sentEmail}</strong>, você receberá um
-                email com um código numérico ({RECOVERY_OTP_MIN_LENGTH} a {RECOVERY_OTP_MAX_LENGTH} dígitos).
-                Acesse{" "}
-                <Link to="/redefinir-senha" className="font-medium underline">
-                  Redefinir senha
-                </Link>{" "}
-                e informe o código. Não use emails de solicitações anteriores.
+                email com um botão para redefinir a senha e um código numérico (
+                {RECOVERY_OTP_MIN_LENGTH} a {RECOVERY_OTP_MAX_LENGTH} dígitos) como alternativa.
+                Use o email mais recente — não reutilize mensagens antigas.
               </p>
               <p className="text-xs text-emerald-800/70">
                 Verifique também a pasta de spam. Emails de recuperação podem ser
@@ -119,7 +116,7 @@ export default function EsqueciSenhaPage() {
             ) : (
               <Mail className="mr-2 h-4 w-4" />
             )}
-            Enviar link de recuperação
+            Enviar instruções de recuperação
           </Button>
         </form>
       )}

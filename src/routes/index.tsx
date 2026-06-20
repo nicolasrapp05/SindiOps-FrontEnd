@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom"
 import AuthGuard from "./AuthGuard"
 import RoleGuard from "./RoleGuard"
 import AppLayout from "@/components/shared/AppLayout"
+import { CARGO_GROUPS } from "@/lib/cargo-permissions"
 
 import LoginPage from "@/pages/LoginPage"
 import CadastroPage from "@/pages/CadastroPage"
@@ -25,9 +26,9 @@ import RelatoriosPage from "@/pages/RelatoriosPage"
 import EquipePage from "@/pages/EquipePage"
 import PerfilPage from "@/pages/PerfilPage"
 
-const ALL_ROLES = ["sindico", "secretario", "zelador", "porteiro"] as const
-const EXCEPT_PORTEIRO = ["sindico", "secretario", "zelador"] as const
-const SINDICO_ONLY = ["sindico"] as const
+const ALL_ROLES = CARGO_GROUPS.ALL
+const EXCEPT_PORTEIRO = CARGO_GROUPS.EXCEPT_PORTEIRO
+const SINDICO_ONLY = CARGO_GROUPS.SINDICO_ONLY
 
 export const router = createBrowserRouter([
   /* ─── Rotas públicas ─── */
@@ -79,7 +80,7 @@ export const router = createBrowserRouter([
           /* Cadastros, Compras, Comunicação, Relatórios — secretário + síndico */
           {
             element: (
-              <RoleGuard allowedRoles={["sindico", "secretario"]} />
+              <RoleGuard allowedRoles={[...CARGO_GROUPS.ADMIN]} />
             ),
             children: [
               { path: "condominios", element: <CondominiosPage /> },

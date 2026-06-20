@@ -8,6 +8,7 @@ import {
   updateFuncionario,
   ativarFuncionario,
   desativarFuncionario,
+  reenviarConviteFuncionario,
 } from "../services/funcionarios.service"
 import type { ConvidarFuncionarioRequest, Funcionario, FuncionarioFilters } from "../types/funcionario.types"
 
@@ -25,6 +26,12 @@ export function useConvidarFuncionario() {
     mutationFn: (data: ConvidarFuncionarioRequest) => convidarFuncionario(data),
     onSuccess: (funcionario) => {
       upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario, { prependIfMissing: true })
+      if (funcionario.conviteEnviado === false) {
+        toast.warning(
+          "Funcionário cadastrado, mas o email de convite não foi enviado. Verifique a configuração de email.",
+        )
+        return
+      }
       toast.success("Convite enviado com sucesso")
     },
     onError: (err) =>
@@ -77,5 +84,18 @@ export function useDesativarFuncionario() {
     },
     onError: (err) =>
       toast.error(getApiErrorMessage(err, "Erro ao desativar funcionário")),
+  })
+}
+
+export function useReenviarConviteFuncionario() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => reenviarConviteFuncionario(id),
+    onSuccess: (funcionario) => {
+      upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario)
+      toast.success("Convite reenviado com sucesso")
+    },
+    onError: (err) =>
+      toast.error(getApiErrorMessage(err, "Erro ao reenviar convite")),
   })
 }

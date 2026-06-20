@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import {
   AlertTriangle,
   Clock,
@@ -11,11 +11,19 @@ import {
   Inbox,
   Loader2,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { useAuthStore } from "@/store/auth-store"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { useDashboard } from "@/features/dashboard/hooks/useDashboard"
 import { useGerarRelatorio } from "@/features/relatorios/hooks/useRelatorios"
 import type { AgendaItem } from "@/features/dashboard/types/dashboard.types"
+import type { AlertaColor } from "@/features/dashboard/components/AlertaCard"
+import {
+  canExportRelatorios,
+  canSeeAgendaTipo,
+  canSeeDashboardAlert,
+  type DashboardAlertKey,
+} from "@/lib/cargo-permissions"
 import {
   MANUTENCAO_TIPO_LABEL,
   type ManutencaoTipo,
@@ -166,8 +174,61 @@ const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "ok", label: "Em dia" },
 ]
 
+const ALERTA_DEFS: {
+  key: DashboardAlertKey
+  titulo: string
+  icone: LucideIcon
+  cor: AlertaColor
+  href: string
+}[] = [
+  {
+    key: "manutencoesVencidas",
+    titulo: "Manutenções Vencidas",
+    icone: AlertTriangle,
+    cor: "red",
+    href: "/manutencoes-obrigatorias",
+  },
+  {
+    key: "manutencoesProximas",
+    titulo: "Manutenções Próximas",
+    icone: Clock,
+    cor: "orange",
+    href: "/manutencoes-obrigatorias",
+  },
+  {
+    key: "ocorrenciasAbertas",
+    titulo: "Ocorrências Abertas",
+    icone: MessageSquareWarning,
+    cor: "blue",
+    href: "/ocorrencias",
+  },
+  {
+    key: "comprasPendentes",
+    titulo: "Compras Pendentes",
+    icone: ShoppingCart,
+    cor: "yellow",
+    href: "/compras",
+  },
+  {
+    key: "contratosVencendo",
+    titulo: "Contratos a Vencer",
+    icone: FileText,
+    cor: "purple",
+    href: "/contratos",
+  },
+]
+
+import type { UserCargo } from "@/types"
+
+function getTipoFilterOptions(cargo: UserCargo | null | undefined) {
+  return TIPO_FILTER_OPTIONS.filter(
+    (option) => option.value === "all" || canSeeAgendaTipo(cargo, option.value as AgendaItem["tipo"]),
+  )
+}
+
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user)
+  const cargo = user?.cargo
   const selectedCondominioId = useCondominioScopeStore((s) => s.selectedCondominioId)
 
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("all")
@@ -183,14 +244,33 @@ export default function DashboardPage() {
 
   const { alertas, agenda } = data
 
-  const sortedAgenda = [...agenda]
-    .sort(
-      (a, b) =>
-        new Date(a.dataVencimento).getTime() -
-        new Date(b.dataVencimento).getTime(),
-    )
-    .filter((item) => tipoFilter === "all" || item.tipo === tipoFilter)
-    .filter((item) => statusFilter === "all" || item.status === statusFilter)
+  const visibleAlertas = useMemo(
+    () =>
+      ALERTA_DEFS.filter((def) => {
+        if (!canSeeDashboardAlert(cargo, def.key)) return false
+        return alertas[def.key] != null
+      }).map((def) => ({
+        ...def,
+        valor: alertas[def.key] ?? 0,
+      })),
+    [alertas, cargo],
+  )
+
+  const sortedAgenda = useMemo(
+    () =>
+      [...agenda]
+        .filter((item) => canSeeAgendaTipo(cargo, item.tipo))
+        .sort(
+          (a, b) =>
+            new Date(a.dataVencimento).getTime() -
+            new Date(b.dataVencimento).getTime(),
+        )
+        .filter((item) => tipoFilter === "all" || item.tipo === tipoFilter)
+        .filter((item) => statusFilter === "all" || item.status === statusFilter),
+    [agenda, cargo, tipoFilter, statusFilter],
+  )
+
+  const tipoFilterOptions = useMemo(() => getTipoFilterOptions(cargo), [cargo])
 
   const handleExportar = () => {
     if (!selectedCondominioId) return
@@ -217,43 +297,24 @@ export default function DashboardPage() {
       </div>
 
       {/* Alert cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <AlertaCard
-          titulo="Manutenções Vencidas"
-          valor={alertas.manutencoesVencidas}
-          icone={AlertTriangle}
-          cor="red"
-          href="/manutencoes-obrigatorias"
-        />
-        <AlertaCard
-          titulo="Manutenções Próximas"
-          valor={alertas.manutencoesProximas}
-          icone={Clock}
-          cor="orange"
-          href="/manutencoes-obrigatorias"
-        />
-        <AlertaCard
-          titulo="Ocorrências Abertas"
-          valor={alertas.ocorrenciasAbertas}
-          icone={MessageSquareWarning}
-          cor="blue"
-          href="/ocorrencias"
-        />
-        <AlertaCard
-          titulo="Compras Pendentes"
-          valor={alertas.comprasPendentes}
-          icone={ShoppingCart}
-          cor="yellow"
-          href="/compras"
-        />
-        <AlertaCard
-          titulo="Contratos a Vencer"
-          valor={alertas.contratosVencendo}
-          icone={FileText}
-          cor="purple"
-          href="/contratos"
-        />
-      </div>
+      {visibleAlertas.length > 0 && (
+        <div
+          className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${
+            visibleAlertas.length >= 4 ? "lg:grid-cols-3 xl:grid-cols-5" : "lg:grid-cols-3"
+          }`}
+        >
+          {visibleAlertas.map((alerta) => (
+            <AlertaCard
+              key={alerta.key}
+              titulo={alerta.titulo}
+              valor={alerta.valor}
+              icone={alerta.icone}
+              cor={alerta.cor}
+              href={alerta.href}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Agenda table */}
       <div className="rounded-xl bg-white p-6 shadow-sm">
@@ -268,7 +329,11 @@ export default function DashboardPage() {
             <Button
               variant="outline"
               size="sm"
-              disabled={!selectedCondominioId || exportar.isPending}
+              disabled={
+                !selectedCondominioId ||
+                exportar.isPending ||
+                !canExportRelatorios(cargo)
+              }
               onClick={handleExportar}
             >
               {exportar.isPending ? (
@@ -281,7 +346,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Combobox
-              options={TIPO_FILTER_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+              options={tipoFilterOptions.map((o) => ({ value: o.value, label: o.label }))}
               value={tipoFilter}
               onValueChange={(v) => setTipoFilter(v as TipoFilter)}
               placeholder="Buscar…"

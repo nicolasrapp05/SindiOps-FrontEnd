@@ -1,9 +1,9 @@
 export interface DashboardAlertas {
-  manutencoesVencidas: number
-  manutencoesProximas: number
-  ocorrenciasAbertas: number
-  comprasPendentes: number
-  contratosVencendo: number
+  manutencoesVencidas?: number | null
+  manutencoesProximas?: number | null
+  ocorrenciasAbertas?: number | null
+  comprasPendentes?: number | null
+  contratosVencendo?: number | null
 }
 
 export interface AgendaItem {

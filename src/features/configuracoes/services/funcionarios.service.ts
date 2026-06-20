@@ -27,3 +27,7 @@ export function ativarFuncionario(id: string) {
 export function desativarFuncionario(id: string) {
   return patch<Funcionario>(`/funcionarios/${id}/desativar`, {})
 }
+
+export function reenviarConviteFuncionario(id: string) {
+  return post<Funcionario>(`/funcionarios/${id}/reenviar-convite`, {})
+}
