@@ -1,6 +1,8 @@
 import { create } from "zustand"
 import { supabaseClient, isSupabaseConfigured } from "@/lib/supabase"
 import { authUserFromPerfil, authUserFromSupabase } from "@/lib/auth-user"
+import { queryClient } from "@/lib/queryClient"
+import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import type { AuthUser } from "@/types"
 
 interface AuthState {
@@ -35,6 +37,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   clearSession: () => {
     localStorage.removeItem(REFRESH_TOKEN_KEY)
+    useCondominioScopeStore.getState().clearSelectedCondominio()
+    queryClient.clear()
     set({ user: null, accessToken: null, isAuthenticated: false })
   },
 
