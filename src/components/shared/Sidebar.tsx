@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/auth-store"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { useAuth } from "@/hooks/useAuth"
 import { useCondominios } from "@/features/condominios/hooks/useCondominios"
+import { canAccessAdmin } from "@/lib/cargo-permissions"
 import { navGroups } from "./sidebar-nav"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
@@ -106,14 +107,20 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
           </div>
         ) : condominiosSuccess && (!condominios || condominios.length === 0) ? (
           <div className="space-y-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
-            <p>Nenhum condomínio cadastrado.</p>
-            <Link
-              to="/condominios"
-              onClick={onNavigate}
-              className="font-medium text-emerald-400 underline-offset-2 hover:underline"
-            >
-              Cadastrar condomínio
-            </Link>
+            <p>
+              {canAccessAdmin(cargo)
+                ? "Nenhum condomínio cadastrado."
+                : "Nenhum condomínio liberado para seu acesso."}
+            </p>
+            {canAccessAdmin(cargo) && (
+              <Link
+                to="/condominios"
+                onClick={onNavigate}
+                className="font-medium text-emerald-400 underline-offset-2 hover:underline"
+              >
+                Cadastrar condomínio
+              </Link>
+            )}
           </div>
         ) : (
           <DropdownMenu>

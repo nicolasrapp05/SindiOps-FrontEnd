@@ -28,6 +28,7 @@ import {
   MANUTENCAO_TIPO_LABEL,
   type ManutencaoTipo,
 } from "@/features/manutencoes/types/manutencao-obrigatoria.types"
+import type { UserCargo } from "@/types"
 import AlertaCard from "@/features/dashboard/components/AlertaCard"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -218,8 +219,6 @@ const ALERTA_DEFS: {
   },
 ]
 
-import type { UserCargo } from "@/types"
-
 function getTipoFilterOptions(cargo: UserCargo | null | undefined) {
   return TIPO_FILTER_OPTIONS.filter(
     (option) => option.value === "all" || canSeeAgendaTipo(cargo, option.value as AgendaItem["tipo"]),
@@ -239,20 +238,20 @@ export default function DashboardPage() {
   )
   const exportar = useGerarRelatorio()
 
-  if (isLoading) return <DashboardSkeleton />
-  if (isError || !data) return <DashboardError onRetry={() => refetch()} />
-
-  const { alertas, agenda } = data
+  const alertas = data?.alertas
+  const agenda = data?.agenda ?? []
 
   const visibleAlertas = useMemo(
-    () =>
-      ALERTA_DEFS.filter((def) => {
+    () => {
+      if (!alertas) return []
+      return ALERTA_DEFS.filter((def) => {
         if (!canSeeDashboardAlert(cargo, def.key)) return false
         return alertas[def.key] != null
       }).map((def) => ({
         ...def,
         valor: alertas[def.key] ?? 0,
-      })),
+      }))
+    },
     [alertas, cargo],
   )
 
@@ -271,6 +270,9 @@ export default function DashboardPage() {
   )
 
   const tipoFilterOptions = useMemo(() => getTipoFilterOptions(cargo), [cargo])
+
+  if (isLoading) return <DashboardSkeleton />
+  if (isError || !data) return <DashboardError onRetry={() => refetch()} />
 
   const handleExportar = () => {
     if (!selectedCondominioId) return
