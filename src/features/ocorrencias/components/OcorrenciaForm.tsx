@@ -1,4 +1,3 @@
-﻿import { useEffect, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -48,21 +47,17 @@ interface OcorrenciaFormProps {
 export default function OcorrenciaForm({
   open, onOpenChange, condominioId, onSubmit, isSubmitting,
 }: OcorrenciaFormProps) {
-  const [selectedBlocoId, setSelectedBlocoId] = useState("")
-
   const { data: blocosData } = useQuery({
     queryKey: ["condominios", condominioId, "blocos"],
     queryFn: () => getBlocos(condominioId),
     enabled: open && !!condominioId,
   })
   const blocos: Bloco[] = Array.isArray(blocosData) ? blocosData : []
-  const selectedBloco = blocos.find((b) => b.id === selectedBlocoId)
-  const unidades = selectedBloco?.unidades ?? []
 
   const { data: moradoresData } = useMoradores(condominioId, { pageSize: 500 })
   const moradores: Morador[] = moradoresData?.data ?? []
 
-  const { register, handleSubmit, reset, control, setValue, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, control, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       origem: "", tipoLocal: "", tipoOcorrencia: "", ocorreuEm: "",
@@ -70,12 +65,16 @@ export default function OcorrenciaForm({
     },
   })
 
-  useEffect(() => {
-    if (open) {
+  const selectedBlocoId = watch("blocoId")
+  const selectedBloco = blocos.find((b) => b.id === selectedBlocoId)
+  const unidades = selectedBloco?.unidades ?? []
+
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
       reset()
-      setSelectedBlocoId("")
     }
-  }, [open, reset])
+    onOpenChange(next)
+  }
 
   const handleMoradorChange = (moradorId: string) => {
     setValue("moradorId", moradorId)
@@ -83,13 +82,11 @@ export default function OcorrenciaForm({
     const morador = moradores.find((m) => m.id === moradorId)
     if (!morador) return
     setValue("blocoId", morador.bloco.id)
-    setSelectedBlocoId(morador.bloco.id)
     setValue("unidadeId", morador.unidade.id)
   }
 
   const handleBlocoChange = (blocoId: string) => {
     setValue("blocoId", blocoId)
-    setSelectedBlocoId(blocoId)
     setValue("unidadeId", "")
     setValue("moradorId", "")
   }
@@ -119,7 +116,7 @@ export default function OcorrenciaForm({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Nova Ocorrência</DialogTitle>

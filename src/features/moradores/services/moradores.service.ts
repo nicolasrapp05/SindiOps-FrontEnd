@@ -24,7 +24,3 @@ export function updateMorador(id: string, data: Partial<CreateMoradorRequest>) {
 export function deleteMorador(id: string) {
   return del<null>(`/moradores/${id}`)
 }
-
-export function getEmailLogs(moradorId: string) {
-  return get<Morador>(`/moradores/${moradorId}`)
-}

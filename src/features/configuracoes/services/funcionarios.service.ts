@@ -1,8 +1,9 @@
-import { get, post, put, patch } from "@/lib/api"
+import { del, get, post, put, patch } from "@/lib/api"
 import type {
   Funcionario,
   ConvidarFuncionarioRequest,
   FuncionarioFilters,
+  UpdateFuncionarioRequest,
 } from "../types/funcionario.types"
 
 export function getFuncionarios(filters?: FuncionarioFilters) {
@@ -13,10 +14,7 @@ export function convidarFuncionario(data: ConvidarFuncionarioRequest) {
   return post<Funcionario>("/funcionarios/convidar", data)
 }
 
-export function updateFuncionario(
-  id: string,
-  data: Partial<ConvidarFuncionarioRequest>,
-) {
+export function updateFuncionario(id: string, data: UpdateFuncionarioRequest) {
   return put<Funcionario>(`/funcionarios/${id}`, data)
 }
 
@@ -30,4 +28,8 @@ export function desativarFuncionario(id: string) {
 
 export function reenviarConviteFuncionario(id: string) {
   return post<Funcionario>(`/funcionarios/${id}/reenviar-convite`, {})
+}
+
+export function deleteFuncionario(id: string) {
+  return del<null>(`/funcionarios/${id}`)
 }

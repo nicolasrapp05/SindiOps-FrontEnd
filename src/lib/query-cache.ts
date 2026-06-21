@@ -70,14 +70,14 @@ export function removePaginatedItem<T extends HasStringId>(
   )
 }
 
-/** Atualiza ou insere um item em listas simples (não paginadas) — query key exata. */
+/** Atualiza ou insere um item em listas simples (não paginadas) — prefixo da query key. */
 export function upsertListItem<T extends HasStringId>(
   qc: QueryClient,
-  queryKey: QueryKey,
+  queryKeyPrefix: QueryKey,
   item: T,
   options?: { prependIfMissing?: boolean },
 ) {
-  qc.setQueryData<T[]>(queryKey, (old) => {
+  qc.setQueriesData<T[]>({ queryKey: queryKeyPrefix }, (old) => {
     if (!Array.isArray(old)) {
       return options?.prependIfMissing ? [item] : old
     }
@@ -92,14 +92,14 @@ export function upsertListItem<T extends HasStringId>(
   })
 }
 
-/** Aplica patch parcial em um item de lista simples — query key exata. */
+/** Aplica patch parcial em um item de lista simples — prefixo da query key. */
 export function patchListItem<T extends HasStringId>(
   qc: QueryClient,
-  queryKey: QueryKey,
+  queryKeyPrefix: QueryKey,
   id: string,
   patch: Partial<T>,
 ) {
-  qc.setQueryData<T[]>(queryKey, (old) => {
+  qc.setQueriesData<T[]>({ queryKey: queryKeyPrefix }, (old) => {
     if (!Array.isArray(old)) return old
     const idx = old.findIndex((x) => x.id === id)
     if (idx < 0) return old
@@ -109,13 +109,13 @@ export function patchListItem<T extends HasStringId>(
   })
 }
 
-/** Remove um item de listas simples — query key exata. */
+/** Remove um item de listas simples — prefixo da query key. */
 export function removeListItem<T extends HasStringId>(
   qc: QueryClient,
-  queryKey: QueryKey,
+  queryKeyPrefix: QueryKey,
   id: string,
 ) {
-  qc.setQueryData<T[]>(queryKey, (old) =>
+  qc.setQueriesData<T[]>({ queryKey: queryKeyPrefix }, (old) =>
     Array.isArray(old) ? old.filter((x) => x.id !== id) : old,
   )
 }

@@ -70,13 +70,15 @@ export default function OcorrenciasPage() {
   const totalCount = ocorrenciasPage?.totalCount ?? 0
   const totalPages = Math.max(1, Math.ceil(totalCount / 20))
 
-  const summaryList = summaryData?.data ?? []
-  const statusCounts = useMemo(() => ({
-    nova:         summaryList.filter((o) => o.status === "nova").length,
-    em_andamento: summaryList.filter((o) => o.status === "em_andamento").length,
-    finalizada:   summaryList.filter((o) => o.status === "finalizada").length,
-    cancelada:    summaryList.filter((o) => o.status === "cancelada").length,
-  }), [summaryList])
+  const statusCounts = useMemo(() => {
+    const summaryList = summaryData?.data ?? []
+    return {
+      nova: summaryList.filter((o) => o.status === "nova").length,
+      em_andamento: summaryList.filter((o) => o.status === "em_andamento").length,
+      finalizada: summaryList.filter((o) => o.status === "finalizada").length,
+      cancelada: summaryList.filter((o) => o.status === "cancelada").length,
+    }
+  }, [summaryData?.data])
 
   if (isLoading) {
     return (

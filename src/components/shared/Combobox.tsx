@@ -13,6 +13,7 @@ interface ComboboxProps {
   value?: string
   onValueChange: (value: string) => void
   placeholder?: string
+  searchPlaceholder?: string
   emptyText?: string
   disabled?: boolean
   className?: string
@@ -23,6 +24,7 @@ export default function Combobox({
   value,
   onValueChange,
   placeholder = "Selecionar",
+  searchPlaceholder,
   emptyText = "Nenhum resultado encontrado",
   disabled,
   className,
@@ -99,7 +101,7 @@ export default function Combobox({
             onChange={handleChange}
             onFocus={handleFocus}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            placeholder={open ? (searchPlaceholder ?? placeholder) : placeholder}
             disabled={disabled}
             autoComplete="off"
             className={cn(

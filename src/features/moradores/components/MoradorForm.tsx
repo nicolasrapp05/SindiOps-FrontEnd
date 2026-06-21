@@ -1,4 +1,3 @@
-﻿import { useEffect, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -56,7 +55,6 @@ export default function MoradorForm({
   isSubmitting,
 }: MoradorFormProps) {
   const isEdit = !!morador
-  const [selectedBlocoId, setSelectedBlocoId] = useState("")
 
   const { data: blocos } = useQuery({
     queryKey: ["condominios", condominioId, "blocos"],
@@ -73,6 +71,7 @@ export default function MoradorForm({
     reset,
     control,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(moradorSchema),
@@ -85,21 +84,24 @@ export default function MoradorForm({
     },
   })
 
-  useEffect(() => {
-    if (open && morador) {
-      reset({
-        nome: morador.nome,
-        blocoId: morador.bloco.id,
-        unidadeId: morador.unidade.id,
-        email: morador.email,
-        telefone: morador.telefone ?? "",
-      })
-      setSelectedBlocoId(morador.bloco.id)
-    } else if (open) {
-      reset({ nome: "", blocoId: "", unidadeId: "", email: "", telefone: "" })
-      setSelectedBlocoId("")
+  const selectedBlocoId = watch("blocoId")
+
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      if (morador) {
+        reset({
+          nome: morador.nome,
+          blocoId: morador.bloco.id,
+          unidadeId: morador.unidade.id,
+          email: morador.email,
+          telefone: morador.telefone ?? "",
+        })
+      } else {
+        reset({ nome: "", blocoId: "", unidadeId: "", email: "", telefone: "" })
+      }
     }
-  }, [open, morador, reset])
+    onOpenChange(next)
+  }
 
   const handleFormSubmit = (data: FormData) => {
     onSubmit({
@@ -112,7 +114,7 @@ export default function MoradorForm({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
@@ -147,7 +149,6 @@ export default function MoradorForm({
                     value={field.value}
                     onValueChange={(val) => {
                       field.onChange(val)
-                      setSelectedBlocoId(val)
                       setValue("unidadeId", "")
                     }}
                     placeholder="Selecionar"

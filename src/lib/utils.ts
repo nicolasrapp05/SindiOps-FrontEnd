@@ -5,6 +5,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function getInitials(nome: string): string {
+  const parts = nome.trim().split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+  }
+  return nome.slice(0, 2).toUpperCase() || "?"
+}
+
 export function toExternalUrl(url: string): string {
   const trimmed = url.trim()
   if (!trimmed) return trimmed

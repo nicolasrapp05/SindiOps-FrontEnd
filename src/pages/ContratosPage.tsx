@@ -98,15 +98,17 @@ export default function ContratosPage() {
   const totalCount = contratosRaw?.totalCount
   const totalPages = totalCount ? Math.ceil(totalCount / PAGE_SIZE) : 1
 
-  const summaryList = contratosSummaryRaw?.data ?? []
   const statusCounts = useMemo(
-    () => ({
-      active: summaryList.filter((c) => c.status === "active").length,
-      expiring: summaryList.filter((c) => c.status === "expiring").length,
-      expired: summaryList.filter((c) => c.status === "expired").length,
-      cancelled: summaryList.filter((c) => c.status === "cancelled").length,
-    }),
-    [summaryList],
+    () => {
+      const summaryList = contratosSummaryRaw?.data ?? []
+      return {
+        active: summaryList.filter((c) => c.status === "active").length,
+        expiring: summaryList.filter((c) => c.status === "expiring").length,
+        expired: summaryList.filter((c) => c.status === "expired").length,
+        cancelled: summaryList.filter((c) => c.status === "cancelled").length,
+      }
+    },
+    [contratosSummaryRaw?.data],
   )
 
   const openCreate = () => {
