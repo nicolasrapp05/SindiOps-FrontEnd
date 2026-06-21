@@ -62,9 +62,6 @@ export default function MoradorForm({
     enabled: open && !!condominioId,
   })
 
-  const selectedBloco = blocos?.find((b: Bloco) => b.id === selectedBlocoId)
-  const unidades = selectedBloco?.unidades ?? []
-
   const {
     register,
     handleSubmit,
@@ -85,6 +82,8 @@ export default function MoradorForm({
   })
 
   const selectedBlocoId = watch("blocoId")
+  const selectedBloco = blocos?.find((b: Bloco) => b.id === selectedBlocoId)
+  const unidades = selectedBloco?.unidades ?? []
 
   const handleOpenChange = (next: boolean) => {
     if (next) {
