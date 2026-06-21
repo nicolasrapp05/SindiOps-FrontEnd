@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   Check,
@@ -96,34 +96,41 @@ export default function EnviarComunicacaoModal({
 
   const enviarMutation = useEnviarComunicacao()
 
-  // ── Effects ────────────────────────────────────────────────────────────────
-
-  // Reset everything when modal opens
-  useEffect(() => {
-    if (open) {
-      setStep(1)
-      setSelectedTemplateId("")
-      setAssunto("")
-      setCorpo("")
-      setValorMulta(undefined)
-      setPrazoResposta("")
-    }
-  }, [open])
-
-  // Reset body fields when the selected template changes
-  useEffect(() => {
+  const resetFormState = () => {
+    setStep(1)
+    setSelectedTemplateId("")
     setAssunto("")
     setCorpo("")
     setValorMulta(undefined)
     setPrazoResposta("")
-  }, [selectedTemplateId])
+  }
 
-  // Pre-fill assunto e corpo quando o detalhe do template chega (tokens preservados)
-  useEffect(() => {
-    if (!templateDetail) return
-    setAssunto(templateDetail.assunto)
-    setCorpo(templateDetail.corpo)
-  }, [templateDetail])
+  const resetBodyFields = () => {
+    setAssunto("")
+    setCorpo("")
+    setValorMulta(undefined)
+    setPrazoResposta("")
+  }
+
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      resetFormState()
+    }
+    onOpenChange(next)
+  }
+
+  const handleSelectTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId)
+    resetBodyFields()
+  }
+
+  const handleGoToStep3 = () => {
+    if (templateDetail) {
+      setAssunto(templateDetail.assunto)
+      setCorpo(templateDetail.corpo)
+    }
+    setStep(3)
+  }
 
   // ── Derived state ──────────────────────────────────────────────────────────
 
@@ -161,14 +168,14 @@ export default function EnviarComunicacaoModal({
           ...(prazoResposta ? { prazoResposta } : {}),
         },
       },
-      { onSuccess: () => onOpenChange(false) },
+      { onSuccess: () => handleOpenChange(false) },
     )
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Enviar Comunicação</DialogTitle>
@@ -207,7 +214,7 @@ export default function EnviarComunicacaoModal({
                         ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500"
                         : "hover:border-gray-300",
                     )}
-                    onClick={() => setSelectedTemplateId(t.id)}
+                    onClick={() => handleSelectTemplate(t.id)}
                   >
                     <div className="mt-0.5 rounded-lg bg-gray-100 p-2">
                       {t.tipo === "multa" ? <AlertCircle className="h-4 w-4 text-red-500" /> :
@@ -263,7 +270,7 @@ export default function EnviarComunicacaoModal({
               <Button variant="outline" onClick={() => setStep(1)}>
                 <ChevronLeft className="mr-1 h-4 w-4" /> Voltar
               </Button>
-              <Button disabled={!moradorPadrao} onClick={() => setStep(3)}>
+              <Button disabled={!moradorPadrao} onClick={handleGoToStep3}>
                 Próximo <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             </div>

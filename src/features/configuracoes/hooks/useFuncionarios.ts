@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api"
-import { upsertListItem } from "@/lib/query-cache"
+import { removeListItem, upsertListItem } from "@/lib/query-cache"
 import {
   getFuncionarios,
   convidarFuncionario,
@@ -9,8 +9,9 @@ import {
   ativarFuncionario,
   desativarFuncionario,
   reenviarConviteFuncionario,
+  deleteFuncionario,
 } from "../services/funcionarios.service"
-import type { ConvidarFuncionarioRequest, Funcionario, FuncionarioFilters } from "../types/funcionario.types"
+import type { ConvidarFuncionarioRequest, Funcionario, FuncionarioFilters, UpdateFuncionarioRequest } from "../types/funcionario.types"
 
 export function useFuncionarios(filters?: FuncionarioFilters) {
   return useQuery({
@@ -42,7 +43,7 @@ export function useConvidarFuncionario() {
 export function useUpdateFuncionario() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<ConvidarFuncionarioRequest> }) =>
+    mutationFn: ({ id, data }: { id: string; data: UpdateFuncionarioRequest }) =>
       updateFuncionario(id, data),
     onSuccess: (funcionario) => {
       upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario)
@@ -58,11 +59,7 @@ export function useAtivarFuncionario() {
   return useMutation({
     mutationFn: (id: string) => ativarFuncionario(id),
     onSuccess: (funcionario) => {
-      if (funcionario) {
-        upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario)
-      } else {
-        qc.invalidateQueries({ queryKey: ["funcionarios"] })
-      }
+      upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario)
       toast.success("Funcionário ativado")
     },
     onError: (err) =>
@@ -75,11 +72,7 @@ export function useDesativarFuncionario() {
   return useMutation({
     mutationFn: (id: string) => desativarFuncionario(id),
     onSuccess: (funcionario) => {
-      if (funcionario) {
-        upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario)
-      } else {
-        qc.invalidateQueries({ queryKey: ["funcionarios"] })
-      }
+      upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario)
       toast.success("Funcionário desativado")
     },
     onError: (err) =>
@@ -97,5 +90,18 @@ export function useReenviarConviteFuncionario() {
     },
     onError: (err) =>
       toast.error(getApiErrorMessage(err, "Erro ao reenviar convite")),
+  })
+}
+
+export function useDeleteFuncionario() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteFuncionario(id),
+    onSuccess: (_data, id) => {
+      removeListItem<Funcionario>(qc, ["funcionarios"], id)
+      toast.success("Funcionário removido com sucesso")
+    },
+    onError: (err) =>
+      toast.error(getApiErrorMessage(err, "Erro ao remover funcionário")),
   })
 }

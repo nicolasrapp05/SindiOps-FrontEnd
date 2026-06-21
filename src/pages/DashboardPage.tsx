@@ -239,7 +239,6 @@ export default function DashboardPage() {
   const exportar = useGerarRelatorio()
 
   const alertas = data?.alertas
-  const agenda = data?.agenda ?? []
 
   const visibleAlertas = useMemo(
     () => {
@@ -256,8 +255,9 @@ export default function DashboardPage() {
   )
 
   const sortedAgenda = useMemo(
-    () =>
-      [...agenda]
+    () => {
+      const agenda = data?.agenda ?? []
+      return [...agenda]
         .filter((item) => canSeeAgendaTipo(cargo, item.tipo))
         .sort(
           (a, b) =>
@@ -265,8 +265,9 @@ export default function DashboardPage() {
             new Date(b.dataVencimento).getTime(),
         )
         .filter((item) => tipoFilter === "all" || item.tipo === tipoFilter)
-        .filter((item) => statusFilter === "all" || item.status === statusFilter),
-    [agenda, cargo, tipoFilter, statusFilter],
+        .filter((item) => statusFilter === "all" || item.status === statusFilter)
+    },
+    [data?.agenda, cargo, tipoFilter, statusFilter],
   )
 
   const tipoFilterOptions = useMemo(() => getTipoFilterOptions(cargo), [cargo])

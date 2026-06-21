@@ -2,15 +2,6 @@
 export const RECOVERY_OTP_MIN_LENGTH = 6
 export const RECOVERY_OTP_MAX_LENGTH = 8
 
-export function getPasswordResetRedirectUrl() {
-  if (import.meta.env.DEV) {
-    return `${window.location.origin}/redefinir-senha`
-  }
-
-  const base = import.meta.env.VITE_APP_URL || window.location.origin
-  return `${String(base).replace(/\/$/, "")}/redefinir-senha`
-}
-
 function getHashParams() {
   const raw = window.location.hash.startsWith("#")
     ? window.location.hash.slice(1)

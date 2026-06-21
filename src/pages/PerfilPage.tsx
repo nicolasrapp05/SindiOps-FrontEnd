@@ -13,17 +13,10 @@ import {
   useAlterarSenha,
 } from "@/features/configuracoes/hooks/usePerfil"
 import { toastFormValidationError } from "@/lib/form-utils"
+import { getInitials } from "@/lib/utils"
 import type { UserCargo } from "@/types"
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
-
-function initials(nome: string): string {
-  const parts = nome.trim().split(/\s+/).filter(Boolean)
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-  }
-  return nome.slice(0, 2).toUpperCase() || "?"
-}
 
 const CARGO_LABEL: Record<UserCargo, string> = {
   sindico: "Síndico",
@@ -110,7 +103,7 @@ export default function PerfilPage() {
             <div className="flex flex-col items-center gap-4 text-center">
               <Avatar className="h-20 w-20 text-lg">
                 <AvatarFallback className="bg-emerald-100 text-xl font-bold text-emerald-700">
-                  {nome ? initials(nome) : "?"}
+                  {nome ? getInitials(nome) : "?"}
                 </AvatarFallback>
               </Avatar>
 

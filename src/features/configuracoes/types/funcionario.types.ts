@@ -26,6 +26,12 @@ export interface ConvidarFuncionarioRequest {
   condominioIds: string[]
 }
 
+export interface UpdateFuncionarioRequest {
+  nome: string
+  cargo: FuncionarioCargo
+  condominioIds: string[]
+}
+
 export interface FuncionarioFilters {
   cargo?: FuncionarioCargo
   ativo?: boolean

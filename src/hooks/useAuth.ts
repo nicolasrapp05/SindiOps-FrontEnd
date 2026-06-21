@@ -11,16 +11,6 @@ import type { AuthUser } from "@/types"
 export function useAuth() {
   const { user, isAuthenticated, setSession, clearSession, hydrateUserFromApi } = useAuthStore()
 
-  async function syncSessionFromSupabase() {
-    const { data, error } = await supabaseClient.auth.getSession()
-    if (error) throw error
-    if (!data.session) throw new Error("Sessão não retornada")
-
-    const authUser: AuthUser = authUserFromSupabase(data.session.user)
-    setSession(authUser, data.session.access_token, data.session.refresh_token)
-    await hydrateUserFromApi()
-  }
-
   const login = async (email: string, password: string) => {
     const { data, error } = await supabaseClient.auth.signInWithPassword({
       email,
