@@ -44,13 +44,16 @@ import {
   type TipoAprovacao,
 } from "@/features/compras/types/compra.types"
 import CompraStatusBadge from "@/features/compras/components/CompraStatusBadge"
+import ItensSolicitacaoLista from "@/features/compras/components/ItensSolicitacaoLista"
 import SolicitacaoCompraForm from "@/features/compras/components/SolicitacaoCompraForm"
 import MapaCotacoes from "@/features/compras/components/MapaCotacoes"
 import AprovarCompraDialog from "@/features/compras/components/AprovarCompraDialog"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import {
   getAprovarBlockReason,
   getCotacaoReadinessLabel,
   isSindico,
+  resumoItensCompra,
 } from "@/features/compras/lib/compra-flow"
 import { cn } from "@/lib/utils"
 import { formatBRL } from "@/lib/currency"
@@ -113,6 +116,7 @@ export default function ComprasPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [aprovarDialog, setAprovarDialog] = useState<AprovarDialogState | null>(null)
+  const [cancelarDialog, setCancelarDialog] = useState<{ id: string; nome: string } | null>(null)
 
   const debouncedSearch = useDebounce(search)
 
@@ -245,6 +249,7 @@ export default function ComprasPage() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar…"
+              aria-label="Buscar por item ou justificativa"
               className="pl-10"
               value={search}
               onChange={(e) => {
@@ -298,7 +303,7 @@ export default function ComprasPage() {
                   <TableHead>Status</TableHead>
                   <TableHead>Categoria</TableHead>
                   <TableHead>Item</TableHead>
-                  <TableHead className="text-right">QTD</TableHead>
+                  <TableHead className="text-right">Itens</TableHead>
                   <TableHead>Solicitante</TableHead>
                   <TableHead>Tipo aprovação</TableHead>
                   <TableHead>Data</TableHead>
@@ -321,6 +326,7 @@ export default function ComprasPage() {
                   )
                   const cotacoes = detail?.cotacoes ?? row.cotacoes ?? []
                   const cotacaoSelecionada = cotacoes.find((c) => c.selecionada)
+                  const itensResumo = resumoItensCompra(row.itens)
 
                   return (
                     <Fragment key={row.id}>
@@ -336,6 +342,7 @@ export default function ComprasPage() {
                             size="icon"
                             className="h-7 w-7"
                             aria-expanded={open}
+                            aria-label={open ? "Ocultar itens e cotações" : "Ver itens e cotações"}
                             onClick={(e) => {
                               e.stopPropagation()
                               toggleExpand(row.id)
@@ -363,9 +370,22 @@ export default function ComprasPage() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>{COMPRA_CATEGORIA_LABEL[row.categoria]}</TableCell>
-                        <TableCell className="max-w-[200px] truncate font-medium">{row.item}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.quantidade}</TableCell>
+                        <TableCell title={itensResumo.categoriasTitulo}>
+                          {itensResumo.categoria}
+                        </TableCell>
+                        <TableCell className="max-w-[240px] font-medium" title={itensResumo.titulo}>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="truncate">{itensResumo.descricao}</span>
+                            {itensResumo.extras > 0 && (
+                              <span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">
+                                +{itensResumo.extras}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {itensResumo.quantidade}
+                        </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-0.5">
                             <span>{row.solicitadoPor.nome}</span>
@@ -387,7 +407,11 @@ export default function ComprasPage() {
                             {detailLoading ? (
                               <Skeleton className="h-40 w-full rounded-xl" />
                             ) : (
-                              <>
+                              <div className="space-y-4">
+                                <ItensSolicitacaoLista
+                                  itens={detail?.itens ?? row.itens}
+                                  justificativa={detail?.justificativa}
+                                />
                                 <div className="mb-3 flex items-center justify-between gap-2">
                                   <p className="text-sm font-medium text-muted-foreground">
                                     Mapa de cotações
@@ -402,9 +426,10 @@ export default function ComprasPage() {
                                 </div>
                                 <MapaCotacoes
                                   cotacoes={cotacoes}
+                                  itens={detail?.itens ?? row.itens}
                                 />
                                 {row.status !== "finalizada" && sindico && (
-                                  <div className="mt-4 flex items-center justify-end gap-3 border-t pt-4">
+                                  <div className="flex items-center justify-end gap-3 border-t pt-4">
                                     {row.status === "cancelada" && (
                                       <Button
                                         variant="outline"
@@ -424,7 +449,7 @@ export default function ComprasPage() {
                                         size="sm"
                                         disabled={updateStatusMutation.isPending}
                                         onClick={() =>
-                                          updateStatusMutation.mutate({ id: row.id, status: "cancelada" })
+                                          setCancelarDialog({ id: row.id, nome: itensResumo.descricao })
                                         }
                                       >
                                         Cancelar Solicitação
@@ -479,7 +504,7 @@ export default function ComprasPage() {
                                     )}
                                   </div>
                                 )}
-                              </>
+                              </div>
                             )}
                           </TableCell>
                         </TableRow>
@@ -528,6 +553,22 @@ export default function ComprasPage() {
         condominioId={condominioId}
         isSubmitting={createMutation.isPending}
         onSubmit={handleCreate}
+      />
+
+      <ConfirmDialog
+        open={cancelarDialog !== null}
+        onOpenChange={(open) => { if (!open) setCancelarDialog(null) }}
+        title="Cancelar solicitação"
+        description={`Tem certeza que deseja cancelar "${cancelarDialog?.nome ?? "esta solicitação"}"?`}
+        confirmLabel="Confirmar cancelamento"
+        isPending={updateStatusMutation.isPending}
+        onConfirm={() => {
+          if (!cancelarDialog) return
+          updateStatusMutation.mutate(
+            { id: cancelarDialog.id, status: "cancelada" },
+            { onSuccess: () => setCancelarDialog(null) },
+          )
+        }}
       />
 
       {aprovarDialog && (

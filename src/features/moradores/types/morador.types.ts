@@ -1,3 +1,11 @@
+export type MoradorPapel = "proprietario" | "inquilino" | "ocupante"
+
+export const MORADOR_PAPEL_LABEL: Record<MoradorPapel, string> = {
+  proprietario: "Proprietário",
+  inquilino: "Inquilino",
+  ocupante: "Ocupante",
+}
+
 export interface Morador {
   id: string
   condominioId: string
@@ -5,6 +13,7 @@ export interface Morador {
   nome: string
   email: string
   telefone?: string
+  papel: MoradorPapel
   bloco: { id: string; nome: string }
   unidade: { id: string; numero: string }
   criadoEm: string
@@ -24,6 +33,7 @@ export interface CreateMoradorRequest {
   nome: string
   email: string
   telefone?: string
+  papel: MoradorPapel
 }
 
 export interface MoradoresFilters {

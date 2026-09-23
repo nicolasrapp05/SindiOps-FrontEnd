@@ -16,7 +16,12 @@ import {
 } from "@/components/ui/dialog"
 import { getBlocos } from "@/features/condominios/services/condominios.service"
 import type { Bloco } from "@/features/condominios/types/condominio.types"
-import type { Morador, CreateMoradorRequest } from "../types/morador.types"
+import {
+  MORADOR_PAPEL_LABEL,
+  type Morador,
+  type MoradorPapel,
+  type CreateMoradorRequest,
+} from "../types/morador.types"
 import Combobox from "@/components/shared/Combobox"
 import { toastFormValidationError } from "@/lib/form-utils"
 
@@ -27,10 +32,13 @@ function phoneMask(value: string): string {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
 }
 
+const PAPEIS: MoradorPapel[] = ["proprietario", "inquilino", "ocupante"]
+
 const moradorSchema = z.object({
   nome: z.string().min(1, "O nome é obrigatório"),
   blocoId: z.string().min(1, "Selecione um bloco"),
   unidadeId: z.string().min(1, "Selecione uma unidade"),
+  papel: z.enum(["proprietario", "inquilino", "ocupante"], { error: "Selecione o papel" }),
   email: z.string().min(1, "O email é obrigatório").email("Formato de email inválido"),
   telefone: z.string().optional().or(z.literal("")),
 })
@@ -76,6 +84,7 @@ export default function MoradorForm({
       nome: "",
       blocoId: "",
       unidadeId: "",
+      papel: "" as FormData["papel"],
       email: "",
       telefone: "",
     },
@@ -92,11 +101,19 @@ export default function MoradorForm({
           nome: morador.nome,
           blocoId: morador.bloco.id,
           unidadeId: morador.unidade.id,
+          papel: morador.papel,
           email: morador.email,
           telefone: morador.telefone ?? "",
         })
       } else {
-        reset({ nome: "", blocoId: "", unidadeId: "", email: "", telefone: "" })
+        reset({
+          nome: "",
+          blocoId: "",
+          unidadeId: "",
+          papel: "" as FormData["papel"],
+          email: "",
+          telefone: "",
+        })
       }
     }
     onOpenChange(next)
@@ -109,6 +126,7 @@ export default function MoradorForm({
       nome: data.nome,
       email: data.email,
       telefone: data.telefone || undefined,
+      papel: data.papel,
     })
   }
 
@@ -176,6 +194,24 @@ export default function MoradorForm({
               />
               {errors.unidadeId && <p className="text-xs text-destructive">{errors.unidadeId.message}</p>}
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Papel<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
+            <Controller
+              control={control}
+              name="papel"
+              render={({ field }) => (
+                <Combobox
+                  options={PAPEIS.map((papel) => ({ value: papel, label: MORADOR_PAPEL_LABEL[papel] }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Selecionar papel"
+                  searchPlaceholder="Buscar papel..."
+                />
+              )}
+            />
+            {errors.papel && <p className="text-xs text-destructive">{errors.papel.message}</p>}
           </div>
 
           {/* Email */}

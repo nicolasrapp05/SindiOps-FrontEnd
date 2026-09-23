@@ -1,10 +1,18 @@
 import { Mail, Phone, Calendar, Building2, Home } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { MORADOR_PAPEL_LABEL, type MoradorPapel } from "../types/morador.types"
 import { useMorador } from "../hooks/useMoradores"
+import { cn } from "@/lib/utils"
 
 interface MoradorExpandidoProps {
   moradorId: string
+}
+
+const PAPEL_CLASS: Record<MoradorPapel, string> = {
+  proprietario: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100",
+  inquilino: "bg-blue-100 text-blue-700 hover:bg-blue-100",
+  ocupante: "bg-gray-100 text-gray-600 hover:bg-gray-100",
 }
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
@@ -55,6 +63,9 @@ export default function MoradorExpandido({ moradorId }: MoradorExpandidoProps) {
           </div>
           <div>
             <p className="font-semibold text-gray-900">{morador.nome}</p>
+            <Badge variant="secondary" className={cn("mt-1 font-medium", PAPEL_CLASS[morador.papel])}>
+              {MORADOR_PAPEL_LABEL[morador.papel]}
+            </Badge>
             <p className="text-sm text-gray-500">
               Bloco {morador.bloco.nome} · Unidade {morador.unidade.numero}
             </p>

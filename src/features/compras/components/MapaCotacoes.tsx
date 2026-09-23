@@ -2,11 +2,12 @@ import { Pencil, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { brl, getMenorValorUnitario } from "../lib/cotacao-utils"
-import type { Cotacao } from "../types/compra.types"
+import { brl, calcValorTotalCotacao, getMenorValorTotal } from "../lib/cotacao-utils"
+import type { Cotacao, SolicitacaoCompraItem } from "../types/compra.types"
 
 interface MapaCotacoesProps {
   cotacoes: Cotacao[]
+  itens: SolicitacaoCompraItem[]
   onSelecionar?: (cotacaoId: string) => void
   isSelecting?: boolean
   onEdit?: (cotacao: Cotacao) => void
@@ -16,13 +17,14 @@ interface MapaCotacoesProps {
 
 export default function MapaCotacoes({
   cotacoes,
+  itens,
   onSelecionar,
   isSelecting = false,
   onEdit,
   onDelete,
   isDeleting,
 }: MapaCotacoesProps) {
-  const menorValorUnitario = getMenorValorUnitario(cotacoes)
+  const menorValorTotal = getMenorValorTotal(cotacoes)
 
   if (cotacoes.length === 0) {
     return (
@@ -35,7 +37,7 @@ export default function MapaCotacoes({
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {cotacoes.map((c) => {
-        const isBest = menorValorUnitario !== null && c.valorUnitario === menorValorUnitario
+        const isBest = menorValorTotal !== null && c.valorTotal === menorValorTotal
         const selected = c.selecionada
         const fornecedorNome = c.nomeEmpresa ?? c.fornecedor?.nome ?? "—"
         return (
@@ -84,9 +86,10 @@ export default function MapaCotacoes({
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+                    aria-label={`Editar cotação de ${fornecedorNome}`}
                     onClick={() => onEdit(c)}
                   >
-                    <Pencil className="h-3.5 w-3.5" />
+                    <Pencil className="h-3.5 w-3.5" aria-hidden />
                   </Button>
                 )}
                 {onDelete && (
@@ -96,21 +99,44 @@ export default function MapaCotacoes({
                     size="icon"
                     className="h-7 w-7 shrink-0 text-muted-foreground hover:text-red-600"
                     disabled={isDeleting}
+                    aria-label={`Excluir cotação de ${fornecedorNome}`}
                     onClick={() => onDelete(c.id)}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden />
                   </Button>
                 )}
               </div>
             </div>
-            <dl className="space-y-1 text-sm">
-              <div className="flex justify-between gap-2">
-                <dt className="text-muted-foreground">Unitário</dt>
-                <dd className="font-medium">{brl(c.valorUnitario)}</dd>
-              </div>
-              <div className="flex justify-between gap-2">
+            <dl className="space-y-2 text-sm">
+              {itens.map((item) => {
+                const linha = c.itens?.find((i) => i.itemId === item.id)
+                const totalLinha = linha
+                  ? (linha.valorTotal ?? calcValorTotalCotacao(linha.valorUnitario, item.quantidade))
+                  : null
+                return (
+                  <div key={item.id} className="space-y-0.5">
+                    <dt className="truncate text-xs text-muted-foreground" title={item.descricao}>
+                      {item.descricao}
+                    </dt>
+                    <dd className="flex justify-between gap-2 tabular-nums">
+                      {linha ? (
+                        <>
+                          <span className="text-muted-foreground">
+                            {brl(linha.valorUnitario)} × {item.quantidade}
+                            {item.unidade ? ` ${item.unidade}` : ""}
+                          </span>
+                          <span className="font-medium">{brl(totalLinha ?? 0)}</span>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">Sem preço</span>
+                      )}
+                    </dd>
+                  </div>
+                )
+              })}
+              <div className="flex justify-between gap-2 border-t pt-2">
                 <dt className="text-muted-foreground">Total</dt>
-                <dd className="font-semibold">{brl(c.valorTotal)}</dd>
+                <dd className="font-semibold tabular-nums">{brl(c.valorTotal)}</dd>
               </div>
               {c.formaPagamento && (
                 <div className="pt-1">

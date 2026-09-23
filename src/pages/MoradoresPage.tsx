@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -36,13 +37,22 @@ import {
 } from "@/features/moradores/hooks/useMoradores"
 import type {
   Morador,
+  MoradorPapel,
   CreateMoradorRequest,
 } from "@/features/moradores/types/morador.types"
+import { MORADOR_PAPEL_LABEL } from "@/features/moradores/types/morador.types"
+import { cn } from "@/lib/utils"
 import MoradorForm from "@/features/moradores/components/MoradorForm"
 import MoradorExpandido from "@/features/moradores/components/MoradorExpandido"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { useDebounce } from "@/hooks/useDebounce"
+
+const PAPEL_CLASS: Record<MoradorPapel, string> = {
+  proprietario: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100",
+  inquilino: "bg-blue-100 text-blue-700 hover:bg-blue-100",
+  ocupante: "bg-gray-100 text-gray-600 hover:bg-gray-100",
+}
 
 export default function MoradoresPage() {
   const [search, setSearch] = useState("")
@@ -241,6 +251,7 @@ export default function MoradoresPage() {
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Nome</TableHead>
+                  <TableHead>Papel</TableHead>
                   <TableHead>Bloco</TableHead>
                   <TableHead>Unidade</TableHead>
                   <TableHead>Email</TableHead>
@@ -256,6 +267,11 @@ export default function MoradoresPage() {
                       onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}
                     >
                       <TableCell className="font-medium text-gray-900">{m.nome}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={cn("font-medium", PAPEL_CLASS[m.papel])}>
+                          {MORADOR_PAPEL_LABEL[m.papel]}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-gray-600">{m.bloco.nome}</TableCell>
                       <TableCell className="text-gray-600">{m.unidade.numero}</TableCell>
                       <TableCell className="text-gray-500">{m.email}</TableCell>
@@ -300,7 +316,7 @@ export default function MoradoresPage() {
                     </TableRow>
                     {expandedId === m.id && (
                       <TableRow key={`${m.id}-expand`}>
-                        <TableCell colSpan={6} className="p-0">
+                        <TableCell colSpan={7} className="p-0">
                           <MoradorExpandido moradorId={m.id} />
                         </TableCell>
                       </TableRow>
