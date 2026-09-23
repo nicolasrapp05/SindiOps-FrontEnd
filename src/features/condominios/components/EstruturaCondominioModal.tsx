@@ -1,6 +1,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -23,7 +24,10 @@ export default function EstruturaCondominioModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Blocos e Unidades — {condominioNome}</DialogTitle>
+          <DialogTitle>Blocos e Unidades - {condominioNome}</DialogTitle>
+          <DialogDescription>
+            Organize os blocos e as unidades deste condomínio.
+          </DialogDescription>
         </DialogHeader>
         <EstruturaCondominio
           condominioId={condominioId}

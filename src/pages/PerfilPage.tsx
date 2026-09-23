@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Eye, EyeOff, KeyRound, Mail, Shield, User } from "lucide-react"
+import { KeyRound, Mail, Shield, User } from "lucide-react"
+import PasswordField from "@/components/shared/PasswordField"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -52,9 +53,6 @@ export default function PerfilPage() {
   const atualizarPerfil = useAtualizarPerfil()
   const alterarSenha = useAlterarSenha()
 
-  const [showNova, setShowNova] = useState(false)
-  const [showConfirmar, setShowConfirmar] = useState(false)
-
   const perfilForm = useForm<EditarPerfilForm>({
     resolver: zodResolver(editarPerfilSchema),
     defaultValues: { nome: user?.nome ?? "" },
@@ -90,7 +88,7 @@ export default function PerfilPage() {
     <div className="space-y-6">
       {/* ── page header ── */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Perfil</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Perfil</h1>
         <p className="mt-1 text-sm text-gray-500">
           Gerencie suas informações pessoais e segurança da conta.
         </p>
@@ -99,7 +97,7 @@ export default function PerfilPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* ── left: identity card ── */}
         <div className="lg:col-span-1">
-          <div className="rounded-xl bg-white p-6 shadow-sm">
+          <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
             <div className="flex flex-col items-center gap-4 text-center">
               <Avatar className="h-20 w-20 text-lg">
                 <AvatarFallback className="bg-emerald-100 text-xl font-bold text-emerald-700">
@@ -108,8 +106,8 @@ export default function PerfilPage() {
               </Avatar>
 
               <div className="space-y-1">
-                <p className="text-lg font-semibold text-gray-900">
-                  {nome || "—"}
+                <p className="text-lg font-semibold text-foreground">
+                  {nome || "-"}
                 </p>
                 <p className="text-sm text-gray-500">{email}</p>
               </div>
@@ -123,15 +121,15 @@ export default function PerfilPage() {
 
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2.5 text-gray-600">
-                <User className="h-4 w-4 shrink-0 text-gray-400" />
-                <span className="truncate">{nome || "—"}</span>
+                <User className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{nome || "-"}</span>
               </li>
               <li className="flex items-center gap-2.5 text-gray-600">
-                <Mail className="h-4 w-4 shrink-0 text-gray-400" />
+                <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="truncate">{email}</span>
               </li>
               <li className="flex items-center gap-2.5 text-gray-600">
-                <Shield className="h-4 w-4 shrink-0 text-gray-400" />
+                <Shield className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span>{CARGO_LABEL[cargo]}</span>
               </li>
             </ul>
@@ -141,9 +139,9 @@ export default function PerfilPage() {
         {/* ── right: forms ── */}
         <div className="space-y-6 lg:col-span-2">
           {/* ── edit profile ── */}
-          <div className="rounded-xl bg-white p-6 shadow-sm">
+          <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
             <div className="mb-5">
-              <h2 className="text-base font-semibold text-gray-900">
+              <h2 className="text-base font-semibold text-foreground">
                 Informações do Perfil
               </h2>
               <p className="mt-0.5 text-sm text-gray-500">
@@ -160,7 +158,7 @@ export default function PerfilPage() {
                   {...perfilForm.register("nome")}
                 />
                 {perfilForm.formState.errors.nome && (
-                  <p className="text-xs text-red-500">
+                  <p className="text-xs text-destructive">
                     {perfilForm.formState.errors.nome.message}
                   </p>
                 )}
@@ -175,7 +173,7 @@ export default function PerfilPage() {
                   disabled
                   className="cursor-not-allowed bg-gray-50 text-gray-500"
                 />
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   O email é gerenciado pelo sistema e não pode ser alterado aqui.
                 </p>
               </div>
@@ -189,7 +187,7 @@ export default function PerfilPage() {
                   disabled
                   className="cursor-not-allowed bg-gray-50 text-gray-500"
                 />
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   O cargo é atribuído pelo síndico responsável.
                 </p>
               </div>
@@ -197,7 +195,7 @@ export default function PerfilPage() {
               <div className="pt-2">
                 <Button
                   type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  
                   disabled={
                     atualizarPerfil.isPending ||
                     !perfilForm.formState.isDirty
@@ -210,13 +208,13 @@ export default function PerfilPage() {
           </div>
 
           {/* ── change password ── */}
-          <div className="rounded-xl bg-white p-6 shadow-sm">
+          <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
             <div className="mb-5 flex items-start gap-3">
               <div className="mt-0.5 rounded-lg bg-amber-50 p-2">
                 <KeyRound className="h-4 w-4 text-amber-600" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-gray-900">Segurança</h2>
+                <h2 className="text-base font-semibold text-foreground">Segurança</h2>
                 <p className="mt-0.5 text-sm text-gray-500">
                   Defina uma nova senha para sua conta.
                 </p>
@@ -226,29 +224,17 @@ export default function PerfilPage() {
             <form onSubmit={senhaForm.handleSubmit(onSubmitSenha, toastFormValidationError)} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="novaSenha">Nova senha</Label>
-                <div className="relative">
-                  <Input
-                    id="novaSenha"
-                    type={showNova ? "text" : "password"}
-                    placeholder="Mínimo 6 caracteres"
-                    className="pr-10"
-                    {...senhaForm.register("novaSenha")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNova((v) => !v)}
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
-                    tabIndex={-1}
-                  >
-                    {showNova ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
+                <PasswordField
+                  id="novaSenha"
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  placeholder="Mínimo 6 caracteres"
+                  aria-invalid={!!senhaForm.formState.errors.novaSenha}
+                  aria-describedby={senhaForm.formState.errors.novaSenha ? "nova-senha-erro" : undefined}
+                  {...senhaForm.register("novaSenha")}
+                />
                 {senhaForm.formState.errors.novaSenha && (
-                  <p className="text-xs text-red-500">
+                  <p id="nova-senha-erro" role="alert" className="text-xs text-destructive">
                     {senhaForm.formState.errors.novaSenha.message}
                   </p>
                 )}
@@ -256,29 +242,17 @@ export default function PerfilPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="confirmarSenha">Confirmar nova senha</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmarSenha"
-                    type={showConfirmar ? "text" : "password"}
-                    placeholder="Repita a nova senha"
-                    className="pr-10"
-                    {...senhaForm.register("confirmarSenha")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmar((v) => !v)}
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
-                    tabIndex={-1}
-                  >
-                    {showConfirmar ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
+                <PasswordField
+                  id="confirmarSenha"
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  placeholder="Repita a nova senha"
+                  aria-invalid={!!senhaForm.formState.errors.confirmarSenha}
+                  aria-describedby={senhaForm.formState.errors.confirmarSenha ? "confirmar-senha-erro" : undefined}
+                  {...senhaForm.register("confirmarSenha")}
+                />
                 {senhaForm.formState.errors.confirmarSenha && (
-                  <p className="text-xs text-red-500">
+                  <p id="confirmar-senha-erro" role="alert" className="text-xs text-destructive">
                     {senhaForm.formState.errors.confirmarSenha.message}
                   </p>
                 )}
@@ -287,7 +261,7 @@ export default function PerfilPage() {
               <div className="pt-2">
                 <Button
                   type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  
                   disabled={alterarSenha.isPending}
                 >
                   {alterarSenha.isPending ? "Alterando…" : "Alterar senha"}

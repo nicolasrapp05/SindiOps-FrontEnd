@@ -219,7 +219,7 @@ export default function GerarEstruturaWizard({
           setProgress((prev) => ({
             ...prev,
             current: criados,
-            message: `Bloco ${blocoPreview.nome} — ${criados}/${totalUnidades} unidades`,
+            message: `Bloco ${blocoPreview.nome} - ${criados}/${totalUnidades} unidades`,
           }))
         } catch {
           erros++
@@ -279,7 +279,7 @@ export default function GerarEstruturaWizard({
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
-            <p className="text-center text-xs text-gray-400">
+            <p className="text-center text-xs text-muted-foreground">
               {progress.current} / {progress.total} unidades criadas ({progressPercent}%)
             </p>
           </div>
@@ -445,7 +445,7 @@ export default function GerarEstruturaWizard({
                       className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 transition-colors ${
                         padrao === opt.value
                           ? "border-emerald-500 bg-emerald-50"
-                          : "border-gray-200 hover:border-gray-300"
+                          : "border-border hover:border-gray-300"
                       } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
                     >
                       <input
@@ -501,13 +501,13 @@ export default function GerarEstruturaWizard({
                         {bloco.unidades.slice(0, 30).map((u, i) => (
                           <span
                             key={`${bloco.nome}-${i}`}
-                            className="inline-block rounded bg-white px-2 py-0.5 text-xs font-medium text-gray-700 shadow-sm ring-1 ring-gray-200"
+                            className="inline-block rounded bg-card px-2 py-0.5 text-xs font-medium text-gray-700 shadow-sm ring-1 ring-gray-200"
                           >
                             {u}
                           </span>
                         ))}
                         {bloco.unidades.length > 30 && (
-                          <span className="inline-block rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-400">
+                          <span className="inline-block rounded bg-gray-100 px-2 py-0.5 text-xs text-muted-foreground">
                             +{bloco.unidades.length - 30} mais…
                           </span>
                         )}
@@ -525,7 +525,7 @@ export default function GerarEstruturaWizard({
             Cancelar
           </Button>
           <Button
-            className="bg-emerald-700 hover:bg-emerald-800"
+            
             onClick={handleGerar}
             disabled={isGenerating || preview.length === 0 || totalUnidades === 0}
           >

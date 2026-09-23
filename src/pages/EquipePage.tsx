@@ -124,9 +124,9 @@ export default function EquipePage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="rounded-full bg-red-50 p-4">
-          <Users className="h-8 w-8 text-red-500" />
+          <Users className="text-red-500" />
         </div>
-        <h3 className="mt-4 text-lg font-semibold text-gray-900">Erro ao carregar equipe</h3>
+        <h3 className="mt-4 text-lg font-semibold text-foreground">Erro ao carregar equipe</h3>
         <p className="mt-1 text-sm text-gray-500">Verifique sua conexão e tente novamente.</p>
         <Button variant="outline" className="mt-6" onClick={() => refetch()}>
           <RefreshCw className="mr-2 h-4 w-4" />
@@ -140,11 +140,11 @@ export default function EquipePage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Equipe</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Equipe</h1>
           <p className="mt-1 text-sm text-gray-500">Gerencie convites, cargos e acesso.</p>
         </div>
         <Button
-          className="shrink-0 bg-emerald-700 hover:bg-emerald-800"
+          className="shrink-0"
           onClick={() => setModalOpen(true)}
         >
           <Plus className="mr-1.5 h-4 w-4" />
@@ -177,14 +177,14 @@ export default function EquipePage() {
       </div>
 
       {list.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
           <div className="rounded-full bg-gray-100 p-4">
-            <Users className="h-8 w-8 text-gray-400" />
+            <Users className="text-muted-foreground" />
           </div>
           <h3 className="mt-4 text-lg font-semibold text-gray-700">Nenhum funcionário</h3>
           <p className="mt-1 text-sm text-gray-500">Convide o primeiro membro da equipe.</p>
           <Button
-            className="mt-6 bg-emerald-700 hover:bg-emerald-800"
+            className="mt-6"
             onClick={() => setModalOpen(true)}
           >
             <Plus className="mr-1.5 h-4 w-4" />
@@ -192,7 +192,7 @@ export default function EquipePage() {
           </Button>
         </div>
       ) : (
-        <div className="rounded-xl bg-white shadow-sm">
+        <div className="rounded-2xl bg-card ring-1 ring-border">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -208,7 +208,7 @@ export default function EquipePage() {
               </TableHeader>
               <TableBody>
                 {list.map((f) => (
-                  <TableRow key={f.id} className="transition-colors hover:bg-gray-50">
+                  <TableRow key={f.id} className="transition-colors hover:bg-muted/60">
                     <TableCell className={cn(!f.ativo && "opacity-60")}>
                       <div className="flex items-center gap-3">
                         <Avatar size="sm">
@@ -216,7 +216,7 @@ export default function EquipePage() {
                             {getInitials(f.nome)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-medium text-gray-900">{f.nome}</span>
+                        <span className="font-medium text-foreground">{f.nome}</span>
                       </div>
                     </TableCell>
                     <TableCell className={cn("text-gray-600", !f.ativo && "opacity-60")}>
@@ -247,12 +247,12 @@ export default function EquipePage() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            
                             title="Reenviar convite"
                             disabled={reenviarConvite.isPending}
                             onClick={() => reenviarConvite.mutate(f.id)}
-                          >
-                            <Mail className="h-4 w-4" />
+                           aria-label="Reenviar convite">
+                            <Mail className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         )}
                         {f.ativo ? (
@@ -261,12 +261,12 @@ export default function EquipePage() {
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-amber-600 hover:text-amber-800"
+                              className="text-amber-600 hover:text-amber-800"
                               title="Desativar"
                               disabled={desativar.isPending}
                               onClick={() => setPendingDeactivate(f)}
-                            >
-                              <UserX className="h-4 w-4" />
+                             aria-label="Desativar">
+                              <UserX className="h-4 w-4" aria-hidden="true" />
                             </Button>
                           )
                         ) : (
@@ -274,34 +274,34 @@ export default function EquipePage() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-emerald-600 hover:text-emerald-800"
+                            className="text-emerald-600 hover:text-emerald-800"
                             title="Ativar"
                             disabled={ativar.isPending}
                             onClick={() => ativar.mutate(f.id)}
-                          >
-                            <UserCheck className="h-4 w-4" />
+                           aria-label="Ativar">
+                            <UserCheck className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         )}
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          
                           title="Editar"
                           onClick={() => openEditModal(f)}
-                        >
-                          <Pencil className="h-4 w-4" />
+                         aria-label="Editar">
+                          <Pencil className="h-4 w-4" aria-hidden="true" />
                         </Button>
                         {f.id !== currentUserId && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-red-500 hover:text-red-700"
+                            className="text-red-500 hover:text-red-700"
                             title="Remover"
                             onClick={() => setPendingDelete(f)}
-                          >
-                            <Trash2 className="h-4 w-4" />
+                           aria-label="Remover">
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         )}
                       </div>

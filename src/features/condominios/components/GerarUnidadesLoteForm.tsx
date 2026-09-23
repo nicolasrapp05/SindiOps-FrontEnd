@@ -152,7 +152,7 @@ export default function GerarUnidadesLoteForm({
                 "flex cursor-pointer items-start gap-2 rounded-md border p-2 transition-colors",
                 padrao === opt.value
                   ? "border-emerald-500 bg-emerald-50"
-                  : "border-gray-200 hover:border-gray-300",
+                  : "border-border hover:border-gray-300",
               )}
             >
               <input
@@ -205,13 +205,13 @@ export default function GerarUnidadesLoteForm({
             {numerosParaCriar.slice(0, 24).map((u, i) => (
               <span
                 key={`${u}-${i}`}
-                className="inline-block rounded bg-white px-1.5 py-0.5 text-[11px] font-medium text-gray-700 ring-1 ring-gray-200"
+                className="inline-block rounded bg-card px-1.5 py-0.5 text-[11px] font-medium text-gray-700 ring-1 ring-gray-200"
               >
                 {u}
               </span>
             ))}
             {numerosParaCriar.length > 24 && (
-              <span className="inline-block rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-400">
+              <span className="inline-block rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-muted-foreground">
                 +{numerosParaCriar.length - 24} mais…
               </span>
             )}
@@ -219,7 +219,7 @@ export default function GerarUnidadesLoteForm({
         )}
       </section>
 
-      <div className="sticky bottom-0 flex justify-end gap-1.5 border-t border-gray-100 bg-white pt-2">
+      <div className="sticky bottom-0 flex justify-end gap-1.5 border-t border-gray-100 bg-card pt-2">
         <Button
           size="sm"
           variant="ghost"
@@ -231,7 +231,7 @@ export default function GerarUnidadesLoteForm({
         </Button>
         <Button
           size="sm"
-          className="h-8 bg-emerald-700 px-2.5 text-xs hover:bg-emerald-800"
+          className="h-9 px-2.5 text-xs"
           disabled={isPending || totalNovas === 0}
           onClick={() => onGenerate(numerosParaCriar, ignorados)}
         >

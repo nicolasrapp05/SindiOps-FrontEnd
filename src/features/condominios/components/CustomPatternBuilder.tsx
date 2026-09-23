@@ -107,7 +107,7 @@ export default function CustomPatternBuilder({
 
       <div
         className={cn(
-          "flex flex-wrap items-center gap-1.5 rounded-md bg-white font-mono ring-1 ring-gray-200",
+          "flex flex-wrap items-center gap-1.5 rounded-md bg-card font-mono ring-1 ring-gray-200",
           compact ? "px-2 py-1.5 text-xs" : "px-3 py-2.5 text-sm",
         )}
       >
@@ -134,7 +134,7 @@ export default function CustomPatternBuilder({
             "{cfg.suffix}"
           </span>
         )}
-        <span className="ml-auto text-gray-400">→</span>
+        <span className="ml-auto text-muted-foreground">→</span>
         <span className="font-semibold text-gray-800">
           {sample1}, {sample2}, {sample3}…
         </span>
@@ -257,12 +257,12 @@ export default function CustomPatternBuilder({
       </div>
 
       <div className="flex flex-wrap gap-1.5 border-t border-emerald-200 pt-2">
-        <span className="self-center text-xs text-gray-400">Atalhos:</span>
+        <span className="self-center text-xs text-muted-foreground">Atalhos:</span>
         {PRESETS.map((preset) => (
           <button
             key={preset.label}
             type="button"
-            className="rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs text-gray-600 transition hover:border-emerald-400 hover:text-emerald-700"
+            className="rounded-full border border-border bg-card px-2 py-0.5 text-xs text-gray-600 transition hover:border-emerald-400 hover:text-emerald-700"
             onClick={() => onChange(preset.cfg)}
           >
             {preset.label}

@@ -4,7 +4,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Link } from "react-router-dom"
-import { ArrowLeft, Loader2, Lock, AlertCircle, KeyRound, Mail, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, Loader2, AlertCircle, KeyRound, Mail, CheckCircle2 } from "lucide-react"
+import PasswordField from "@/components/shared/PasswordField"
 import { RECOVERY_OTP_MAX_LENGTH, RECOVERY_OTP_MIN_LENGTH } from "@/lib/auth-password"
 import { getApiErrorMessage } from "@/lib/api"
 import { toastFormValidationError } from "@/lib/form-utils"
@@ -133,7 +134,7 @@ export default function PasswordRecoveryFlow({ copy }: PasswordRecoveryFlowProps
             </div>
           </div>
 
-          <Button asChild className="w-full bg-emerald-700 hover:bg-emerald-800">
+          <Button asChild className="w-full">
             <Link to="/login">
               <ArrowLeft className="mr-2 h-4 w-4" />
               {copy.successButtonLabel}
@@ -176,79 +177,81 @@ export default function PasswordRecoveryFlow({ copy }: PasswordRecoveryFlowProps
 
           <form
             onSubmit={otpForm.handleSubmit(onSubmitOtp, toastFormValidationError)}
-            className="space-y-4 rounded-lg border border-gray-200 bg-gray-50/60 p-4"
+            className="space-y-4 rounded-lg border border-border bg-gray-50/60 p-4"
           >
             <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-900">{copy.otpSectionTitle}</p>
+              <p className="text-sm font-medium text-foreground">{copy.otpSectionTitle}</p>
               <p className="text-xs text-gray-500">{copy.otpSectionHint}</p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="recovery-email">Email</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                 <Input
                   id="recovery-email"
                   type="email"
+                  autoComplete="email"
+                  spellCheck={false}
                   placeholder="seu@email.com"
-                  className="bg-white pl-10"
+                  className="bg-card pl-10"
+                  aria-invalid={!!otpForm.formState.errors.email}
                   {...otpForm.register("email")}
                 />
               </div>
               {otpForm.formState.errors.email && (
-                <p className="text-xs text-red-500">{otpForm.formState.errors.email.message}</p>
+                <p className="text-xs text-destructive">{otpForm.formState.errors.email.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="recovery-codigo">{copy.otpCodeLabel}</Label>
               <div className="relative">
-                <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                 <Input
                   id="recovery-codigo"
                   inputMode="numeric"
+                  autoComplete="one-time-code"
+                  spellCheck={false}
                   maxLength={RECOVERY_OTP_MAX_LENGTH}
                   placeholder="00000000"
-                  className="bg-white pl-10 tracking-widest"
+                  className="bg-card pl-10 tracking-widest"
+                  aria-invalid={!!otpForm.formState.errors.codigo}
                   {...otpForm.register("codigo")}
                 />
               </div>
               {otpForm.formState.errors.codigo && (
-                <p className="text-xs text-red-500">{otpForm.formState.errors.codigo.message}</p>
+                <p className="text-xs text-destructive">{otpForm.formState.errors.codigo.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="recovery-senha">{copy.passwordLabel}</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input
-                  id="recovery-senha"
-                  type="password"
-                  placeholder="••••••"
-                  className="bg-white pl-10"
-                  {...otpForm.register("senha")}
-                />
-              </div>
+              <PasswordField
+                id="recovery-senha"
+                autoComplete="new-password"
+                spellCheck={false}
+                placeholder="Mínimo 6 caracteres"
+                aria-invalid={!!otpForm.formState.errors.senha}
+                {...otpForm.register("senha")}
+              />
               {otpForm.formState.errors.senha && (
-                <p className="text-xs text-red-500">{otpForm.formState.errors.senha.message}</p>
+                <p className="text-xs text-destructive">{otpForm.formState.errors.senha.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="recovery-confirmar">{copy.confirmPasswordLabel}</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input
-                  id="recovery-confirmar"
-                  type="password"
-                  placeholder="••••••"
-                  className="bg-white pl-10"
-                  {...otpForm.register("confirmarSenha")}
-                />
-              </div>
+              <PasswordField
+                id="recovery-confirmar"
+                autoComplete="new-password"
+                spellCheck={false}
+                placeholder="Repita a senha"
+                aria-invalid={!!otpForm.formState.errors.confirmarSenha}
+                {...otpForm.register("confirmarSenha")}
+              />
               {otpForm.formState.errors.confirmarSenha && (
-                <p className="text-xs text-red-500">
+                <p className="text-xs text-destructive">
                   {otpForm.formState.errors.confirmarSenha.message}
                 </p>
               )}
@@ -263,7 +266,7 @@ export default function PasswordRecoveryFlow({ copy }: PasswordRecoveryFlowProps
             <Button
               type="submit"
               disabled={otpForm.formState.isSubmitting}
-              className="w-full bg-emerald-700 hover:bg-emerald-800"
+              className="w-full"
             >
               {otpForm.formState.isSubmitting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -300,36 +303,31 @@ export default function PasswordRecoveryFlow({ copy }: PasswordRecoveryFlowProps
       >
         <div className="space-y-2">
           <Label htmlFor="recovery-ready-senha">{copy.passwordLabel}</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <Input
-              id="recovery-ready-senha"
-              type="password"
-              placeholder="••••••"
-              className="pl-10"
-              autoFocus
-              {...passwordForm.register("senha")}
-            />
-          </div>
+          <PasswordField
+            id="recovery-ready-senha"
+            autoComplete="new-password"
+            spellCheck={false}
+            placeholder="Mínimo 6 caracteres"
+            aria-invalid={!!passwordForm.formState.errors.senha}
+            {...passwordForm.register("senha")}
+          />
           {passwordForm.formState.errors.senha && (
-            <p className="text-xs text-red-500">{passwordForm.formState.errors.senha.message}</p>
+            <p className="text-xs text-destructive">{passwordForm.formState.errors.senha.message}</p>
           )}
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="recovery-ready-confirmar">{copy.confirmPasswordLabel}</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <Input
-              id="recovery-ready-confirmar"
-              type="password"
-              placeholder="••••••"
-              className="pl-10"
-              {...passwordForm.register("confirmarSenha")}
-            />
-          </div>
+          <PasswordField
+            id="recovery-ready-confirmar"
+            autoComplete="new-password"
+            spellCheck={false}
+            placeholder="Repita a senha"
+            aria-invalid={!!passwordForm.formState.errors.confirmarSenha}
+            {...passwordForm.register("confirmarSenha")}
+          />
           {passwordForm.formState.errors.confirmarSenha && (
-            <p className="text-xs text-red-500">
+            <p className="text-xs text-destructive">
               {passwordForm.formState.errors.confirmarSenha.message}
             </p>
           )}
@@ -342,12 +340,12 @@ export default function PasswordRecoveryFlow({ copy }: PasswordRecoveryFlowProps
         <Button
           type="submit"
           disabled={passwordForm.formState.isSubmitting}
-          className="w-full bg-emerald-700 hover:bg-emerald-800"
+          className="w-full"
         >
           {passwordForm.formState.isSubmitting ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <Lock className="mr-2 h-4 w-4" />
+            <KeyRound className="mr-2 h-4 w-4" aria-hidden="true" />
           )}
           {copy.readySubmitLabel}
         </Button>

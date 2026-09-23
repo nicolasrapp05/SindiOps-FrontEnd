@@ -122,7 +122,7 @@ export default function ManutencaoObrigatoriaForm({
           <div className="space-y-1.5">
             <Label>Condomínio</Label>
             <div className="flex h-10 items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground">
-              {condominioNome || "—"}
+              {condominioNome || "-"}
             </div>
           </div>
           <div className="space-y-2">

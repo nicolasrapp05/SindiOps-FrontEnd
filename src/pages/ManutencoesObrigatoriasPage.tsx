@@ -174,9 +174,9 @@ export default function ManutencoesObrigatoriasPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="rounded-full bg-red-50 p-4">
-          <ClipboardList className="h-8 w-8 text-red-500" />
+          <ClipboardList className="text-red-500" />
         </div>
-        <h3 className="mt-4 text-lg font-semibold text-gray-900">Erro ao carregar manutenções</h3>
+        <h3 className="mt-4 text-lg font-semibold text-foreground">Erro ao carregar manutenções</h3>
         <p className="mt-1 text-sm text-gray-500">Verifique sua conexão e tente novamente.</p>
         <Button variant="outline" className="mt-6" onClick={() => refetch()}>
           <RefreshCw className="mr-2 h-4 w-4" />
@@ -190,7 +190,7 @@ export default function ManutencoesObrigatoriasPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             Manutenções Obrigatórias
           </h1>
           <p className="mt-1 text-sm text-gray-500">
@@ -198,7 +198,7 @@ export default function ManutencoesObrigatoriasPage() {
           </p>
         </div>
         <Button
-          className="shrink-0 bg-emerald-700 hover:bg-emerald-800"
+          className="shrink-0"
           disabled={!condoConfigured}
           onClick={openCreate}
         >
@@ -240,8 +240,12 @@ export default function ManutencoesObrigatoriasPage() {
         </div>
         <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
           <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input
+              type="search"
+              autoComplete="off"
+              spellCheck={false}
+              aria-label="Buscar manutenções obrigatórias"
               placeholder="Buscar…"
               className="pl-10"
               value={search}
@@ -265,9 +269,9 @@ export default function ManutencoesObrigatoriasPage() {
       </div>
 
       {!condoConfigured || sortedList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
           <div className="rounded-full bg-gray-100 p-4">
-            <ClipboardList className="h-8 w-8 text-gray-400" />
+            <ClipboardList className="text-muted-foreground" />
           </div>
           <h3 className="mt-4 text-lg font-semibold text-gray-700">
             {!condoConfigured ? "Condomínio não configurado" : "Nenhuma manutenção"}
@@ -278,7 +282,7 @@ export default function ManutencoesObrigatoriasPage() {
               : "Cadastre a primeira obrigação."}
           </p>
           <Button
-            className="mt-6 bg-emerald-700 hover:bg-emerald-800"
+            className="mt-6"
             disabled={!condoConfigured}
             onClick={openCreate}
           >
@@ -288,7 +292,7 @@ export default function ManutencoesObrigatoriasPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -306,7 +310,7 @@ export default function ManutencoesObrigatoriasPage() {
                     key={m.id}
                     className={cn(m.status === "overdue" && "bg-red-50/50")}
                   >
-                    <TableCell className="font-medium text-gray-900">
+                    <TableCell className="font-medium text-foreground">
                       {MANUTENCAO_TIPO_LABEL[m.tipo]}
                     </TableCell>
                     <TableCell>{m.condominio.nome}</TableCell>
@@ -316,7 +320,7 @@ export default function ManutencoesObrigatoriasPage() {
                     <TableCell className="whitespace-nowrap">
                       {m.ultimaRealizacao
                         ? new Date(m.ultimaRealizacao + "T00:00:00").toLocaleDateString("pt-BR")
-                        : "—"}
+                        : "-"}
                     </TableCell>
                     <TableCell>
                       <ManutencaoStatusBadge status={m.status} />
@@ -337,19 +341,19 @@ export default function ManutencoesObrigatoriasPage() {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          
                           onClick={() => openEdit(m)}
-                        >
-                          <Pencil className="h-4 w-4" />
+                         aria-label="Editar">
+                          <Pencil className="h-4 w-4" aria-hidden="true" />
                         </Button>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-red-600 hover:text-red-700"
+                          className="text-red-600 hover:text-red-700"
                           onClick={() => handleDelete(m)}
-                        >
-                          <Trash2 className="h-4 w-4" />
+                         aria-label="Excluir">
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </div>
                     </TableCell>

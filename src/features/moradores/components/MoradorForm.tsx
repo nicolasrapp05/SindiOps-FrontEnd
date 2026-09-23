@@ -140,7 +140,7 @@ export default function MoradorForm({
           <DialogTitle>
             {isEdit ? "Editar Morador" : "Cadastrar Novo Morador"}
           </DialogTitle>
-          <DialogDescription className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+          <DialogDescription className="text-sm text-muted-foreground">
             Preencha os dados obrigatórios
           </DialogDescription>
         </DialogHeader>
@@ -245,7 +245,7 @@ export default function MoradorForm({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-emerald-700 hover:bg-emerald-800"
+              
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEdit ? "Salvar Alterações" : "Cadastrar Morador"}

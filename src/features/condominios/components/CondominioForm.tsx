@@ -209,7 +209,7 @@ export default function CondominioForm({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-emerald-700 hover:bg-emerald-800"
+              
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEdit ? "Salvar Alterações" : "Cadastrar"}

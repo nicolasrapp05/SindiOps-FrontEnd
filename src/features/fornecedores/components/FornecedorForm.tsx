@@ -50,7 +50,7 @@ const formSchema = z
     .optional()
     .or(z.literal(""))
     .refine((val) => !val || val.replace(/\D/g, "").length === 14, {
-      message: "CNPJ inválido — informe 14 dígitos",
+      message: "CNPJ inválido - informe 14 dígitos",
     }),
   enderecoRua: z.string().optional().or(z.literal("")),
   enderecoNumero: z.string().optional().or(z.literal("")),
@@ -305,7 +305,7 @@ export default function FornecedorForm({
               </Button>
             </div>
             {fields.length === 0 && (
-              <p className="text-sm text-gray-400">Nenhum serviço adicionado.</p>
+              <p className="text-sm text-muted-foreground">Nenhum serviço adicionado.</p>
             )}
             <div className="space-y-2">
               {fields.map((field, idx) => (
@@ -313,11 +313,13 @@ export default function FornecedorForm({
                   <div className="flex items-start gap-2">
                     <Input
                       className="flex-1"
+                      aria-label={`Tipo do serviço ${idx + 1}`}
                       placeholder="Tipo (ex: limpeza_geral)"
                       {...register(`servicos.${idx}.tipo`)}
                     />
                     <Input
                       className="flex-1"
+                      aria-label={`Descrição do serviço ${idx + 1}`}
                       placeholder="Descrição"
                       {...register(`servicos.${idx}.descricao`)}
                     />
@@ -325,10 +327,10 @@ export default function FornecedorForm({
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9 shrink-0 text-red-500 hover:text-red-700"
+                      className="shrink-0 text-red-500 hover:text-red-700"
                       onClick={() => remove(idx)}
-                    >
-                      <X className="h-4 w-4" />
+                      aria-label={`Remover serviço ${idx + 1}`}>
+                      <X className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
                   {errors.servicos?.[idx]?.tipo && (
@@ -348,7 +350,7 @@ export default function FornecedorForm({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-emerald-700 hover:bg-emerald-800"
+              
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEdit ? "Salvar Alterações" : "Cadastrar"}

@@ -41,12 +41,12 @@ function ExpandedLogRow({ logId, log }: { logId: string; log: EmailLog }) {
         <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-gray-500">Enviado por</dt>
-            <dd className="font-medium text-gray-900">{log.enviadoPor.nome}</dd>
+            <dd className="font-medium text-foreground">{log.enviadoPor.nome}</dd>
           </div>
           {log.template && (
             <div>
               <dt className="text-gray-500">Template</dt>
-              <dd className="font-medium text-gray-900">{log.template.nome}</dd>
+              <dd className="font-medium text-foreground">{log.template.nome}</dd>
             </div>
           )}
         </dl>
@@ -149,9 +149,9 @@ export default function HistoricoEnviosPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="rounded-full bg-red-50 p-4">
-          <Mail className="h-8 w-8 text-red-500" />
+          <Mail className="text-red-500" />
         </div>
-        <h3 className="mt-4 text-lg font-semibold text-gray-900">Erro ao carregar histórico</h3>
+        <h3 className="mt-4 text-lg font-semibold text-foreground">Erro ao carregar histórico</h3>
         <p className="mt-1 text-sm text-gray-500">Tente novamente em instantes.</p>
         <Button variant="outline" className="mt-6" onClick={() => refetch()}>
           <RefreshCw className="mr-2 h-4 w-4" />
@@ -164,7 +164,7 @@ export default function HistoricoEnviosPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Histórico de Envios</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Histórico de Envios</h1>
         <p className="mt-1 text-sm text-gray-500">
           Acompanhe e-mails enviados aos moradores e o status de entrega.
         </p>
@@ -172,8 +172,12 @@ export default function HistoricoEnviosPage() {
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
+            type="search"
+            autoComplete="off"
+            spellCheck={false}
+            aria-label="Buscar morador ou e-mail"
             className="pl-10"
             placeholder="Buscar morador ou e-mail…"
             value={search}
@@ -229,15 +233,15 @@ export default function HistoricoEnviosPage() {
       </div>
 
       {logs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
           <div className="rounded-full bg-gray-100 p-4">
-            <Mail className="h-8 w-8 text-gray-400" />
+            <Mail className="text-muted-foreground" />
           </div>
           <h3 className="mt-4 text-lg font-semibold text-gray-700">Nenhum envio encontrado</h3>
           <p className="mt-1 text-sm text-gray-500">Ajuste os filtros ou aguarde novos envios.</p>
         </div>
       ) : (
-        <div className="rounded-xl bg-white shadow-sm ring-1 ring-gray-100">
+        <div className="rounded-2xl bg-card ring-1 ring-border">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -254,16 +258,16 @@ export default function HistoricoEnviosPage() {
               <TableBody>
                 {logs.map((log) => (
                   <Fragment key={log.id}>
-                    <TableRow className="hover:bg-gray-50">
+                    <TableRow className="hover:bg-muted/60">
                       <TableCell>
-                        <div className="font-medium text-gray-900">{log.morador.nome}</div>
+                        <div className="font-medium text-foreground">{log.morador.nome}</div>
                         <div className="text-xs text-gray-500">{log.emailDestinatario}</div>
                       </TableCell>
                       <TableCell>
                         {log.template ? (
                           <TemplateTipoBadge tipo={log.template.tipo as TemplateTipo} />
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate text-gray-700">
@@ -278,7 +282,7 @@ export default function HistoricoEnviosPage() {
                             {log.ocorrencia.tipoOcorrencia}
                           </Link>
                         ) : (
-                          "—"
+                          "-"
                         )}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-gray-600">
@@ -298,8 +302,8 @@ export default function HistoricoEnviosPage() {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
                           aria-expanded={expandedId === log.id}
+                          aria-label={expandedId === log.id ? "Ocultar detalhes" : "Mostrar detalhes"}
                           onClick={() =>
                             setExpandedId(expandedId === log.id ? null : log.id)
                           }
@@ -333,16 +337,15 @@ export default function HistoricoEnviosPage() {
                   size="sm"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
+                 aria-label="Página anterior"><ChevronLeft className="h-4 w-4" aria-hidden="true" /></Button>
                 <Button
                   variant="outline"
                   size="sm"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
+                  aria-label="Próxima página"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -364,7 +367,7 @@ export default function HistoricoEnviosPage() {
             <CardTitle className="text-sm font-medium text-gray-500">Taxa de sucesso</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-gray-900">{pctFmt.format(taxaSucesso)}</p>
+            <p className="text-3xl font-bold text-foreground">{pctFmt.format(taxaSucesso)}</p>
           </CardContent>
         </Card>
         <Card>

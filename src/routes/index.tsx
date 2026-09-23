@@ -48,7 +48,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="/dashboard" replace /> },
 
-          /* Dashboard — todos os cargos */
+          /* Dashboard - todos os cargos */
           {
             element: <RoleGuard allowedRoles={[...ALL_ROLES]} />,
             children: [
@@ -57,7 +57,7 @@ export const router = createBrowserRouter([
             ],
           },
 
-          /* Ocorrências — todos os cargos (porteiro incluso) */
+          /* Ocorrências - todos os cargos (porteiro incluso) */
           {
             element: <RoleGuard allowedRoles={[...ALL_ROLES]} />,
             children: [
@@ -66,7 +66,7 @@ export const router = createBrowserRouter([
             ],
           },
 
-          /* Manutenções — zelador, secretário, síndico */
+          /* Manutenções - zelador, secretário, síndico */
           {
             element: <RoleGuard allowedRoles={[...EXCEPT_PORTEIRO]} />,
             children: [
@@ -78,7 +78,7 @@ export const router = createBrowserRouter([
             ],
           },
 
-          /* Cadastros, Compras, Comunicação, Relatórios — secretário + síndico */
+          /* Cadastros, Compras, Comunicação, Relatórios - secretário + síndico */
           {
             element: (
               <RoleGuard allowedRoles={[...CARGO_GROUPS.ADMIN]} />
@@ -99,7 +99,7 @@ export const router = createBrowserRouter([
             ],
           },
 
-          /* Equipe — somente síndico */
+          /* Equipe - somente síndico */
           {
             element: <RoleGuard allowedRoles={[...SINDICO_ONLY]} />,
             children: [
@@ -107,13 +107,13 @@ export const router = createBrowserRouter([
             ],
           },
 
-          /* 404 — rotas autenticadas inexistentes (com sidebar) */
+          /* 404 - rotas autenticadas inexistentes (com sidebar) */
           { path: "*", element: <NotFoundPage /> },
         ],
       },
     ],
   },
 
-  /* 404 — URLs públicas inexistentes (sem layout) */
+  /* 404 - URLs públicas inexistentes (sem layout) */
   { path: "*", element: <NotFoundPage /> },
 ])

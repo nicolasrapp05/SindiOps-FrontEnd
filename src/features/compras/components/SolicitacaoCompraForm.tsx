@@ -6,6 +6,7 @@ import { Loader2, Plus, Trash2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -124,6 +125,9 @@ export default function SolicitacaoCompraForm({
       <DialogContent className="flex max-h-[90vh] flex-col gap-4 overflow-hidden sm:max-w-2xl" showCloseButton>
         <DialogHeader className="shrink-0">
           <DialogTitle>Nova solicitação de compra</DialogTitle>
+          <DialogDescription>
+            Descreva os itens que o condomínio precisa comprar.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(submit, toastFormValidationError)} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-1">

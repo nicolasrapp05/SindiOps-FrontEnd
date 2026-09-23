@@ -33,7 +33,7 @@ import AlertaCard from "@/features/dashboard/components/AlertaCard"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import Combobox from "@/components/shared/Combobox"
+import { cn } from "@/lib/utils"
 import {
   Table,
   TableBody,
@@ -64,15 +64,6 @@ const STATUS_COLORS: Record<string, string> = {
   ok: "bg-green-100 text-green-700",
 }
 
-function formatDate(iso: string): string {
-  const date = new Date(iso + "T00:00:00")
-  return date.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  })
-}
-
 function formatFullDate(): string {
   const now = new Date()
   return now.toLocaleDateString("pt-BR", {
@@ -92,6 +83,24 @@ function formatDescricao(item: AgendaItem): string {
     return MANUTENCAO_TIPO_LABEL[item.descricao as ManutencaoTipo] ?? item.descricao
   }
   return item.descricao
+}
+
+function formatPrazo(iso: string): string {
+  const date = new Date(iso + "T00:00:00")
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const diff = Math.round((date.getTime() - today.getTime()) / 86_400_000)
+  const formatted = date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+  })
+  if (diff < 0) {
+    const days = Math.abs(diff)
+    return `${formatted}, há ${days} ${days === 1 ? "dia" : "dias"}`
+  }
+  if (diff === 0) return `${formatted}, hoje`
+  if (diff <= 14) return `${formatted}, em ${diff} ${diff === 1 ? "dia" : "dias"}`
+  return date.toLocaleDateString("pt-BR")
 }
 
 function statusLabel(status: string): string {
@@ -120,7 +129,7 @@ function DashboardSkeleton() {
           <Skeleton key={i} className="h-36 rounded-xl" />
         ))}
       </div>
-      <div className="rounded-xl bg-white p-6 shadow-sm">
+      <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
         <Skeleton className="mb-6 h-6 w-48" />
         <div className="space-y-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -138,9 +147,9 @@ function DashboardError({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
       <div className="rounded-full bg-red-50 p-4">
-        <AlertTriangle className="h-8 w-8 text-red-500" />
+        <AlertTriangle className="text-red-500" />
       </div>
-      <h3 className="mt-4 text-lg font-semibold text-gray-900">
+      <h3 className="mt-4 text-lg font-semibold text-foreground">
         Erro ao carregar o dashboard
       </h3>
       <p className="mt-1 text-sm text-gray-500">
@@ -219,6 +228,43 @@ const ALERTA_DEFS: {
   },
 ]
 
+function FilterChips<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string
+  value: T
+  options: { value: T; label: string }[]
+  onChange: (value: T) => void
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label={label}>
+      {options.map((option) => {
+        const selected = value === option.value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={selected}
+            onClick={() => onChange(option.value)}
+            className={cn(
+              "h-9 rounded-full px-3 text-sm font-medium transition-colors duration-200",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              selected
+                ? "bg-primary text-primary-foreground"
+                : "bg-card text-muted-foreground ring-1 ring-border hover:text-foreground",
+            )}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function getTipoFilterOptions(cargo: UserCargo | null | undefined) {
   return TIPO_FILTER_OPTIONS.filter(
     (option) => option.value === "all" || canSeeAgendaTipo(cargo, option.value as AgendaItem["tipo"]),
@@ -286,16 +332,22 @@ export default function DashboardPage() {
   }
 
   const firstName = user?.nome?.split(" ")[0] ?? "Usuário"
+  const pendencias = visibleAlertas.reduce((total, alerta) => total + alerta.valor, 0)
+  const resumoAtencao =
+    pendencias === 0
+      ? "Nada urgente neste condomínio."
+      : pendencias === 1
+        ? "1 item pede atenção."
+        : `${pendencias} itens pedem atenção.`
 
   return (
     <div className="space-y-8">
-      {/* Greeting */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-          Olá, {firstName}. Aqui está o resumo de hoje.
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Olá, {firstName}
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {capitalizeFirst(formatFullDate())}
+        <p className="mt-1 text-sm text-muted-foreground">
+          {capitalizeFirst(formatFullDate())}. {resumoAtencao}
         </p>
       </div>
 
@@ -320,62 +372,79 @@ export default function DashboardPage() {
       )}
 
       {/* Agenda table */}
-      <div className="rounded-xl bg-white p-6 shadow-sm">
+      <section className="rounded-2xl bg-card p-5 ring-1 ring-border shadow-[0_1px_2px_hsl(150_20%_10%/0.04)] sm:p-6">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
-              <CalendarDays className="h-5 w-5 text-gray-500" />
-              <h2 className="text-lg font-semibold text-gray-900">
-                Agenda de Vencimentos
+              <CalendarDays className="size-5 text-muted-foreground" aria-hidden="true" />
+              <h2 className="text-lg font-semibold text-foreground">
+                Agenda de vencimentos
               </h2>
+              <span className="text-sm tabular-nums text-muted-foreground">
+                {sortedAgenda.length}
+              </span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={
-                !selectedCondominioId ||
-                exportar.isPending ||
-                !canExportRelatorios(cargo)
-              }
-              onClick={handleExportar}
-            >
-              {exportar.isPending ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="mr-1.5 h-4 w-4" />
-              )}
-              Exportar
-            </Button>
+            {canExportRelatorios(cargo) && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!selectedCondominioId || exportar.isPending}
+                title={selectedCondominioId ? undefined : "Selecione um condomínio"}
+                onClick={handleExportar}
+              >
+                {exportar.isPending ? (
+                  <Loader2 className="mr-1.5 size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Download className="mr-1.5 size-4" aria-hidden="true" />
+                )}
+                {exportar.isPending ? "Exportando…" : "Exportar"}
+              </Button>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Combobox
-              options={tipoFilterOptions.map((o) => ({ value: o.value, label: o.label }))}
+          <div className="flex flex-col gap-2">
+            <FilterChips
+              label="Filtrar por tipo"
               value={tipoFilter}
-              onValueChange={(v) => setTipoFilter(v as TipoFilter)}
-              placeholder="Buscar…"
-              className="w-[180px]"
+              options={tipoFilterOptions}
+              onChange={setTipoFilter}
             />
-            <Combobox
-              options={STATUS_FILTER_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+            <FilterChips
+              label="Filtrar por status"
               value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-              placeholder="Buscar…"
-              className="w-[180px]"
+              options={STATUS_FILTER_OPTIONS}
+              onChange={setStatusFilter}
             />
           </div>
         </div>
 
         {sortedAgenda.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="rounded-full bg-gray-100 p-3">
-              <Inbox className="h-6 w-6 text-gray-400" />
+            <div className="rounded-full bg-muted p-3">
+              <Inbox className="size-6 text-muted-foreground" aria-hidden="true" />
             </div>
-            <p className="mt-3 text-sm font-medium text-gray-500">
-              Nenhum vencimento programado
+            <p className="mt-3 text-sm font-medium text-foreground">
+              {tipoFilter !== "all" || statusFilter !== "all"
+                ? "Nenhum prazo com esses filtros."
+                : "Nenhum vencimento programado"}
             </p>
-            <p className="mt-1 text-xs text-gray-400">
-              Quando houver itens na agenda, eles aparecerão aqui.
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              {tipoFilter !== "all" || statusFilter !== "all"
+                ? "Limpe os filtros para ver a agenda completa."
+                : "Quando houver prazos, eles aparecem aqui em ordem de vencimento."}
             </p>
+            {(tipoFilter !== "all" || statusFilter !== "all") && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => {
+                  setTipoFilter("all")
+                  setStatusFilter("all")
+                }}
+              >
+                Limpar filtros
+              </Button>
+            )}
           </div>
         ) : (
           <div className="mt-4 overflow-x-auto">
@@ -385,7 +454,7 @@ export default function DashboardPage() {
                   <TableHead className="w-32">Tipo</TableHead>
                   <TableHead>Descrição</TableHead>
                   <TableHead>Condomínio</TableHead>
-                  <TableHead className="w-32">Vencimento</TableHead>
+                  <TableHead className="min-w-44">Vencimento</TableHead>
                   <TableHead className="w-28">Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -393,7 +462,11 @@ export default function DashboardPage() {
                 {sortedAgenda.map((item, idx) => (
                   <TableRow
                     key={`${item.referenciaId}-${idx}`}
-                    className="transition-colors hover:bg-gray-50"
+                    className={cn(
+                      item.status === "overdue" || item.status === "vencida"
+                        ? "bg-red-50/80 hover:bg-red-50"
+                        : undefined,
+                    )}
                   >
                     <TableCell>
                       <span
@@ -402,14 +475,14 @@ export default function DashboardPage() {
                         {TIPO_LABELS[item.tipo]}
                       </span>
                     </TableCell>
-                    <TableCell className="max-w-xs truncate font-medium text-gray-900">
+                    <TableCell className="max-w-xs truncate font-medium text-foreground">
                       {formatDescricao(item)}
                     </TableCell>
                     <TableCell className="text-gray-500">
                       {item.condominioNome}
                     </TableCell>
-                    <TableCell className="tabular-nums text-gray-600">
-                      {formatDate(item.dataVencimento)}
+                    <TableCell className="tabular-nums text-muted-foreground">
+                      {formatPrazo(item.dataVencimento)}
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -428,7 +501,7 @@ export default function DashboardPage() {
             </Table>
           </div>
         )}
-      </div>
+      </section>
     </div>
   )
 }

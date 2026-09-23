@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -194,6 +195,9 @@ export default function CotacaoForm({
       <DialogContent className="flex max-h-[90vh] flex-col gap-4 overflow-hidden sm:max-w-2xl" showCloseButton>
         <DialogHeader className="shrink-0">
           <DialogTitle>{isEditMode ? "Editar cotação" : "Nova cotação"}</DialogTitle>
+          <DialogDescription>
+            Informe o fornecedor e o valor de cada item.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(submit, toastFormValidationError)} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-1">
@@ -229,7 +233,7 @@ export default function CotacaoForm({
                   id="nomeEmpresa"
                   className="flex h-8 items-center rounded-lg border border-input bg-muted/50 px-2.5 text-sm text-foreground"
                 >
-                  {selectedFornecedor?.nome ?? cotacao?.fornecedor?.nome ?? "—"}
+                  {selectedFornecedor?.nome ?? cotacao?.fornecedor?.nome ?? "-"}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Vinculado ao fornecedor selecionado
@@ -309,7 +313,7 @@ export default function CotacaoForm({
                     <div className="space-y-2">
                       <Label>Total da linha</Label>
                       <div className="flex h-8 items-center rounded-lg border bg-muted/50 px-2.5 text-sm font-medium tabular-nums">
-                        {totalLinha == null ? "—" : brl(totalLinha)}
+                        {totalLinha == null ? "-" : brl(totalLinha)}
                       </div>
                     </div>
                   </div>
@@ -327,7 +331,7 @@ export default function CotacaoForm({
               id="valorTotal"
               className="flex h-8 items-center rounded-lg border bg-muted/50 px-2.5 text-sm font-medium tabular-nums"
             >
-              {valorTotalCalculado == null ? "—" : brl(valorTotalCalculado)}
+              {valorTotalCalculado == null ? "-" : brl(valorTotalCalculado)}
             </div>
             <p className="text-xs text-muted-foreground">
               Soma das linhas: unitário × quantidade de cada item
@@ -350,7 +354,7 @@ export default function CotacaoForm({
             </Button>
             <Button
               type="submit"
-              className="bg-emerald-700 hover:bg-emerald-800"
+              
               disabled={isSubmitting || itensSolicitacao.length === 0}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

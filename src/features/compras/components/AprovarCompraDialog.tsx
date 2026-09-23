@@ -81,7 +81,6 @@ export default function AprovarCompraDialog({
             Cancelar
           </Button>
           <Button
-            className="bg-emerald-700 text-white hover:bg-emerald-800"
             disabled={isPending || (exigeDeliberacao && !deliberacaoRegistrada)}
             onClick={() => {
               onConfirm()

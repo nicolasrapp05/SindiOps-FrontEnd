@@ -97,7 +97,7 @@ export default function OcorrenciaDetalhePage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <AlertTriangle className="mb-4 h-12 w-12 text-red-400" />
-        <h2 className="text-lg font-semibold text-gray-900">Erro ao carregar ocorrência</h2>
+        <h2 className="text-lg font-semibold text-foreground">Erro ao carregar ocorrência</h2>
         <Button variant="outline" className="mt-4" onClick={() => navigate("/ocorrencias")}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
         </Button>
@@ -110,19 +110,19 @@ export default function OcorrenciaDetalhePage() {
       {/* Top bar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/ocorrencias")}>
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="icon" onClick={() => navigate("/ocorrencias")} aria-label="Voltar para ocorrências">
+            <ArrowLeft className="h-5 w-5" aria-hidden="true" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">
-              {TIPO_LABEL[oc.tipoOcorrencia]} — {TIPO_LOCAL_LABEL[oc.tipoLocal]}
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              {TIPO_LABEL[oc.tipoOcorrencia]} - {TIPO_LOCAL_LABEL[oc.tipoLocal]}
             </h1>
             <p className="text-sm text-gray-500">
               Registrada em {new Date(oc.criadoEm).toLocaleDateString("pt-BR")}
             </p>
           </div>
         </div>
-        <Button className="bg-emerald-700 hover:bg-emerald-800" onClick={() => openCom()}>
+        <Button onClick={() => openCom()}>
           <Send className="mr-2 h-4 w-4" /> Enviar Comunicação
         </Button>
       </div>
@@ -131,33 +131,33 @@ export default function OcorrenciaDetalhePage() {
         {/* Main column */}
         <div className="space-y-6 lg:col-span-2">
           {/* Info card */}
-          <div className="rounded-xl border bg-white p-6">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Informações da Ocorrência</h2>
+          <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
+            <h2 className="mb-4 text-sm font-semibold text-foreground">Informações da Ocorrência</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex items-center gap-2 text-sm">
-                <Eye className="h-4 w-4 text-gray-400" />
+                <Eye className="h-4 w-4 text-muted-foreground" />
                 <span className="text-gray-500">Tipo:</span>
                 <span className="font-medium">{TIPO_LABEL[oc.tipoOcorrencia]}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <AlertTriangle className="h-4 w-4 text-gray-400" />
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                 <span className="text-gray-500">Origem:</span>
                 <span className="font-medium">{ORIGEM_LABEL[oc.origem]}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <MapPin className="h-4 w-4 text-gray-400" />
+                <MapPin className="h-4 w-4 text-muted-foreground" />
                 <span className="text-gray-500">Local:</span>
                 <span className="font-medium">{TIPO_LOCAL_LABEL[oc.tipoLocal]}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-gray-400" />
+                <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-gray-500">Data/Hora:</span>
                 <span className="font-medium">
                   {new Date(oc.ocorreuEm).toLocaleString("pt-BR")}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-sm sm:col-span-2">
-                <User className="h-4 w-4 text-gray-400" />
+                <User className="h-4 w-4 text-muted-foreground" />
                 <span className="text-gray-500">Registrado por:</span>
                 <span className="font-medium">{oc.registradoPor.nome}</span>
               </div>
@@ -168,8 +168,8 @@ export default function OcorrenciaDetalhePage() {
           </div>
 
           {/* Mídias */}
-          <div className="rounded-xl border bg-white p-6">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Mídias Anexadas</h2>
+          <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
+            <h2 className="mb-4 text-sm font-semibold text-foreground">Mídias Anexadas</h2>
             <UploadMidia
               midias={oc.midias ?? []}
               onUpload={handleUpload}
@@ -179,10 +179,10 @@ export default function OcorrenciaDetalhePage() {
           </div>
 
           {/* Communications timeline */}
-          <div className="rounded-xl border bg-white p-6">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Histórico de Comunicações</h2>
+          <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
+            <h2 className="mb-4 text-sm font-semibold text-foreground">Histórico de Comunicações</h2>
             {!oc.emailLogs?.length ? (
-              <p className="py-4 text-sm text-gray-400">Nenhuma comunicação enviada.</p>
+              <p className="py-4 text-sm text-muted-foreground">Nenhuma comunicação enviada.</p>
             ) : (
               <div className="space-y-3">
                 {oc.emailLogs.map((log) => (
@@ -191,7 +191,7 @@ export default function OcorrenciaDetalhePage() {
                       <Send className="h-3 w-3 text-gray-500" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{log.assunto}</p>
+                      <p className="text-sm font-medium text-foreground">{log.assunto}</p>
                       <p className="text-xs text-gray-500">
                         {new Date(log.enviadoEm).toLocaleString("pt-BR")}
                       </p>
@@ -218,25 +218,25 @@ export default function OcorrenciaDetalhePage() {
         <div className="space-y-6">
           {/* Morador card */}
           {oc.morador && (
-            <div className="rounded-xl border bg-white p-6">
-              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Morador Envolvido</h2>
+            <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
+              <h2 className="mb-4 text-sm font-semibold text-foreground">Morador Envolvido</h2>
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
                   {oc.morador.nome.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">{oc.morador.nome}</p>
+                  <p className="font-medium text-foreground">{oc.morador.nome}</p>
                   <p className="text-xs text-gray-500">
                     Apt {oc.morador.unidade.numero}
                     {oc.bloco ? ` · ${oc.bloco.nome}` : ""}
                   </p>
-                  <p className="text-xs text-gray-400">{oc.morador.email}</p>
+                  <p className="text-xs text-muted-foreground">{oc.morador.email}</p>
                 </div>
               </div>
               <div className="mt-3 space-y-1 border-t pt-3">
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <Phone className="h-3 w-3" />
-                  <span>{oc.morador.telefone || "—"}</span>
+                  <span>{oc.morador.telefone || "-"}</span>
                 </div>
                 <Button variant="link" size="sm" className="h-auto p-0 text-xs text-emerald-700" onClick={() => navigate(`/moradores`)}>
                   Ver perfil completo
@@ -246,8 +246,8 @@ export default function OcorrenciaDetalhePage() {
           )}
 
           {/* Quick actions */}
-          <div className="rounded-xl border bg-white p-6">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Ações Rápidas</h2>
+          <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
+            <h2 className="mb-4 text-sm font-semibold text-foreground">Ações Rápidas</h2>
             <div className="space-y-2">
               <Button variant="outline" className="w-full justify-start" onClick={() => openCom("advertencia")}>
                 <AlertTriangle className="mr-2 h-4 w-4 text-amber-500" /> Enviar Advertência
@@ -262,13 +262,13 @@ export default function OcorrenciaDetalhePage() {
           </div>
 
           {/* Status card */}
-          <div className="rounded-xl border bg-white p-6">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Status</h2>
+          <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
+            <h2 className="mb-4 text-sm font-semibold text-foreground">Status</h2>
             <div className="mb-3">
               <OcorrenciaStatusBadge status={oc.status} />
             </div>
             {isStatusFinal(oc.status as FluxoStatus) ? (
-              <p className="text-xs text-gray-400">Status final · não pode ser alterado</p>
+              <p className="text-xs text-muted-foreground">Status final · não pode ser alterado</p>
             ) : (
               <>
                 <Combobox

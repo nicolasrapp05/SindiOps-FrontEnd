@@ -179,9 +179,9 @@ export default function CotacoesPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="rounded-full bg-red-50 p-4">
-          <ReceiptText className="h-8 w-8 text-red-500" />
+          <ReceiptText className="text-red-500" />
         </div>
-        <h3 className="mt-4 text-lg font-semibold text-gray-900">Erro ao carregar solicitações</h3>
+        <h3 className="mt-4 text-lg font-semibold text-foreground">Erro ao carregar solicitações</h3>
         <p className="mt-1 text-sm text-gray-500">Verifique sua conexão e tente novamente.</p>
         <Button variant="outline" className="mt-6" onClick={() => refetch()}>
           <RefreshCw className="mr-2 h-4 w-4" />
@@ -194,7 +194,7 @@ export default function CotacoesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Cotações</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Cotações</h1>
         <p className="mt-1 text-sm text-gray-500">
           Adicione, compare e selecione cotações para as solicitações de compra.
         </p>
@@ -233,8 +233,11 @@ export default function CotacoesPage() {
         </div>
         <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
           <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input
+              type="search"
+              autoComplete="off"
+              spellCheck={false}
               placeholder="Buscar…"
               aria-label="Buscar por item ou justificativa"
               className="pl-10"
@@ -259,9 +262,9 @@ export default function CotacoesPage() {
       </div>
 
       {!condoConfigured || list.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
           <div className="rounded-full bg-gray-100 p-4">
-            <ReceiptText className="h-8 w-8 text-gray-400" />
+            <ReceiptText className="text-muted-foreground" />
           </div>
           <h3 className="mt-4 text-lg font-semibold text-gray-700">
             {!condoConfigured ? "Condomínio não configurado" : "Nenhuma solicitação encontrada"}
@@ -286,7 +289,7 @@ export default function CotacoesPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -330,7 +333,7 @@ export default function CotacoesPage() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7"
+                            
                             aria-expanded={open}
                             aria-label={open ? "Ocultar itens e cotações" : "Ver itens e cotações"}
                             onClick={(e) => {
@@ -420,7 +423,7 @@ export default function CotacoesPage() {
                                 />
                                 {!podeGerenciar && (
                                   <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
-                                    Cotações bloqueadas — solicitação já aprovada, finalizada ou
+                                    Cotações bloqueadas - solicitação já aprovada, finalizada ou
                                     cancelada.
                                   </div>
                                 )}
@@ -453,7 +456,7 @@ export default function CotacoesPage() {
                                 {podeGerenciar && (
                                   <div className="flex items-center justify-end border-t pt-4">
                                     <Button
-                                      className="bg-emerald-700 hover:bg-emerald-800"
+                                      
                                       size="sm"
                                       onClick={() => openCreateForm(row.id, expandedDetail?.itens ?? row.itens)}
                                     >

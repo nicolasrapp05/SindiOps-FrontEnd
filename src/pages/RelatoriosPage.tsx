@@ -109,7 +109,7 @@ export default function RelatoriosPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Relatórios</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Relatórios</h1>
         <p className="mt-1 text-sm text-gray-500">
           Gere relatórios em PDF, Excel ou Word com filtros opcionais.
         </p>
@@ -174,7 +174,7 @@ export default function RelatoriosPage() {
             </div>
           </div>
 
-          {/* Status — só exibe quando o tipo tem status definidos */}
+          {/* Status - só exibe quando o tipo tem status definidos */}
           {hasStatusFilter && (
             <div className="space-y-2">
               <Label>Status (opcional)</Label>

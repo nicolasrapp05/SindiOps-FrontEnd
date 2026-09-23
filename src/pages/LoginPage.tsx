@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom"
-import { Loader2, Mail, Lock, ArrowRight } from "lucide-react"
+import { Loader2, Mail, ArrowRight } from "lucide-react"
 import { getApiErrorMessage } from "@/lib/api"
 import { toastFormValidationError } from "@/lib/form-utils"
 import { useAuth } from "@/hooks/useAuth"
@@ -12,6 +12,7 @@ import AuthShell from "@/components/shared/AuthShell"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import PasswordField from "@/components/shared/PasswordField"
 
 const loginSchema = z.object({
   email: z
@@ -60,11 +61,14 @@ export default function LoginPage() {
   return (
     <AuthShell
       title="Entrar na sua conta"
-      subtitle="Bem-vindo de volta! Por favor, insira seus dados."
+      subtitle="Use o e-mail e a senha da sua conta."
       footer={
-        <p className="text-center text-sm text-gray-500">
+        <p className="text-center text-sm text-muted-foreground">
           Não tem conta?{" "}
-          <Link to="/cadastro" className="font-medium text-emerald-700 hover:underline">
+          <Link
+            to="/cadastro"
+            className="rounded-sm font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
             Cadastre-se como síndico
           </Link>
         </p>
@@ -72,66 +76,65 @@ export default function LoginPage() {
     >
       <form onSubmit={handleSubmit(onSubmit, toastFormValidationError)} className="space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">E-mail</Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input
               id="email"
               type="email"
+              inputMode="email"
+              autoComplete="email"
+              spellCheck={false}
               placeholder="seu@email.com"
               className="pl-10"
+              aria-invalid={errors.email ? true : undefined}
+              aria-describedby={errors.email ? "email-error" : undefined}
               {...register("email")}
             />
           </div>
           {errors.email && (
-            <p className="text-xs text-red-500">{errors.email.message}</p>
+            <p id="email-error" className="text-xs text-destructive">{errors.email.message}</p>
           )}
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <Label htmlFor="password">Senha</Label>
             <Link
               to="/esqueci-senha"
-              className="text-xs font-medium text-emerald-700 hover:underline"
+              className="rounded-sm text-xs font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Esqueci minha senha
             </Link>
           </div>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••"
-              className="pl-10"
-              {...register("password")}
-            />
-          </div>
+          <PasswordField
+            id="password"
+            autoComplete="current-password"
+            placeholder="Mínimo de 6 caracteres"
+            aria-invalid={errors.password ? true : undefined}
+            aria-describedby={errors.password ? "password-error" : undefined}
+            {...register("password")}
+          />
           {errors.password && (
-            <p className="text-xs text-red-500">
+            <p id="password-error" className="text-xs text-destructive">
               {errors.password.message}
             </p>
           )}
         </div>
 
         {submitError && (
-          <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+          <div role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
             {submitError}
           </div>
         )}
 
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-emerald-700 hover:bg-emerald-800"
-        >
+        <Button type="submit" disabled={isSubmitting} className="h-10 w-full">
           {isSubmitting ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
           ) : (
-            <ArrowRight className="mr-2 h-4 w-4" />
+            <ArrowRight className="mr-2 size-4" aria-hidden="true" />
           )}
-          Entrar
+          {isSubmitting ? "Entrando…" : "Entrar"}
         </Button>
       </form>
     </AuthShell>

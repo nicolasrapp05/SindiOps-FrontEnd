@@ -39,7 +39,7 @@ export default function MapaCotacoes({
       {cotacoes.map((c) => {
         const isBest = menorValorTotal !== null && c.valorTotal === menorValorTotal
         const selected = c.selecionada
-        const fornecedorNome = c.nomeEmpresa ?? c.fornecedor?.nome ?? "—"
+        const fornecedorNome = c.nomeEmpresa ?? c.fornecedor?.nome ?? "-"
         return (
           <div
             key={c.id}

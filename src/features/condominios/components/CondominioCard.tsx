@@ -32,7 +32,7 @@ const MANDATO_BADGE: Record<MandatoStatus, { label: string; className: string }>
 }
 
 function formatDate(iso: string): string {
-  if (!iso) return "—"
+  if (!iso) return "-"
   const d = new Date(iso + "T00:00:00")
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
 }
@@ -60,13 +60,17 @@ export default function CondominioCard({
   ].join("")
 
   return (
-    <div
-      className="group cursor-pointer rounded-xl border bg-white p-5 shadow-sm transition hover:shadow-md"
-      onClick={() => onOpenBlocosUnidades(condominio)}
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">{condominio.nome}</h3>
+    <article className="group rounded-2xl bg-card p-5 ring-1 ring-border shadow-[0_1px_2px_hsl(150_20%_10%/0.04)] transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:-translate-y-0.5 hover:shadow-[0_12px_28px_hsl(150_20%_10%/0.07)] motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="min-w-0 text-lg font-semibold text-foreground">
+          <button
+            type="button"
+            className="rounded-sm text-left hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={() => onOpenBlocosUnidades(condominio)}
+          >
+            {condominio.nome}
+          </button>
+        </h3>
         <Badge className={MANDATO_BADGE[mandatoStatus].className}>
           {MANDATO_BADGE[mandatoStatus].label}
         </Badge>
@@ -75,7 +79,7 @@ export default function CondominioCard({
       {/* Address */}
       {endereco.trim() && (
         <div className="mt-2 flex items-start gap-1.5 text-sm text-gray-500">
-          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
           <span className="line-clamp-2">{endereco}</span>
         </div>
       )}
@@ -83,13 +87,13 @@ export default function CondominioCard({
       {/* Counters */}
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Building2 className="h-4 w-4 text-gray-400" />
+          <Building2 className="h-4 w-4 text-muted-foreground" />
           <span>
             <strong className="font-semibold">{condominio.totalBlocos}</strong> Blocos
           </span>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          <DoorOpen className="h-4 w-4 text-gray-400" />
+          <DoorOpen className="h-4 w-4 text-muted-foreground" />
           <span>
             <strong className="font-semibold">{condominio.totalUnidades}</strong> Unidades
           </span>
@@ -125,10 +129,7 @@ export default function CondominioCard({
             variant="outline"
             size="sm"
             className="border-emerald-200 text-emerald-800 hover:bg-emerald-50"
-            onClick={(e) => {
-              e.stopPropagation()
-              onOpenBlocosUnidades(condominio)
-            }}
+            onClick={() => onOpenBlocosUnidades(condominio)}
           >
             <DoorOpen className="mr-1 h-3.5 w-3.5" />
             Blocos e unidades
@@ -137,10 +138,7 @@ export default function CondominioCard({
         <Button
           variant="ghost"
           size="sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            onEdit(condominio)
-          }}
+          onClick={() => onEdit(condominio)}
         >
           <Pencil className="mr-1 h-3.5 w-3.5" />
           Editar
@@ -149,15 +147,12 @@ export default function CondominioCard({
           variant="ghost"
           size="sm"
           className="text-red-600 hover:bg-red-50 hover:text-red-700"
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete(condominio)
-          }}
+          onClick={() => onDelete(condominio)}
         >
           <Trash2 className="mr-1 h-3.5 w-3.5" />
           Excluir
         </Button>
       </div>
-    </div>
+    </article>
   )
 }

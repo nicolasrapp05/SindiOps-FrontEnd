@@ -149,9 +149,9 @@ export default function FornecedoresPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="rounded-full bg-red-50 p-4">
-          <Truck className="h-8 w-8 text-red-500" />
+          <Truck className="text-red-500" />
         </div>
-        <h3 className="mt-4 text-lg font-semibold text-gray-900">Erro ao carregar fornecedores</h3>
+        <h3 className="mt-4 text-lg font-semibold text-foreground">Erro ao carregar fornecedores</h3>
         <p className="mt-1 text-sm text-gray-500">Verifique sua conexão e tente novamente.</p>
         <Button variant="outline" className="mt-6" onClick={() => refetch()}>
           <RefreshCw className="mr-2 h-4 w-4" />
@@ -166,12 +166,12 @@ export default function FornecedoresPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Fornecedores</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Fornecedores</h1>
           <p className="mt-1 text-sm text-gray-500">
             Gestão centralizada de parceiros e prestadores de serviço.
           </p>
         </div>
-        <Button className="bg-emerald-700 hover:bg-emerald-800" onClick={openCreate}>
+        <Button onClick={openCreate}>
           <Plus className="mr-1.5 h-4 w-4" />
           Novo Fornecedor
         </Button>
@@ -182,14 +182,14 @@ export default function FornecedoresPage() {
         {SUMMARY_CARDS.map((card) => {
           const Icon = card.icon
           return (
-            <div key={card.key} className="rounded-xl bg-white p-5 shadow-sm">
+            <div key={card.key} className="rounded-2xl bg-card p-5 ring-1 ring-border">
               <div className="flex items-center gap-3">
                 <div className={`rounded-lg p-2 ${card.color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-500">{card.label}</p>
-                  <p className="text-2xl font-bold text-gray-900">{summaryValues[card.key]}</p>
+                  <p className="text-2xl font-bold text-foreground">{summaryValues[card.key]}</p>
                 </div>
               </div>
             </div>
@@ -200,8 +200,12 @@ export default function FornecedoresPage() {
       {/* Search */}
       <div className="flex items-center gap-3">
         <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
+            type="search"
+            autoComplete="off"
+            spellCheck={false}
+            aria-label="Buscar fornecedores"
             className="pl-10"
             placeholder="Buscar…"
             value={search}
@@ -215,19 +219,19 @@ export default function FornecedoresPage() {
 
       {/* Table */}
       {fornecedorList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
           <div className="rounded-full bg-gray-100 p-4">
-            <Truck className="h-8 w-8 text-gray-400" />
+            <Truck className="text-muted-foreground" />
           </div>
           <h3 className="mt-4 text-lg font-semibold text-gray-700">Nenhum fornecedor encontrado</h3>
           <p className="mt-1 text-sm text-gray-500">Cadastre o primeiro fornecedor.</p>
-          <Button className="mt-6 bg-emerald-700 hover:bg-emerald-800" onClick={openCreate}>
+          <Button className="mt-6" onClick={openCreate}>
             <Plus className="mr-1.5 h-4 w-4" />
             Cadastrar Fornecedor
           </Button>
         </div>
       ) : (
-        <div className="rounded-xl bg-white shadow-sm">
+        <div className="rounded-2xl bg-card ring-1 ring-border">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -247,16 +251,16 @@ export default function FornecedoresPage() {
                   return (
                   <Fragment key={f.id}>
                     <TableRow
-                      className="cursor-pointer transition-colors hover:bg-gray-50"
+                      className="cursor-pointer transition-colors hover:bg-muted/60"
                       onClick={() =>
                         setExpandedId(expandedId === f.id ? null : f.id)
                       }
                     >
-                      <TableCell className="font-medium text-gray-900">{f.nome}</TableCell>
-                      <TableCell className="text-gray-500">{f.cnpj || "—"}</TableCell>
-                      <TableCell className="text-gray-600">{f.nomeContato || "—"}</TableCell>
-                      <TableCell className="text-gray-500">{f.telefone || "—"}</TableCell>
-                      <TableCell className="text-gray-500">{f.email || "—"}</TableCell>
+                      <TableCell className="font-medium text-foreground">{f.nome}</TableCell>
+                      <TableCell className="text-gray-500">{f.cnpj || "-"}</TableCell>
+                      <TableCell className="text-gray-600">{f.nomeContato || "-"}</TableCell>
+                      <TableCell className="text-gray-500">{f.telefone || "-"}</TableCell>
+                      <TableCell className="text-gray-500">{f.email || "-"}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {servicos.slice(0, 2).map((s) => (
@@ -270,7 +274,7 @@ export default function FornecedoresPage() {
                             </Badge>
                           )}
                           {servicos.length === 0 && (
-                            <span className="text-xs text-gray-400">—</span>
+                            <span className="text-xs text-muted-foreground">-</span>
                           )}
                         </div>
                       </TableCell>
@@ -279,35 +283,35 @@ export default function FornecedoresPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            
                             onClick={(e) => {
                               e.stopPropagation()
                               setExpandedId(expandedId === f.id ? null : f.id)
                             }}
-                          >
-                            <Eye className="h-4 w-4" />
+                           aria-label="Ver detalhes">
+                            <Eye className="h-4 w-4" aria-hidden="true" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            
                             onClick={(e) => {
                               e.stopPropagation()
                               openEdit(f)
                             }}
-                          >
-                            <Pencil className="h-4 w-4" />
+                           aria-label="Editar">
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-red-500 hover:text-red-700"
+                            className="text-red-500 hover:text-red-700"
                             onClick={(e) => {
                               e.stopPropagation()
                               handleDelete(f)
                             }}
-                          >
-                            <Trash2 className="h-4 w-4" />
+                           aria-label="Excluir">
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         </div>
                       </TableCell>
@@ -338,9 +342,7 @@ export default function FornecedoresPage() {
                   size="sm"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
+                 aria-label="Página anterior"><ChevronLeft className="h-4 w-4" aria-hidden="true" /></Button>
                 <span className="px-2 text-sm text-gray-600">
                   Página {page} de {totalPages}
                 </span>
@@ -349,8 +351,9 @@ export default function FornecedoresPage() {
                   size="sm"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
+                  aria-label="Próxima página"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             </div>

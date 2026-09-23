@@ -139,7 +139,7 @@ export default function MoradoresPage() {
           <Skeleton className="h-8 w-40" />
           <Skeleton className="h-10 w-40" />
         </div>
-        <div className="rounded-xl bg-white p-6 shadow-sm">
+        <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
           <div className="space-y-3">
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
@@ -155,9 +155,9 @@ export default function MoradoresPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="rounded-full bg-red-50 p-4">
-          <Users className="h-8 w-8 text-red-500" />
+          <Users className="text-red-500" />
         </div>
-        <h3 className="mt-4 text-lg font-semibold text-gray-900">Erro ao carregar moradores</h3>
+        <h3 className="mt-4 text-lg font-semibold text-foreground">Erro ao carregar moradores</h3>
         <p className="mt-1 text-sm text-gray-500">Verifique sua conexão e tente novamente.</p>
         <Button variant="outline" className="mt-6" onClick={() => refetch()}>
           <RefreshCw className="mr-2 h-4 w-4" />
@@ -172,13 +172,13 @@ export default function MoradoresPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Moradores</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Moradores</h1>
           <p className="mt-1 text-sm text-gray-500">
             Gerencie os moradores, unidades e histórico de comunicações.
           </p>
         </div>
         <Button
-          className="bg-emerald-700 hover:bg-emerald-800"
+          
           disabled={!condoConfigured}
           onClick={openCreate}
         >
@@ -204,8 +204,12 @@ export default function MoradoresPage() {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
+            type="search"
+            autoComplete="off"
+            spellCheck={false}
+            aria-label="Buscar moradores"
             className="pl-10"
             placeholder="Buscar…"
             value={search}
@@ -229,14 +233,14 @@ export default function MoradoresPage() {
 
       {/* Table */}
       {moradorList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
           <div className="rounded-full bg-gray-100 p-4">
-            <Users className="h-8 w-8 text-gray-400" />
+            <Users className="text-muted-foreground" />
           </div>
           <h3 className="mt-4 text-lg font-semibold text-gray-700">Nenhum morador encontrado</h3>
           <p className="mt-1 text-sm text-gray-500">Cadastre o primeiro morador do condomínio.</p>
           <Button
-            className="mt-6 bg-emerald-700 hover:bg-emerald-800"
+            className="mt-6"
             disabled={!condoConfigured}
             onClick={openCreate}
           >
@@ -245,7 +249,7 @@ export default function MoradoresPage() {
           </Button>
         </div>
       ) : (
-        <div className="rounded-xl bg-white shadow-sm">
+        <div className="rounded-2xl bg-card ring-1 ring-border">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -263,10 +267,10 @@ export default function MoradoresPage() {
                 {moradorList.map((m) => (
                   <Fragment key={m.id}>
                     <TableRow
-                      className="cursor-pointer transition-colors hover:bg-gray-50"
+                      className="cursor-pointer transition-colors hover:bg-muted/60"
                       onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}
                     >
-                      <TableCell className="font-medium text-gray-900">{m.nome}</TableCell>
+                      <TableCell className="font-medium text-foreground">{m.nome}</TableCell>
                       <TableCell>
                         <Badge variant="secondary" className={cn("font-medium", PAPEL_CLASS[m.papel])}>
                           {MORADOR_PAPEL_LABEL[m.papel]}
@@ -275,41 +279,41 @@ export default function MoradoresPage() {
                       <TableCell className="text-gray-600">{m.bloco.nome}</TableCell>
                       <TableCell className="text-gray-600">{m.unidade.numero}</TableCell>
                       <TableCell className="text-gray-500">{m.email}</TableCell>
-                      <TableCell className="text-gray-500">{m.telefone || "—"}</TableCell>
+                      <TableCell className="text-gray-500">{m.telefone || "-"}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            
                             onClick={(e) => {
                               e.stopPropagation()
                               setExpandedId(expandedId === m.id ? null : m.id)
                             }}
-                          >
-                            <Eye className="h-4 w-4" />
+                           aria-label="Ver detalhes">
+                            <Eye className="h-4 w-4" aria-hidden="true" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            
                             onClick={(e) => {
                               e.stopPropagation()
                               openEdit(m)
                             }}
-                          >
-                            <Pencil className="h-4 w-4" />
+                           aria-label="Editar">
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-red-500 hover:text-red-700"
+                            className="text-red-500 hover:text-red-700"
                             onClick={(e) => {
                               e.stopPropagation()
                               handleDelete(m)
                             }}
-                          >
-                            <Trash2 className="h-4 w-4" />
+                           aria-label="Excluir">
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         </div>
                       </TableCell>
@@ -339,9 +343,7 @@ export default function MoradoresPage() {
                   size="sm"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
+                 aria-label="Página anterior"><ChevronLeft className="h-4 w-4" aria-hidden="true" /></Button>
                 <span className="px-2 text-sm text-gray-600">
                   Página {page} de {totalPages}
                 </span>
@@ -350,8 +352,9 @@ export default function MoradoresPage() {
                   size="sm"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
+                  aria-label="Próxima página"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             </div>

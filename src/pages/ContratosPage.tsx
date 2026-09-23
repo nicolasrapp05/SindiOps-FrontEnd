@@ -59,7 +59,7 @@ const SUMMARY_CARDS = [
 ] as const
 
 function formatDate(iso?: string): string {
-  if (!iso) return "—"
+  if (!iso) return "-"
   return new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR")
 }
 
@@ -151,7 +151,7 @@ export default function ContratosPage() {
             <Skeleton key={i} className="h-24 w-full rounded-xl" />
           ))}
         </div>
-        <div className="rounded-xl bg-white p-6 shadow-sm">
+        <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
           <div className="space-y-3">
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
@@ -166,9 +166,9 @@ export default function ContratosPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="rounded-full bg-red-50 p-4">
-          <FileText className="h-8 w-8 text-red-500" />
+          <FileText className="text-red-500" />
         </div>
-        <h3 className="mt-4 text-lg font-semibold text-gray-900">Erro ao carregar contratos</h3>
+        <h3 className="mt-4 text-lg font-semibold text-foreground">Erro ao carregar contratos</h3>
         <p className="mt-1 text-sm text-gray-500">Verifique sua conexão e tente novamente.</p>
         <Button variant="outline" className="mt-6" onClick={() => refetch()}>
           <RefreshCw className="mr-2 h-4 w-4" />
@@ -182,13 +182,13 @@ export default function ContratosPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Contratos</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Contratos</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Contratos de serviços do condomínio — fornecedores, vigência e valores.
+            Contratos de serviços do condomínio - fornecedores, vigência e valores.
           </p>
         </div>
         <Button
-          className="bg-emerald-700 hover:bg-emerald-800"
+          
           disabled={!condoConfigured}
           onClick={openCreate}
         >
@@ -214,14 +214,14 @@ export default function ContratosPage() {
         {SUMMARY_CARDS.map((card) => {
           const Icon = card.icon
           return (
-            <div key={card.key} className="rounded-xl bg-white p-5 shadow-sm">
+            <div key={card.key} className="rounded-2xl bg-card p-5 ring-1 ring-border">
               <div className="flex items-center gap-3">
                 <div className={`rounded-lg p-2 ${card.color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-500">{card.label}</p>
-                  <p className="text-2xl font-bold text-gray-900">{statusCounts[card.key]}</p>
+                  <p className="text-2xl font-bold text-foreground">{statusCounts[card.key]}</p>
                 </div>
               </div>
             </div>
@@ -231,8 +231,12 @@ export default function ContratosPage() {
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
+            type="search"
+            autoComplete="off"
+            spellCheck={false}
+            aria-label="Buscar contratos"
             className="pl-10"
             placeholder="Buscar…"
             value={search}
@@ -252,19 +256,19 @@ export default function ContratosPage() {
       </div>
 
       {contratoList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
           <div className="rounded-full bg-gray-100 p-4">
-            <FileText className="h-8 w-8 text-gray-400" />
+            <FileText className="text-muted-foreground" />
           </div>
           <h3 className="mt-4 text-lg font-semibold text-gray-700">Nenhum contrato encontrado</h3>
           <p className="mt-1 text-sm text-gray-500">Cadastre o primeiro contrato de serviço.</p>
-          <Button className="mt-6 bg-emerald-700 hover:bg-emerald-800" onClick={openCreate}>
+          <Button className="mt-6" onClick={openCreate}>
             <Plus className="mr-1.5 h-4 w-4" />
             Novo Contrato
           </Button>
         </div>
       ) : (
-        <div className="rounded-xl bg-white shadow-sm">
+        <div className="rounded-2xl bg-card ring-1 ring-border">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -282,7 +286,7 @@ export default function ContratosPage() {
               <TableBody>
                 {contratoList.map((c) => {
                   const contato =
-                    [c.nomeContato, c.telefoneContato].filter(Boolean).join(" · ") || "—"
+                    [c.nomeContato, c.telefoneContato].filter(Boolean).join(" · ") || "-"
                   const actionBusy =
                     (cancelMutation.isPending && cancelMutation.variables === c.id) ||
                     (reativarMutation.isPending && reativarMutation.variables === c.id)
@@ -292,7 +296,7 @@ export default function ContratosPage() {
                       key={c.id}
                       className={rowHighlight}
                     >
-                      <TableCell className="font-medium text-gray-900">
+                      <TableCell className="font-medium text-foreground">
                         {TIPO_SERVICO_LABEL[c.tipoServico]}
                       </TableCell>
                       <TableCell className="text-gray-700">{c.fornecedor.nome}</TableCell>
@@ -300,7 +304,7 @@ export default function ContratosPage() {
                       <TableCell className="text-gray-600">{formatDate(c.dataInicio)}</TableCell>
                       <TableCell className="text-gray-600">{formatDate(c.dataFim)}</TableCell>
                       <TableCell className="text-gray-700">
-                        {c.valorMensal != null ? formatBRL(c.valorMensal) : "—"}
+                        {c.valorMensal != null ? formatBRL(c.valorMensal) : "-"}
                       </TableCell>
                       <TableCell>
                         <ContratoStatusBadge status={c.status} />
@@ -334,10 +338,10 @@ export default function ContratosPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            
                             onClick={() => openEdit(c)}
-                          >
-                            <Pencil className="h-4 w-4" />
+                           aria-label="Editar">
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         </div>
                       </TableCell>
@@ -359,9 +363,7 @@ export default function ContratosPage() {
                   size="sm"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
+                 aria-label="Página anterior"><ChevronLeft className="h-4 w-4" aria-hidden="true" /></Button>
                 <span className="px-2 text-sm text-gray-600">
                   Página {page} de {totalPages}
                 </span>
@@ -370,8 +372,9 @@ export default function ContratosPage() {
                   size="sm"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
+                  aria-label="Próxima página"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             </div>

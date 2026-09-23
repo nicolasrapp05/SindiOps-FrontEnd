@@ -5,34 +5,29 @@ import { cn } from "@/lib/utils"
 
 const colorMap = {
   red: {
-    border: "border-l-red-500",
-    bg: "bg-red-50",
-    icon: "text-red-600",
+    well: "bg-red-50 text-red-700",
     value: "text-red-700",
+    edge: "border-t-red-500",
   },
   orange: {
-    border: "border-l-orange-500",
-    bg: "bg-orange-50",
-    icon: "text-orange-600",
+    well: "bg-orange-50 text-orange-700",
     value: "text-orange-700",
+    edge: "border-t-orange-500",
   },
   blue: {
-    border: "border-l-blue-500",
-    bg: "bg-blue-50",
-    icon: "text-blue-600",
-    value: "text-blue-700",
+    well: "bg-sky-50 text-sky-700",
+    value: "text-sky-800",
+    edge: "border-t-sky-500",
   },
   yellow: {
-    border: "border-l-amber-500",
-    bg: "bg-amber-50",
-    icon: "text-amber-600",
-    value: "text-amber-700",
+    well: "bg-amber-50 text-amber-800",
+    value: "text-amber-800",
+    edge: "border-t-amber-500",
   },
   purple: {
-    border: "border-l-purple-500",
-    bg: "bg-purple-50",
-    icon: "text-purple-600",
-    value: "text-purple-700",
+    well: "bg-violet-50 text-violet-700",
+    value: "text-violet-800",
+    edge: "border-t-violet-500",
   },
 } as const
 
@@ -48,32 +43,50 @@ interface AlertaCardProps {
 
 export default function AlertaCard({ titulo, valor, icone: Icon, cor, href }: AlertaCardProps) {
   const colors = colorMap[cor]
+  const needsAction = valor > 0
 
   return (
-    <div
+    <Link
+      to={href}
       className={cn(
-        "flex flex-col justify-between rounded-xl border-l-4 bg-white p-5 shadow-sm transition hover:shadow-md",
-        colors.border,
+        "group flex min-h-40 flex-col justify-between rounded-2xl border-t-4 bg-card p-5 ring-1 ring-border",
+        "shadow-[0_1px_2px_hsl(150_20%_10%/0.04)]",
+        "transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)]",
+        "hover:-translate-y-0.5 hover:shadow-[0_12px_28px_hsl(150_20%_10%/0.08)]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "active:translate-y-0",
+        "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+        needsAction ? colors.edge : "border-t-transparent",
       )}
     >
-      <div className="flex items-start justify-between">
-        <div className={cn("rounded-lg p-2", colors.bg)}>
-          <Icon className={cn("h-5 w-5", colors.icon)} />
-        </div>
-      </div>
-
-      <div className="mt-3">
-        <p className="text-sm font-medium text-gray-500">{titulo}</p>
-        <p className={cn("mt-1 text-3xl font-bold", colors.value)}>{valor}</p>
-      </div>
-
-      <Link
-        to={href}
-        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-gray-500 transition hover:text-gray-800"
+      <span
+        className={cn(
+          "inline-flex size-10 items-center justify-center rounded-xl",
+          needsAction ? colors.well : "bg-muted text-muted-foreground",
+        )}
       >
-        Ver todos
-        <ChevronRight className="h-3.5 w-3.5" />
-      </Link>
-    </div>
+        <Icon className="size-5" aria-hidden="true" />
+      </span>
+
+      <span className="mt-4 block">
+        <span className="block text-sm font-medium text-muted-foreground">{titulo}</span>
+        <span
+          className={cn(
+            "mt-1 block text-3xl font-semibold tabular-nums tracking-tight",
+            needsAction ? colors.value : "text-foreground",
+          )}
+        >
+          {valor}
+        </span>
+      </span>
+
+      <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors duration-200 group-hover:text-foreground">
+        {needsAction ? "Resolver" : "Abrir lista"}
+        <ChevronRight
+          className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+          aria-hidden="true"
+        />
+      </span>
+    </Link>
   )
 }
