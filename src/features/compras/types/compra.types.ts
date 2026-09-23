@@ -9,28 +9,38 @@ export const COMPRA_CATEGORIA_LABEL: Record<CompraCategoria, string> = {
   mat_especifico: "Material Específico",
 }
 
+export interface SolicitacaoCompraItem {
+  id: string
+  categoria: CompraCategoria
+  descricao: string
+  quantidade: number
+  unidade?: string
+  eReposicao: boolean
+}
+
+export interface CotacaoItem {
+  id: string
+  itemId: string
+  valorUnitario: number
+  valorTotal: number
+}
+
 export interface Cotacao {
   id: string
   nomeEmpresa?: string
   nomeContato?: string
   nomeResponsavel?: string
-  valorUnitario: number
-  valorTotal: number
   formaPagamento?: string
-  descricaoProduto?: string
-  quantidade?: number
-  unidade?: string
+  valorTotal: number
   selecionada: boolean
   fornecedor?: { id: string; nome: string }
+  itens: CotacaoItem[]
 }
 
 export interface SolicitacaoCompra {
   id: string
-  condominioId: string
-  categoria: CompraCategoria
-  item: string
-  quantidade: number
-  eReposicao: boolean
+  condominioId?: string
+  itens: SolicitacaoCompraItem[]
   justificativa?: string
   tipoAprovacao: TipoAprovacao
   status: CompraStatus
@@ -42,14 +52,24 @@ export interface SolicitacaoCompra {
   criadoEm: string
 }
 
+export interface CreateSolicitacaoCompraItemRequest {
+  categoria: CompraCategoria
+  descricao: string
+  quantidade: number
+  unidade?: string
+  eReposicao?: boolean
+}
+
 export interface CreateSolicitacaoCompraRequest {
   condominioId: string
-  categoria: CompraCategoria
-  item: string
-  quantidade: number
-  eReposicao?: boolean
+  itens: CreateSolicitacaoCompraItemRequest[]
   justificativa?: string
   tipoAprovacao: TipoAprovacao
+}
+
+export interface CreateCotacaoItemRequest {
+  itemId: string
+  valorUnitario: number
 }
 
 export interface CreateCotacaoRequest {
@@ -57,12 +77,8 @@ export interface CreateCotacaoRequest {
   nomeEmpresa?: string
   nomeContato?: string
   nomeResponsavel?: string
-  valorUnitario: number
-  valorTotal: number
   formaPagamento?: string
-  descricaoProduto?: string
-  quantidade?: number
-  unidade?: string
+  itens: CreateCotacaoItemRequest[]
 }
 
 export interface ComprasFilters {

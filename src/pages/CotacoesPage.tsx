@@ -42,11 +42,14 @@ import {
   type CompraStatus,
   type CreateCotacaoRequest,
   type Cotacao,
+  type SolicitacaoCompraItem,
 } from "@/features/compras/types/compra.types"
 import CompraStatusBadge from "@/features/compras/components/CompraStatusBadge"
 import MapaCotacoes from "@/features/compras/components/MapaCotacoes"
 import CotacaoForm from "@/features/compras/components/CotacaoForm"
-import { canManageCotacoes } from "@/features/compras/lib/compra-flow"
+import ItensSolicitacaoLista from "@/features/compras/components/ItensSolicitacaoLista"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import { canManageCotacoes, resumoItensCompra } from "@/features/compras/lib/compra-flow"
 import { cn } from "@/lib/utils"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 
@@ -72,7 +75,7 @@ const PAGE_SIZE = 10
 
 interface CotacaoFormState {
   solicitacaoId: string
-  quantidadeSolicitacao: number
+  itens: SolicitacaoCompraItem[]
   cotacao?: Cotacao
 }
 
@@ -85,6 +88,11 @@ export default function CotacoesPage() {
   const [page, setPage] = useState(1)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [cotacaoFormState, setCotacaoFormState] = useState<CotacaoFormState | null>(null)
+  const [cotacaoParaExcluir, setCotacaoParaExcluir] = useState<{
+    solicitacaoId: string
+    cotacaoId: string
+    nome: string
+  } | null>(null)
 
   const debouncedSearch = useDebounce(search)
 
@@ -120,12 +128,12 @@ export default function CotacoesPage() {
     setExpandedId((cur) => (cur === id ? null : id))
   }
 
-  const openCreateForm = (solicitacaoId: string, quantidadeSolicitacao: number) => {
-    setCotacaoFormState({ solicitacaoId, quantidadeSolicitacao })
+  const openCreateForm = (solicitacaoId: string, itens: SolicitacaoCompraItem[]) => {
+    setCotacaoFormState({ solicitacaoId, itens })
   }
 
-  const openEditForm = (solicitacaoId: string, quantidadeSolicitacao: number, cotacao: Cotacao) => {
-    setCotacaoFormState({ solicitacaoId, quantidadeSolicitacao, cotacao })
+  const openEditForm = (solicitacaoId: string, itens: SolicitacaoCompraItem[], cotacao: Cotacao) => {
+    setCotacaoFormState({ solicitacaoId, itens, cotacao })
   }
 
   const closeForm = () => {
@@ -228,6 +236,7 @@ export default function CotacoesPage() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar…"
+              aria-label="Buscar por item ou justificativa"
               className="pl-10"
               value={search}
               onChange={(e) => {
@@ -285,7 +294,7 @@ export default function CotacoesPage() {
                   <TableHead>Status</TableHead>
                   <TableHead>Categoria</TableHead>
                   <TableHead>Item</TableHead>
-                  <TableHead className="text-right">QTD</TableHead>
+                  <TableHead className="text-right">Itens</TableHead>
                   <TableHead>Solicitante</TableHead>
                   <TableHead className="text-right">Cotações</TableHead>
                   <TableHead>Data</TableHead>
@@ -307,6 +316,7 @@ export default function CotacoesPage() {
                     row.status === "nova" && cotacoesCount > 0 && !temVencedora
                       ? "Cadastre cotações e selecione uma vencedora"
                       : null
+                  const itensResumo = resumoItensCompra(row.itens)
 
                   return (
                     <Fragment key={row.id}>
@@ -322,6 +332,7 @@ export default function CotacoesPage() {
                             size="icon"
                             className="h-7 w-7"
                             aria-expanded={open}
+                            aria-label={open ? "Ocultar itens e cotações" : "Ver itens e cotações"}
                             onClick={(e) => {
                               e.stopPropagation()
                               toggleExpand(row.id)
@@ -337,11 +348,22 @@ export default function CotacoesPage() {
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <CompraStatusBadge status={row.status} />
                         </TableCell>
-                        <TableCell>{COMPRA_CATEGORIA_LABEL[row.categoria]}</TableCell>
-                        <TableCell className="max-w-[200px] truncate font-medium">
-                          {row.item}
+                        <TableCell title={itensResumo.categoriasTitulo}>
+                          {itensResumo.categoria}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">{row.quantidade}</TableCell>
+                        <TableCell className="max-w-[240px] font-medium" title={itensResumo.titulo}>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="truncate">{itensResumo.descricao}</span>
+                            {itensResumo.extras > 0 && (
+                              <span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">
+                                +{itensResumo.extras}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {itensResumo.quantidade}
+                        </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-0.5">
                             <span>{row.solicitadoPor.nome}</span>
@@ -392,6 +414,10 @@ export default function CotacoesPage() {
                               <Skeleton className="h-40 w-full rounded-xl" />
                             ) : (
                               <div className="space-y-4">
+                                <ItensSolicitacaoLista
+                                  itens={expandedDetail?.itens ?? row.itens}
+                                  justificativa={expandedDetail?.justificativa}
+                                />
                                 {!podeGerenciar && (
                                   <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
                                     Cotações bloqueadas — solicitação já aprovada, finalizada ou
@@ -400,6 +426,7 @@ export default function CotacoesPage() {
                                 )}
                                 <MapaCotacoes
                                   cotacoes={expandedDetail?.cotacoes ?? row.cotacoes ?? []}
+                                  itens={expandedDetail?.itens ?? row.itens}
                                   {...(podeGerenciar
                                     ? {
                                         isSelecting: selecionarMutation.isPending,
@@ -409,12 +436,16 @@ export default function CotacoesPage() {
                                             cotacaoId,
                                           }),
                                         onEdit: (cotacao: Cotacao) =>
-                                          openEditForm(row.id, row.quantidade, cotacao),
-                                        onDelete: (cotacaoId: string) =>
-                                          deleteCotacaoMutation.mutate({
+                                          openEditForm(row.id, expandedDetail?.itens ?? row.itens, cotacao),
+                                        onDelete: (cotacaoId: string) => {
+                                          const cotacao = (expandedDetail?.cotacoes ?? row.cotacoes ?? [])
+                                            .find((item) => item.id === cotacaoId)
+                                          setCotacaoParaExcluir({
                                             solicitacaoId: row.id,
                                             cotacaoId,
-                                          }),
+                                            nome: cotacao?.nomeEmpresa ?? cotacao?.fornecedor?.nome ?? "esta cotação",
+                                          })
+                                        },
                                         isDeleting: deleteCotacaoMutation.isPending,
                                       }
                                     : {})}
@@ -424,7 +455,7 @@ export default function CotacoesPage() {
                                     <Button
                                       className="bg-emerald-700 hover:bg-emerald-800"
                                       size="sm"
-                                      onClick={() => openCreateForm(row.id, row.quantidade)}
+                                      onClick={() => openCreateForm(row.id, expandedDetail?.itens ?? row.itens)}
                                     >
                                       <Plus className="mr-1.5 h-4 w-4" />
                                       Adicionar cotação
@@ -474,11 +505,30 @@ export default function CotacoesPage() {
         </div>
       )}
 
+      <ConfirmDialog
+        open={cotacaoParaExcluir !== null}
+        onOpenChange={(open) => { if (!open) setCotacaoParaExcluir(null) }}
+        title="Excluir cotação"
+        description={`Tem certeza que deseja excluir a cotação de "${cotacaoParaExcluir?.nome ?? "esta cotação"}"?`}
+        confirmLabel="Excluir"
+        isPending={deleteCotacaoMutation.isPending}
+        onConfirm={() => {
+          if (!cotacaoParaExcluir) return
+          deleteCotacaoMutation.mutate(
+            {
+              solicitacaoId: cotacaoParaExcluir.solicitacaoId,
+              cotacaoId: cotacaoParaExcluir.cotacaoId,
+            },
+            { onSuccess: () => setCotacaoParaExcluir(null) },
+          )
+        }}
+      />
+
       <CotacaoForm
         open={cotacaoFormState !== null}
         onOpenChange={(open) => { if (!open) closeForm() }}
         cotacao={cotacaoFormState?.cotacao}
-        quantidadeSolicitacao={cotacaoFormState?.quantidadeSolicitacao ?? 1}
+        itensSolicitacao={cotacaoFormState?.itens ?? []}
         isSubmitting={isFormSubmitting}
         onSubmit={handleFormSubmit}
       />
