@@ -111,9 +111,9 @@ export default function CondominiosPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="rounded-full bg-red-50 p-4">
-          <Building2 className="h-8 w-8 text-red-500" />
+          <Building2 className="text-red-500" />
         </div>
-        <h3 className="mt-4 text-lg font-semibold text-gray-900">
+        <h3 className="mt-4 text-lg font-semibold text-foreground">
           Erro ao carregar condomínios
         </h3>
         <p className="mt-1 text-sm text-gray-500">
@@ -134,7 +134,7 @@ export default function CondominiosPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             Condomínios
           </h1>
           <p className="mt-1 text-sm text-gray-500">
@@ -142,7 +142,7 @@ export default function CondominiosPage() {
           </p>
         </div>
         <Button
-          className="bg-emerald-700 hover:bg-emerald-800"
+          
           onClick={openCreate}
         >
           <Plus className="mr-1.5 h-4 w-4" />
@@ -152,9 +152,9 @@ export default function CondominiosPage() {
 
       {/* Empty state */}
       {isEmpty ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 py-20 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
           <div className="rounded-full bg-gray-100 p-4">
-            <Building2 className="h-8 w-8 text-gray-400" />
+            <Building2 className="text-muted-foreground" />
           </div>
           <h3 className="mt-4 text-lg font-semibold text-gray-700">
             Nenhum condomínio cadastrado
@@ -163,7 +163,7 @@ export default function CondominiosPage() {
             Comece cadastrando seu primeiro condomínio.
           </p>
           <Button
-            className="mt-6 bg-emerald-700 hover:bg-emerald-800"
+            className="mt-6"
             onClick={openCreate}
           >
             <Plus className="mr-1.5 h-4 w-4" />
@@ -184,11 +184,11 @@ export default function CondominiosPage() {
 
           {/* Add card */}
           <button
-            className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-gray-200 bg-white transition hover:border-emerald-400 hover:bg-emerald-50/30"
+            className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-card transition hover:border-emerald-400 hover:bg-emerald-50/30"
             onClick={openCreate}
           >
             <div className="rounded-full bg-gray-100 p-3">
-              <Plus className="h-6 w-6 text-gray-400" />
+              <Plus className="h-6 w-6 text-muted-foreground" />
             </div>
             <span className="text-sm font-medium text-gray-500">
               Vincular novo condomínio

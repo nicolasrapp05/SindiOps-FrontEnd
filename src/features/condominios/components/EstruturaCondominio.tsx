@@ -67,17 +67,21 @@ function RenameInput({ initialValue, onConfirm, onCancel, isPending }: RenameInp
         }}
       />
       <button
-        className="flex h-6 w-6 items-center justify-center rounded text-emerald-600 transition hover:bg-emerald-50"
+        type="button"
+        className="inline-flex size-9 items-center justify-center rounded-lg text-emerald-700 transition hover:bg-emerald-50"
         disabled={isPending || !value.trim()}
+        aria-label="Confirmar nome"
         onClick={() => value.trim() && onConfirm(value.trim())}
       >
-        {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+        {isPending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Check className="size-4" aria-hidden="true" />}
       </button>
       <button
-        className="flex h-6 w-6 items-center justify-center rounded text-gray-400 transition hover:bg-gray-100"
+        type="button"
+        className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted"
+        aria-label="Cancelar edição"
         onClick={onCancel}
       >
-        <X className="h-3.5 w-3.5" />
+        <X className="size-4" aria-hidden="true" />
       </button>
     </div>
   )
@@ -143,7 +147,7 @@ function AddUnidadesPopover({
 
   return (
     <div
-      className="mt-2 rounded-lg border border-gray-200 bg-white p-2.5"
+      className="mt-2 rounded-lg border border-border bg-card p-2.5"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="mb-2.5 inline-flex rounded-md bg-gray-100 p-0.5">
@@ -152,7 +156,7 @@ function AddUnidadesPopover({
           className={cn(
             "rounded px-2.5 py-1 text-xs font-medium transition",
             modo === "individual"
-              ? "bg-white text-emerald-700 shadow-sm"
+              ? "bg-card text-emerald-700 shadow-sm"
               : "text-gray-500 hover:text-gray-700",
           )}
           onClick={() => setModo("individual")}
@@ -164,7 +168,7 @@ function AddUnidadesPopover({
           className={cn(
             "rounded px-2.5 py-1 text-xs font-medium transition",
             modo === "lote"
-              ? "bg-white text-emerald-700 shadow-sm"
+              ? "bg-card text-emerald-700 shadow-sm"
               : "text-gray-500 hover:text-gray-700",
           )}
           onClick={() => setModo("lote")}
@@ -191,7 +195,7 @@ function AddUnidadesPopover({
           </div>
           <Button
             size="sm"
-            className="h-8 bg-emerald-700 px-2.5 text-xs hover:bg-emerald-800"
+            className="h-9 px-2.5 text-xs"
             disabled={createUnidade.isPending || !numero.trim()}
             onClick={handleIndividual}
           >
@@ -276,25 +280,27 @@ function UnidadeChip({ unidade, blocoId, condominioId }: UnidadeChipProps) {
   }
 
   return (
-    <span className="group inline-flex items-center gap-1 rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-200">
+    <span className="inline-flex items-center gap-0.5 rounded-lg bg-muted px-1 py-0.5 text-sm font-medium text-foreground">
       <button
-        className="opacity-0 transition group-hover:opacity-100"
+        type="button"
+        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-card hover:text-foreground"
         onClick={() => setEditando(true)}
-        title="Renomear"
+        aria-label={`Renomear unidade ${unidade.numero}`}
       >
-        <Pencil className="h-2.5 w-2.5 text-gray-400 hover:text-gray-600" />
+        <Pencil className="size-3.5" aria-hidden="true" />
       </button>
       {unidade.numero}
       <button
-        className="opacity-0 transition group-hover:opacity-100"
+        type="button"
+        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-card hover:text-red-600"
         onClick={handleDelete}
         disabled={deleteUnidade.isPending}
-        title="Remover"
+        aria-label={`Remover unidade ${unidade.numero}`}
       >
         {deleteUnidade.isPending ? (
-          <Loader2 className="h-2.5 w-2.5 animate-spin text-gray-400" />
+          <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
         ) : (
-          <X className="h-2.5 w-2.5 text-gray-400 hover:text-red-500" />
+          <X className="size-3.5" aria-hidden="true" />
         )}
       </button>
     </span>
@@ -333,7 +339,7 @@ function BlocoRow({ bloco, condominioId, autoExpand }: BlocoRowProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200">
+    <div className="overflow-hidden rounded-lg border border-border">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <button
@@ -341,9 +347,9 @@ function BlocoRow({ bloco, condominioId, autoExpand }: BlocoRowProps) {
           onClick={() => setExpanded((v) => !v)}
         >
           {expanded ? (
-            <ChevronDown className="h-4 w-4 flex-shrink-0 text-gray-400" />
+            <ChevronDown className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
           ) : (
-            <ChevronRight className="h-4 w-4 flex-shrink-0 text-gray-400" />
+            <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
           )}
 
           {editandoNome ? (
@@ -368,7 +374,7 @@ function BlocoRow({ bloco, condominioId, autoExpand }: BlocoRowProps) {
           ) : (
             <>
               <span className="text-sm font-medium text-gray-800">{bloco.nome}</span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted-foreground">
                 {bloco.unidades.length} unidade{bloco.unidades.length !== 1 ? "s" : ""}
               </span>
             </>
@@ -378,8 +384,9 @@ function BlocoRow({ bloco, condominioId, autoExpand }: BlocoRowProps) {
         <div className="flex items-center gap-1">
           {!editandoNome && (
             <button
-              className="flex h-7 w-7 items-center justify-center rounded text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
-              title="Renomear bloco"
+              type="button"
+              className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              aria-label="Renomear bloco"
               onClick={(e) => {
                 e.stopPropagation()
                 setExpanded(true)
@@ -413,8 +420,9 @@ function BlocoRow({ bloco, condominioId, autoExpand }: BlocoRowProps) {
             </div>
           ) : (
             <button
-              className="flex h-7 w-7 items-center justify-center rounded text-gray-400 transition hover:bg-red-50 hover:text-red-500"
-              title="Remover bloco"
+              type="button"
+              className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-red-50 hover:text-red-600"
+              aria-label="Remover bloco"
               onClick={(e) => {
                 e.stopPropagation()
                 setConfirmDeleteBloco(true)
@@ -440,7 +448,7 @@ function BlocoRow({ bloco, condominioId, autoExpand }: BlocoRowProps) {
             ))}
 
             {bloco.unidades.length === 0 && (
-              <span className="text-xs text-gray-400">Nenhuma unidade cadastrada</span>
+              <span className="text-xs text-muted-foreground">Nenhuma unidade cadastrada</span>
             )}
           </div>
 
@@ -494,7 +502,7 @@ export default function EstruturaCondominio({
 
   if (isLoading) {
     return (
-      <div className="rounded-xl bg-white p-6 shadow-sm">
+      <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
         <Skeleton className="mb-4 h-6 w-64" />
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -506,13 +514,13 @@ export default function EstruturaCondominio({
   }
 
   return (
-    <div id="estrutura-condominio" className="scroll-mt-6 rounded-xl bg-white p-6 shadow-sm">
+    <div id="estrutura-condominio" className="scroll-mt-6 rounded-2xl bg-card p-6 ring-1 ring-border">
       {/* Header */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Building2 className="h-5 w-5 text-gray-500" />
-          <h2 className="text-lg font-semibold text-gray-900">
-            Estrutura — {condominioNome}
+          <h2 className="text-lg font-semibold text-foreground">
+            Estrutura - {condominioNome}
           </h2>
         </div>
 
@@ -545,7 +553,7 @@ export default function EstruturaCondominio({
               />
               <Button
                 size="sm"
-                className="bg-emerald-700 hover:bg-emerald-800"
+                
                 disabled={createBloco.isPending || !newBlocoName.trim()}
                 onClick={handleCreateBloco}
               >
@@ -588,10 +596,10 @@ export default function EstruturaCondominio({
         ))}
 
         {(!blocos || blocos.length === 0) && (
-          <div className="rounded-lg border border-dashed border-gray-200 py-10 text-center">
+          <div className="rounded-lg border border-dashed border-border py-10 text-center">
             <Building2 className="mx-auto mb-2 h-8 w-8 text-gray-300" />
-            <p className="text-sm text-gray-400">Nenhum bloco cadastrado</p>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="text-sm text-muted-foreground">Nenhum bloco cadastrado</p>
+            <p className="mt-1 text-xs text-muted-foreground">
               Use{" "}
               <button
                 className="font-medium text-emerald-600 hover:underline"

@@ -125,28 +125,34 @@ function Lightbox({
           <Download className="h-4 w-4" /> Download
         </button>
         <button
+          type="button"
           onClick={onClose}
-          className="rounded-lg bg-white/10 p-1.5 text-white transition hover:bg-white/20"
+          aria-label="Fechar"
+          className="inline-flex size-11 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
         >
-          <X className="h-5 w-5" />
+          <X className="h-5 w-5" aria-hidden="true" />
         </button>
       </div>
 
       {/* Prev / Next */}
       {canPrev && (
         <button
-          className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20"
+          type="button"
+          aria-label="Mídia anterior"
+          className="absolute left-4 top-1/2 inline-flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
           onClick={(e) => { e.stopPropagation(); onNavigate(state.index - 1) }}
         >
-          <ChevronLeft className="h-6 w-6" />
+          <ChevronLeft className="h-6 w-6" aria-hidden="true" />
         </button>
       )}
       {canNext && (
         <button
-          className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20"
+          type="button"
+          aria-label="Próxima mídia"
+          className="absolute right-4 top-1/2 inline-flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
           onClick={(e) => { e.stopPropagation(); onNavigate(state.index + 1) }}
         >
-          <ChevronRight className="h-6 w-6" />
+          <ChevronRight className="h-6 w-6" aria-hidden="true" />
         </button>
       )}
 
@@ -158,11 +164,11 @@ function Lightbox({
         {state.tipo === "image" ? (
           !blobSrc && !blobError ? (
             <div className="flex h-64 w-64 items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-white/60" />
+              <Loader2 className="animate-spin text-white/60" />
             </div>
           ) : blobError ? (
             <div className="flex h-64 w-64 flex-col items-center justify-center gap-2 text-white/60">
-              <AlertCircle className="h-8 w-8" />
+              <AlertCircle  />
               <span className="text-sm">Erro ao carregar imagem</span>
             </div>
           ) : (
@@ -225,8 +231,8 @@ function Thumbnail({
         </>
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-gray-100">
-          <Play className="h-6 w-6 text-gray-400" />
-          <span className="text-[10px] text-gray-400">Vídeo</span>
+          <Play className="h-6 w-6 text-muted-foreground" />
+          <span className="text-[10px] text-muted-foreground">Vídeo</span>
         </div>
       )}
 
@@ -297,7 +303,7 @@ export default function UploadMidia({ midias, onUpload, onRemove, isUploading }:
       {/* Drop zone */}
       <div
         className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-6 transition ${
-          dragOver ? "border-emerald-400 bg-emerald-50/30" : "border-gray-200 hover:border-gray-300"
+          dragOver ? "border-emerald-400 bg-emerald-50/30" : "border-border hover:border-gray-300"
         }`}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
@@ -307,12 +313,12 @@ export default function UploadMidia({ midias, onUpload, onRemove, isUploading }:
         {isUploading ? (
           <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
         ) : (
-          <Upload className="h-6 w-6 text-gray-400" />
+          <Upload className="h-6 w-6 text-muted-foreground" />
         )}
         <p className="text-sm text-gray-500">
           {isUploading ? "Enviando..." : "Arraste ou clique para adicionar mídia"}
         </p>
-        <p className="text-xs text-gray-400">JPEG, PNG, WebP, MP4, MOV · Máx 50MB</p>
+        <p className="text-xs text-muted-foreground">JPEG, PNG, WebP, MP4, MOV · Máx 50MB</p>
         <input
           ref={inputRef}
           type="file"

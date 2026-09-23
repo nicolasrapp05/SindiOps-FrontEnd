@@ -193,7 +193,7 @@ export default function ConvidarFuncionarioModal({
             </Button>
             <Button
               type="submit"
-              className="bg-emerald-600 hover:bg-emerald-700"
+              
               disabled={isSubmitting || condominioOptions.length === 0}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

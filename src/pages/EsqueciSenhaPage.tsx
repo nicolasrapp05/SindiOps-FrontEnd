@@ -71,7 +71,7 @@ export default function EsqueciSenhaPage() {
                 Se existir uma conta com <strong>{sentEmail}</strong>, você receberá um
                 email com um botão para redefinir a senha e um código numérico (
                 {RECOVERY_OTP_MIN_LENGTH} a {RECOVERY_OTP_MAX_LENGTH} dígitos) como alternativa.
-                Use o email mais recente — não reutilize mensagens antigas.
+                Use o email mais recente - não reutilize mensagens antigas.
               </p>
               <p className="text-xs text-emerald-800/70">
                 Verifique também a pasta de spam. Emails de recuperação podem ser
@@ -85,18 +85,20 @@ export default function EsqueciSenhaPage() {
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
+                spellCheck={false}
                 placeholder="seu@email.com"
                 className="pl-10"
-                autoFocus
+                aria-invalid={!!errors.email}
                 {...register("email")}
               />
             </div>
             {errors.email && (
-              <p className="text-xs text-red-500">{errors.email.message}</p>
+              <p className="text-xs text-destructive">{errors.email.message}</p>
             )}
           </div>
 
@@ -109,14 +111,14 @@ export default function EsqueciSenhaPage() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-emerald-700 hover:bg-emerald-800"
+            className="w-full"
           >
             {isSubmitting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
-              <Mail className="mr-2 h-4 w-4" />
+              <Mail className="mr-2 h-4 w-4" aria-hidden="true" />
             )}
-            Enviar instruções de recuperação
+            {isSubmitting ? "Enviando…" : "Enviar instruções"}
           </Button>
         </form>
       )}

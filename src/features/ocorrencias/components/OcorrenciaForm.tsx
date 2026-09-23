@@ -175,8 +175,8 @@ export default function OcorrenciaForm({
           </div>
 
           {/* Localização e morador (opcionais) */}
-          <div className="space-y-3 rounded-lg border border-dashed border-gray-200 p-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+          <div className="space-y-3 rounded-lg border border-dashed border-border p-3">
+            <p className="text-sm font-medium text-muted-foreground">
               Localização e morador (opcional)
             </p>
             <div className="space-y-1.5">
@@ -240,7 +240,7 @@ export default function OcorrenciaForm({
 
           <DialogFooter className="pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isSubmitting} className="bg-emerald-700 hover:bg-emerald-800">
+            <Button type="submit" disabled={isSubmitting} >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Registrar Ocorrência
             </Button>

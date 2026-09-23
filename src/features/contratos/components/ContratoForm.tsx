@@ -192,7 +192,7 @@ export default function ContratoForm({
             <FileText className="h-5 w-5 text-emerald-700" />
           </div>
           <DialogTitle>{isEdit ? "Editar Contrato" : "Novo Contrato"}</DialogTitle>
-          <DialogDescription className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+          <DialogDescription className="text-sm text-muted-foreground">
             Campos marcados com * são obrigatórios
           </DialogDescription>
         </DialogHeader>
@@ -202,7 +202,7 @@ export default function ContratoForm({
           <div className="space-y-1.5">
             <Label>Condomínio</Label>
             <div className="flex h-10 items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground">
-              {condominioNome || "—"}
+              {condominioNome || "-"}
             </div>
           </div>
 
@@ -290,7 +290,7 @@ export default function ContratoForm({
             )}
           </div>
 
-          {/* Índice de reajuste — oculto temporariamente (campo opcional)
+          {/* Índice de reajuste - oculto temporariamente (campo opcional)
           <div className="space-y-1.5">
             <Label htmlFor="indiceReajuste">Índice de reajuste</Label>
             <Input id="indiceReajuste" {...register("indiceReajuste")} />
@@ -314,7 +314,7 @@ export default function ContratoForm({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-emerald-700 hover:bg-emerald-800"
+              
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEdit ? "Salvar alterações" : "Cadastrar contrato"}

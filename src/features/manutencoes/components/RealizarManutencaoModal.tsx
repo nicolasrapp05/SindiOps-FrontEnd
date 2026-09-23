@@ -126,7 +126,7 @@ export default function RealizarManutencaoModal({
             </Button>
             <Button
               type="submit"
-              className="bg-emerald-700 hover:bg-emerald-800"
+              
               disabled={isSubmitting}
             >
               {isSubmitting ? (

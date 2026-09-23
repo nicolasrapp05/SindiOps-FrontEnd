@@ -23,6 +23,9 @@ interface SidebarProps {
   onNavigate?: () => void
 }
 
+const focusRing =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-300"
+
 export default function Sidebar({ onNavigate }: SidebarProps) {
   const user = useAuthStore((s) => s.user)
   const { logout } = useAuth()
@@ -78,35 +81,38 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
     .filter((group) => group.items.length > 0)
 
   return (
-    <div className="flex h-full w-60 flex-col bg-[#0f1b14]">
-      {/* Logo */}
+    <div className="flex h-full w-64 flex-col bg-[#0f1b14]">
       <Link
         to="/dashboard"
         onClick={onNavigate}
-        className="flex items-center gap-2.5 px-5 py-6 transition-opacity hover:opacity-80"
+        className={cn(
+          "mx-3 mt-4 flex items-center gap-2.5 rounded-xl px-2 py-2 transition-opacity duration-200 hover:opacity-80",
+          focusRing,
+        )}
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
-          <Building className="h-4 w-4 text-white" />
-        </div>
-        <span className="text-lg font-bold tracking-tight text-white">
+        <span className="flex size-9 items-center justify-center rounded-lg bg-emerald-600">
+          <Building className="size-4 text-white" aria-hidden="true" />
+        </span>
+        <span className="text-lg font-semibold tracking-tight text-white" translate="no">
           SíndiOps
         </span>
       </Link>
 
-      {/* Condo selector */}
-      <div className="px-3 pb-4">
+      <div className="px-3 pb-4 pt-4">
+        <p className="mb-1.5 px-1 text-[11px] font-semibold tracking-wide text-white/70">
+          Condomínio em uso
+        </p>
         {condominiosLoading ? (
-          <div className="flex w-full items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-            <Skeleton className="h-4 w-4 shrink-0 rounded bg-white/10" />
+          <div className="flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
+            <Skeleton className="size-4 shrink-0 rounded bg-white/10" />
             <Skeleton className="h-4 flex-1 rounded bg-white/10" />
-            <Skeleton className="h-4 w-4 shrink-0 rounded bg-white/10" />
           </div>
         ) : condominiosError ? (
-          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-amber-200/90">
+          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-amber-100">
             Não foi possível carregar os condomínios.
           </div>
         ) : condominiosSuccess && (!condominios || condominios.length === 0) ? (
-          <div className="space-y-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
+          <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-white/80">
             <p>
               {canAccessAdmin(cargo)
                 ? "Nenhum condomínio cadastrado."
@@ -116,7 +122,11 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
               <Link
                 to="/condominios"
                 onClick={onNavigate}
-                className="font-medium text-emerald-400 underline-offset-2 hover:underline"
+                className={cn(
+                  "inline-flex font-medium text-emerald-300 underline-offset-2 hover:underline",
+                  focusRing,
+                  "rounded-sm",
+                )}
               >
                 Cadastrar condomínio
               </Link>
@@ -125,18 +135,20 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
         ) : (
           <DropdownMenu>
             <DropdownMenuTrigger
+              aria-label="Trocar condomínio em uso"
               className={cn(
-                "flex w-full items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left text-sm text-white/80 outline-none transition hover:bg-white/10",
-                "focus-visible:ring-2 focus-visible:ring-emerald-500/60 data-[state=open]:bg-white/10",
+                "flex min-h-11 w-full items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-sm text-white outline-none transition-colors duration-200 hover:bg-white/10",
+                "data-[state=open]:bg-white/10",
+                focusRing,
               )}
             >
-              <Building className="h-4 w-4 shrink-0 text-emerald-400" />
-              <span className="flex-1 truncate">
+              <Building className="size-4 shrink-0 text-emerald-300" aria-hidden="true" />
+              <span className="min-w-0 flex-1 truncate">
                 {selectedCondominioNome ||
                   selectedCondominioId ||
                   "Selecionar condomínio"}
               </span>
-              <ChevronDown className="h-4 w-4 shrink-0 text-white/40" />
+              <ChevronDown className="size-4 shrink-0 text-white/70" aria-hidden="true" />
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
@@ -146,8 +158,8 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
                 <DropdownMenuItem
                   key={c.id}
                   className={cn(
-                    "cursor-pointer focus:bg-white/10 focus:text-white",
-                    selectedCondominioId === c.id && "bg-white/5",
+                    "min-h-9 cursor-pointer focus:bg-white/10 focus:text-white",
+                    selectedCondominioId === c.id && "bg-white/10",
                   )}
                   onSelect={() => setSelectedCondominio(c.id, c.nome)}
                 >
@@ -156,11 +168,11 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
               ))}
               <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuItem
-                className="cursor-pointer focus:bg-white/10 focus:text-white"
+                className="min-h-9 cursor-pointer focus:bg-white/10 focus:text-white"
                 asChild
               >
                 <Link to="/condominios" onClick={onNavigate}>
-                  Gerenciar condomínios…
+                  Gerenciar condomínios
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -170,11 +182,10 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
 
       <Separator className="bg-white/10" />
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <nav aria-label="Principal" className="flex-1 overflow-y-auto px-3 py-4">
         {filteredGroups.map((group) => (
           <div key={group.title} className="mb-5">
-            <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-white/40">
+            <p className="mb-1.5 px-3 text-[11px] font-semibold tracking-wide text-white/70">
               {group.title}
             </p>
             <ul className="space-y-0.5">
@@ -188,14 +199,15 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
                     onClick={onNavigate}
                     className={({ isActive }) =>
                       cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                        "flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors duration-200",
+                        focusRing,
                         isActive
-                          ? "border-l-2 border-emerald-400 bg-white/10 text-white"
-                          : "border-l-2 border-transparent text-white/60 hover:bg-white/5 hover:text-white/90",
+                          ? "bg-white/10 text-white shadow-[inset_3px_0_0_0_#6ee7b7]"
+                          : "text-white/80 hover:bg-white/5 hover:text-white",
                       )
                     }
                   >
-                    <item.icon className="h-[18px] w-[18px] shrink-0" />
+                    <item.icon className="size-[18px] shrink-0" aria-hidden="true" />
                     <span className="truncate">{item.label}</span>
                   </NavLink>
                 </li>
@@ -207,33 +219,40 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
 
       <Separator className="bg-white/10" />
 
-      {/* User footer */}
-      <div className="flex items-center gap-3 px-4 py-4">
+      <div className="flex items-center gap-2 px-3 py-3">
         <Link
           to="/configuracoes/perfil"
           onClick={onNavigate}
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg transition-opacity hover:opacity-80"
+          className={cn(
+            "flex min-w-0 flex-1 items-center gap-3 rounded-xl px-1 py-1 transition-colors duration-200 hover:bg-white/5",
+            focusRing,
+          )}
         >
-          <Avatar className="h-9 w-9 shrink-0 border border-white/20">
-            <AvatarFallback className="bg-emerald-700 text-xs text-white">
+          <Avatar className="size-9 shrink-0 border border-white/20">
+            <AvatarFallback className="bg-emerald-700 text-xs font-medium text-white">
               {initials}
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1 overflow-hidden">
-            <p className="truncate text-sm font-medium text-white">
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-white">
               {user?.nome || "Usuário"}
-            </p>
-            <p className="truncate text-xs capitalize text-white/50">
-              {cargo || "—"}
-            </p>
-          </div>
+            </span>
+            <span className="block truncate text-xs capitalize text-white/65">
+              {cargo || "Sem cargo"}
+            </span>
+          </span>
         </Link>
         <button
+          type="button"
           onClick={logout}
-          className="rounded-md p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white/80"
-          title="Sair"
+          aria-label="Sair"
+          className={cn(
+            "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-white/75 transition-colors duration-200 hover:bg-white/10 hover:text-white",
+            focusRing,
+          )}
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="size-4" aria-hidden="true" />
+          Sair
         </button>
       </div>
     </div>

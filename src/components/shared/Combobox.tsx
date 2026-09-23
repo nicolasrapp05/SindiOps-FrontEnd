@@ -105,7 +105,7 @@ export default function Combobox({
             disabled={disabled}
             autoComplete="off"
             className={cn(
-              "flex h-8 w-full rounded-lg border border-input bg-transparent pl-2.5 pr-8 text-sm transition-colors outline-none",
+              "flex h-10 w-full rounded-lg border border-input bg-card pl-3 pr-8 text-sm transition-[color,background-color,border-color,box-shadow] duration-200 outline-none",
               "placeholder:text-muted-foreground",
               "hover:border-ring/50",
               "focus:border-ring focus:ring-3 focus:ring-ring/50",
@@ -159,7 +159,7 @@ export default function Combobox({
                     aria-selected={isSelected}
                     onClick={() => handleSelect(option.value)}
                     className={cn(
-                      "relative flex w-full cursor-default items-center rounded-md py-1 pl-1.5 pr-8 text-sm outline-none",
+                      "relative flex min-h-9 w-full cursor-pointer items-center rounded-md py-2 pl-1.5 pr-8 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring",
                       "hover:bg-accent hover:text-accent-foreground",
                       isSelected && "bg-accent/50 text-primary font-medium",
                     )}

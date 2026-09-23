@@ -30,7 +30,7 @@ import { get } from "@/lib/api"
 import { VARIAVEIS_DISPONIVEIS } from "@/features/comunicacao/types/template.types"
 import { useEnviarComunicacao } from "../hooks/useOcorrencias"
 
-// List endpoint — no corpo
+// List endpoint - no corpo
 interface EmailTemplate {
   id: string
   nome: string
@@ -38,7 +38,7 @@ interface EmailTemplate {
   assunto: string
 }
 
-// Detail endpoint — includes corpo
+// Detail endpoint - includes corpo
 interface EmailTemplateDetail extends EmailTemplate {
   corpo: string
 }
@@ -136,7 +136,7 @@ export default function EnviarComunicacaoModal({
 
   const selectedTemplate = templates?.find((t) => t.id === selectedTemplateId)
 
-  // Tokens whose values are provided via dedicated input fields — resolved by backend
+  // Tokens whose values are provided via dedicated input fields - resolved by backend
   const inputProvidedTokens: Record<string, boolean> = {
     "{{valor_multa}}": valorMulta != null && valorMulta > 0,
     "{{prazo_resposta}}": !!prazoResposta,
@@ -180,7 +180,7 @@ export default function EnviarComunicacaoModal({
         <DialogHeader>
           <DialogTitle>Enviar Comunicação</DialogTitle>
           <DialogDescription>
-            Etapa {step} de 3 —{" "}
+            Etapa {step} de 3 -{" "}
             {step === 1 ? "Selecione o Template" : step === 2 ? "Destinatário" : "Revisar e Editar"}
           </DialogDescription>
         </DialogHeader>
@@ -202,7 +202,7 @@ export default function EnviarComunicacaoModal({
         {step === 1 && (
           <div className="space-y-3">
             {!templates?.length ? (
-              <p className="py-8 text-center text-sm text-gray-400">Nenhum template encontrado.</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">Nenhum template encontrado.</p>
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {templates.map((t) => (
@@ -222,7 +222,7 @@ export default function EnviarComunicacaoModal({
                        <FileText className="h-4 w-4 text-blue-500" />}
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{t.nome}</p>
+                      <p className="text-sm font-medium text-foreground">{t.nome}</p>
                       <Badge variant="secondary" className="mt-1 text-xs">{t.tipo}</Badge>
                     </div>
                     {selectedTemplateId === t.id && (
@@ -255,14 +255,14 @@ export default function EnviarComunicacaoModal({
                   {moradorPadrao.nome.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{moradorPadrao.nome}</p>
+                  <p className="text-sm font-medium text-foreground">{moradorPadrao.nome}</p>
                   <p className="text-xs text-gray-500">
                     {moradorPadrao.bloco} · Apt {moradorPadrao.unidade} · {moradorPadrao.email}
                   </p>
                 </div>
               </div>
             ) : (
-              <p className="py-4 text-center text-sm text-gray-400">
+              <p className="py-4 text-center text-sm text-muted-foreground">
                 Nenhum morador vinculado a esta ocorrência.
               </p>
             )}
@@ -318,7 +318,7 @@ export default function EnviarComunicacaoModal({
                     <Label>
                       Prazo para resposta
                       <span className="ml-1 text-xs font-normal text-muted-foreground">
-                        — substitui{" "}
+                        - substitui{" "}
                         <span className="token-chip !mx-0 !py-0 text-[10px]">Prazo para resposta</span>
                         {" "}no corpo
                       </span>
@@ -411,7 +411,7 @@ export default function EnviarComunicacaoModal({
               </Button>
               <Button
                 disabled={!canSend || enviarMutation.isPending}
-                className="bg-emerald-700 hover:bg-emerald-800"
+                
                 onClick={handleSend}
               >
                 {enviarMutation.isPending ? (

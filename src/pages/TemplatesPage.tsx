@@ -32,7 +32,7 @@ import { TemplateTipoBadge } from "@/features/comunicacao/components/TemplateTip
 import { TemplateEditor } from "@/features/comunicacao/components/TemplateEditor"
 
 function formatDate(iso: string | null | undefined): string {
-  if (!iso) return "—"
+  if (!iso) return "-"
   return new Date(iso).toLocaleDateString("pt-BR")
 }
 
@@ -95,9 +95,9 @@ export default function TemplatesPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="rounded-full bg-red-50 p-4">
-          <Mail className="h-8 w-8 text-red-500" />
+          <Mail className="text-red-500" />
         </div>
-        <h3 className="mt-4 text-lg font-semibold text-gray-900">Erro ao carregar templates</h3>
+        <h3 className="mt-4 text-lg font-semibold text-foreground">Erro ao carregar templates</h3>
         <p className="mt-1 text-sm text-gray-500">Verifique sua conexão e tente novamente.</p>
         <Button variant="outline" className="mt-6" onClick={() => refetch()}>
           <RefreshCw className="mr-2 h-4 w-4" />
@@ -111,31 +111,31 @@ export default function TemplatesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Templates de Email</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Templates de Email</h1>
           <p className="mt-1 text-sm text-gray-500">
             Modelos reutilizáveis para comunicação com moradores.
           </p>
         </div>
-        <Button className="bg-emerald-700 hover:bg-emerald-800" onClick={openCreate}>
+        <Button onClick={openCreate}>
           <Plus className="mr-1.5 h-4 w-4" />
           Novo Template
         </Button>
       </div>
 
       {list.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
           <div className="rounded-full bg-gray-100 p-4">
-            <Mail className="h-8 w-8 text-gray-400" />
+            <Mail className="text-muted-foreground" />
           </div>
           <h3 className="mt-4 text-lg font-semibold text-gray-700">Nenhum template cadastrado</h3>
           <p className="mt-1 text-sm text-gray-500">Crie o primeiro template de e-mail.</p>
-          <Button className="mt-6 bg-emerald-700 hover:bg-emerald-800" onClick={openCreate}>
+          <Button className="mt-6" onClick={openCreate}>
             <Plus className="mr-1.5 h-4 w-4" />
             Criar template
           </Button>
         </div>
       ) : (
-        <div className="rounded-xl bg-white shadow-sm">
+        <div className="rounded-2xl bg-card ring-1 ring-border">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -149,8 +149,8 @@ export default function TemplatesPage() {
               </TableHeader>
               <TableBody>
                 {list.map((t) => (
-                  <TableRow key={t.id} className="hover:bg-gray-50">
-                    <TableCell className="font-medium text-gray-900">{t.nome}</TableCell>
+                  <TableRow key={t.id} className="hover:bg-muted/60">
+                    <TableCell className="font-medium text-foreground">{t.nome}</TableCell>
                     <TableCell>
                       <TemplateTipoBadge tipo={t.tipo} />
                     </TableCell>
@@ -168,20 +168,20 @@ export default function TemplatesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          
                           onClick={() => openEdit(t)}
                           aria-label={`Editar ${t.nome}`}
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-4 w-4" aria-hidden="true" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-red-500 hover:text-red-700"
+                          className="text-red-500 hover:text-red-700"
                           onClick={() => setDeleteTarget(t)}
                           aria-label={`Excluir ${t.nome}`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </div>
                     </TableCell>

@@ -57,20 +57,20 @@ export default function FornecedorExpandido({ fornecedorId }: FornecedorExpandid
             {initials}
           </div>
           <div>
-            <p className="font-semibold text-gray-900">{fornecedor.nome}</p>
+            <p className="font-semibold text-foreground">{fornecedor.nome}</p>
             {fornecedor.nomeContato && (
               <p className="text-sm text-gray-500">Contato: {fornecedor.nomeContato}</p>
             )}
           </div>
         </div>
 
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+        <h4 className="text-sm text-muted-foreground">
           Informações de Contato
         </h4>
 
         {endereco && (
           <div className="flex items-start gap-2 text-sm text-gray-600">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="whitespace-pre-line">{endereco}</span>
           </div>
         )}
@@ -92,7 +92,7 @@ export default function FornecedorExpandido({ fornecedorId }: FornecedorExpandid
             href={toInstagramUrl(fornecedor.instagram)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-foreground"
           >
             <AtSign className="h-4 w-4" />
             {fornecedor.instagram}
@@ -104,27 +104,27 @@ export default function FornecedorExpandido({ fornecedorId }: FornecedorExpandid
       <div className="space-y-5">
         {/* Contratos */}
         <div className="space-y-2">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+          <h4 className="text-sm text-muted-foreground">
             Contratos
           </h4>
 
           {contratos.length === 0 ? (
-            <p className="text-sm text-gray-400">Nenhum contrato cadastrado.</p>
+            <p className="text-sm text-muted-foreground">Nenhum contrato cadastrado.</p>
           ) : (
             <div className="space-y-2">
               {contratos.map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-center justify-between rounded-lg border bg-white p-3"
+                  className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
                 >
                   <div className="flex items-start gap-2">
-                    <FileText className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                    <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium text-gray-800">
                         {TIPO_SERVICO_LABEL[c.tipoServico] ?? c.tipoServico}
                       </p>
                       {c.dataFim && (
-                        <p className="flex items-center gap-1 text-xs text-gray-400">
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Calendar className="h-3 w-3" />
                           até{" "}
                           {new Date(c.dataFim).toLocaleDateString("pt-BR", {
@@ -146,16 +146,16 @@ export default function FornecedorExpandido({ fornecedorId }: FornecedorExpandid
         {/* Serviços */}
         {servicos.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <h4 className="text-sm text-muted-foreground">
               Serviços Registrados
             </h4>
             <div className="space-y-2">
               {servicos.map((s) => (
                 <div
                   key={s.id}
-                  className="flex items-start gap-2 rounded-lg border bg-white p-3"
+                  className="flex items-start gap-2 rounded-lg border border-border bg-card p-3"
                 >
-                  <Wrench className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                  <Wrench className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
                     {s.tipo ? (
                       <p className="break-words text-sm font-medium text-gray-800">{s.tipo}</p>
@@ -173,7 +173,7 @@ export default function FornecedorExpandido({ fornecedorId }: FornecedorExpandid
                       <p className="text-sm font-medium text-gray-800">Serviço</p>
                     ) : null}
                     {s.quantidade != null && (
-                      <p className="mt-1 text-xs text-gray-400">Qtd: {s.quantidade}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Qtd: {s.quantidade}</p>
                     )}
                   </div>
                 </div>

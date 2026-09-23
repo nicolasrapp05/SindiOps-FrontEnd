@@ -309,7 +309,7 @@ export function TemplateEditor({
             <Button
               type="submit"
               disabled={isSubmitting || (isEdit && isLoadingDetail)}
-              className="bg-emerald-700 hover:bg-emerald-800"
+              
             >
               {isSubmitting || (isEdit && isLoadingDetail) ? (
                 <>

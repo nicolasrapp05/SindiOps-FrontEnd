@@ -62,7 +62,7 @@ export default function MoradorExpandido({ moradorId }: MoradorExpandidoProps) {
             {initials}
           </div>
           <div>
-            <p className="font-semibold text-gray-900">{morador.nome}</p>
+            <p className="font-semibold text-foreground">{morador.nome}</p>
             <Badge variant="secondary" className={cn("mt-1 font-medium", PAPEL_CLASS[morador.papel])}>
               {MORADOR_PAPEL_LABEL[morador.papel]}
             </Badge>
@@ -72,35 +72,35 @@ export default function MoradorExpandido({ moradorId }: MoradorExpandidoProps) {
           </div>
         </div>
 
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+        <h4 className="text-sm text-muted-foreground">
           Informações de Contato
         </h4>
 
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Mail className="h-4 w-4 shrink-0 text-gray-400" />
+            <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span>{morador.email}</span>
           </div>
 
           {morador.telefone && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Phone className="h-4 w-4 shrink-0 text-gray-400" />
+              <Phone className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span>{morador.telefone}</span>
             </div>
           )}
 
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Building2 className="h-4 w-4 shrink-0 text-gray-400" />
+            <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span>Bloco {morador.bloco.nome}</span>
           </div>
 
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Home className="h-4 w-4 shrink-0 text-gray-400" />
+            <Home className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span>Unidade {morador.unidade.numero}</span>
           </div>
 
           <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Calendar className="h-4 w-4 shrink-0 text-gray-400" />
+            <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span>Cadastrado em {formatDateTime(morador.criadoEm)}</span>
           </div>
         </div>
@@ -108,12 +108,12 @@ export default function MoradorExpandido({ moradorId }: MoradorExpandidoProps) {
 
       {/* Direita: histórico de emails */}
       <div className="space-y-3">
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+        <h4 className="text-sm text-muted-foreground">
           Últimos Emails Enviados
         </h4>
 
         {!morador.ultimosEmails?.length ? (
-          <p className="text-sm text-gray-400">Nenhum email enviado ainda.</p>
+          <p className="text-sm text-muted-foreground">Nenhum email enviado ainda.</p>
         ) : (
           <div className="space-y-2">
             {morador.ultimosEmails.map((email) => {
@@ -124,13 +124,13 @@ export default function MoradorExpandido({ moradorId }: MoradorExpandidoProps) {
               return (
                 <div
                   key={email.id}
-                  className="flex items-center justify-between rounded-lg border bg-white p-3"
+                  className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-gray-800">
                       {email.assunto}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       {formatDateTime(email.enviadoEm)}
                     </p>
                   </div>
