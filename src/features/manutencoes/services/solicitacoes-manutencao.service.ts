@@ -1,4 +1,4 @@
-import { getPaginated, post, put, patch } from "@/lib/api"
+import { get, getPaginated, post, put, patch } from "@/lib/api"
 import type {
   CreateSolicitacaoManutencaoRequest,
   SolicitacaoFilters,
@@ -11,6 +11,10 @@ export function getSolicitacoesManutencao(condominioId: string, filters?: Solici
     condominioId,
     ...filters,
   })
+}
+
+export function getSolicitacaoManutencao(id: string) {
+  return get<SolicitacaoManutencao>(`/solicitacoes-manutencao/${id}`)
 }
 
 export function createSolicitacaoManutencao(data: CreateSolicitacaoManutencaoRequest) {

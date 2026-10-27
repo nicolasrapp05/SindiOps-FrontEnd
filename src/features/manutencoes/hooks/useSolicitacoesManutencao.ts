@@ -4,6 +4,7 @@ import { getApiErrorMessage } from "@/lib/api"
 import { upsertPaginatedItem } from "@/lib/query-cache"
 import {
   getSolicitacoesManutencao,
+  getSolicitacaoManutencao,
   createSolicitacaoManutencao,
   updateSolicitacaoStatus,
 } from "../services/solicitacoes-manutencao.service"
@@ -20,6 +21,14 @@ export function useSolicitacoesManutencao(condominioId: string, filters?: Solici
     queryFn: () => getSolicitacoesManutencao(condominioId, filters),
     enabled: !!condominioId,
     placeholderData: keepPreviousData,
+  })
+}
+
+export function useSolicitacaoManutencao(id: string) {
+  return useQuery({
+    queryKey: ["solicitacoes-manutencao", "detail", id],
+    queryFn: () => getSolicitacaoManutencao(id),
+    enabled: !!id,
   })
 }
 
@@ -52,6 +61,7 @@ export function useUpdateSolicitacaoStatus() {
     }) => updateSolicitacaoStatus(id, status, dataConclusao),
     onSuccess: (solicitacao) => {
       upsertPaginatedItem<SolicitacaoManutencao>(qc, ["solicitacoes-manutencao"], solicitacao)
+      qc.setQueryData(["solicitacoes-manutencao", "detail", solicitacao.id], solicitacao)
       toast.success("Status atualizado")
     },
     onError: (err) =>
