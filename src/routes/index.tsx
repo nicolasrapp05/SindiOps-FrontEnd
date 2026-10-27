@@ -18,10 +18,8 @@ import OcorrenciasPage from "@/pages/OcorrenciasPage"
 import OcorrenciaDetalhePage from "@/pages/OcorrenciaDetalhePage"
 import ManutencoesPage from "@/pages/ManutencoesPage"
 import ManutencaoDetalhePage from "@/pages/ManutencaoDetalhePage"
-import OrcamentosManutencaoPage from "@/pages/OrcamentosManutencaoPage"
 import ManutencoesObrigatoriasPage from "@/pages/ManutencoesObrigatoriasPage"
 import ComprasPage from "@/pages/ComprasPage"
-import CotacoesPage from "@/pages/CotacoesPage"
 import TemplatesPage from "@/pages/TemplatesPage"
 import HistoricoEnviosPage from "@/pages/HistoricoEnviosPage"
 import RelatoriosPage from "@/pages/RelatoriosPage"
@@ -73,7 +71,10 @@ export const router = createBrowserRouter([
             element: <RoleGuard allowedRoles={[...EXCEPT_PORTEIRO]} />,
             children: [
               { path: "manutencoes", element: <ManutencoesPage /> },
-              { path: "manutencoes/orcamentos", element: <OrcamentosManutencaoPage /> },
+              {
+                path: "manutencoes/orcamentos",
+                element: <Navigate to="/manutencoes?visao=orcamentos" replace />,
+              },
               { path: "manutencoes/:id", element: <ManutencaoDetalhePage /> },
               {
                 path: "manutencoes-obrigatorias",
@@ -93,7 +94,7 @@ export const router = createBrowserRouter([
               { path: "fornecedores", element: <FornecedoresPage /> },
               { path: "contratos", element: <ContratosPage /> },
               { path: "compras", element: <ComprasPage /> },
-              { path: "compras/cotacoes", element: <CotacoesPage /> },
+              { path: "compras/cotacoes", element: <Navigate to="/compras?status=nova" replace /> },
               { path: "comunicacao/templates", element: <TemplatesPage /> },
               {
                 path: "comunicacao/historico",

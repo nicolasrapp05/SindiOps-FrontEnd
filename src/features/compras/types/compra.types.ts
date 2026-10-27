@@ -81,10 +81,19 @@ export interface CreateCotacaoRequest {
   itens: CreateCotacaoItemRequest[]
 }
 
+export type SituacaoCotacao = "sem_cotacoes" | "sem_vencedora" | "pronta_para_aprovar"
+
+export const SITUACAO_COTACAO_LABEL: Record<SituacaoCotacao, string> = {
+  sem_cotacoes: "Sem cotações",
+  sem_vencedora: "Sem vencedora",
+  pronta_para_aprovar: "Pronta para aprovar",
+}
+
 export interface ComprasFilters {
   search?: string
   status?: CompraStatus
   categoria?: CompraCategoria
+  situacaoCotacao?: SituacaoCotacao
   page?: number
   pageSize?: number
 }

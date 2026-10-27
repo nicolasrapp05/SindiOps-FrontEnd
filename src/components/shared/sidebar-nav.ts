@@ -8,9 +8,7 @@ import {
   AlertTriangle,
   Wrench,
   ClipboardCheck,
-  Receipt,
   ShoppingCart,
-  BarChart2,
   Mail,
   Send,
   FileBarChart,
@@ -54,24 +52,12 @@ export const navGroups: NavGroup[] = [
       { label: "Ocorrências", href: "/ocorrencias", icon: AlertTriangle, allowedRoles: [...CARGO_GROUPS.ALL] },
       { label: "Manutenções", href: "/manutencoes", icon: Wrench, allowedRoles: [...CARGO_GROUPS.EXCEPT_PORTEIRO] },
       {
-        label: "Orçamentos",
-        href: "/manutencoes/orcamentos",
-        icon: Receipt,
-        allowedRoles: [...CARGO_GROUPS.ADMIN],
-      },
-      {
         label: "Manutenções Obrigatórias",
         href: "/manutencoes-obrigatorias",
         icon: ClipboardCheck,
         allowedRoles: [...CARGO_GROUPS.EXCEPT_PORTEIRO],
       },
-    ],
-  },
-  {
-    title: "Compras",
-    items: [
-      { label: "Solicitações", href: "/compras", icon: ShoppingCart, allowedRoles: [...CARGO_GROUPS.ADMIN] },
-      { label: "Cotações", href: "/compras/cotacoes", icon: BarChart2, allowedRoles: [...CARGO_GROUPS.ADMIN] },
+      { label: "Compras", href: "/compras", icon: ShoppingCart, allowedRoles: [...CARGO_GROUPS.ADMIN] },
     ],
   },
   {

@@ -7,6 +7,7 @@ import {
   RefreshCw,
   Search,
 } from "lucide-react"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -21,7 +22,8 @@ import {
 } from "@/components/ui/table"
 import Combobox from "@/components/shared/Combobox"
 import { useDebounce } from "@/hooks/useDebounce"
-import { Link } from "react-router-dom"
+import { canAccessAdmin } from "@/lib/cargo-permissions"
+import { useAuthStore } from "@/store/auth-store"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { SolicitacaoStatusBadge } from "@/features/manutencoes/components/SolicitacaoStatusBadge"
 import { SituacaoOrcamentoBadge } from "@/features/manutencoes/components/SituacaoOrcamentoBadge"
@@ -45,6 +47,56 @@ import type { FluxoStatus } from "@/lib/status-transitions"
 
 const PAGE_SIZE = 10
 
+function LinhaCarregando({ colunas }: { colunas: number }) {
+  return (
+    <TableRow>
+      <TableCell colSpan={colunas}>
+        <Skeleton className="h-16 w-full" />
+      </TableCell>
+    </TableRow>
+  )
+}
+
+function Paginacao({
+  page,
+  totalPages,
+  onPage,
+}: {
+  page: number
+  totalPages: number
+  onPage: (page: number) => void
+}) {
+  return (
+    <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+      <p className="text-sm text-muted-foreground">
+        Página {page} de {totalPages}
+      </p>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={page <= 1}
+          onClick={() => onPage(Math.max(1, page - 1))}
+        >
+          <ChevronLeft className="mr-1 h-4 w-4" />
+          Anterior
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={page >= totalPages}
+          onClick={() => onPage(Math.min(totalPages, page + 1))}
+        >
+          Próxima
+          <ChevronRight className="ml-1 h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 const TIPOS = Object.keys(SOLICITACAO_TIPO_LABEL) as SolicitacaoTipoServico[]
 
 const STATUS_TABS: (SolicitacaoStatus | "todas")[] = [
@@ -63,32 +115,70 @@ const STATUS_TAB_LABEL: Record<SolicitacaoStatus | "todas", string> = {
   cancelada: "Cancelada",
 }
 
+const FILTROS_FILA = ["pendentes", ...Object.keys(SITUACAO_ORCAMENTO_LABEL), "todas"] as const
+type FiltroFila = (typeof FILTROS_FILA)[number]
+
+const FILTRO_FILA_LABEL: Record<FiltroFila, string> = {
+  pendentes: "Pendentes",
+  ...SITUACAO_ORCAMENTO_LABEL,
+  todas: "Todas",
+}
+
 
 export default function ManutencoesPage() {
   const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
+  const cargo = useAuthStore((s) => s.user?.cargo)
+  const admin = canAccessAdmin(cargo)
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const visaoOrcamentos = admin && searchParams.get("visao") === "orcamentos"
 
   const [statusTab, setStatusTab] = useState<SolicitacaoStatus | "todas">("todas")
   const [tipoFilter, setTipoFilter] = useState<SolicitacaoTipoServico | "">("")
   const [situacaoFilter, setSituacaoFilter] = useState<SituacaoOrcamento | "">("")
+  const [filtroFila, setFiltroFila] = useState<FiltroFila>("pendentes")
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [formOpen, setFormOpen] = useState(false)
 
   const debouncedSearch = useDebounce(search)
 
-  const filters = useMemo(
-    () => ({
+  const filters = useMemo(() => {
+    if (visaoOrcamentos) {
+      return {
+        search: debouncedSearch.trim() || undefined,
+        situacaoOrcamento:
+          filtroFila !== "pendentes" && filtroFila !== "todas"
+            ? (filtroFila as SituacaoOrcamento)
+            : undefined,
+        pendenteOrcamento: filtroFila === "pendentes" ? true : undefined,
+        page,
+        pageSize: PAGE_SIZE,
+      }
+    }
+
+    return {
       search: debouncedSearch.trim() || undefined,
       status: statusTab === "todas" ? undefined : statusTab,
       tipoServico: tipoFilter || undefined,
       situacaoOrcamento: situacaoFilter || undefined,
       page,
       pageSize: PAGE_SIZE,
-    }),
-    [debouncedSearch, statusTab, tipoFilter, situacaoFilter, page],
-  )
+    }
+  }, [debouncedSearch, filtroFila, page, situacaoFilter, statusTab, tipoFilter, visaoOrcamentos])
 
-  const { data, isLoading, isError, refetch } = useSolicitacoesManutencao(
+  const setVisao = (fila: boolean) => {
+    setPage(1)
+    const next = new URLSearchParams(searchParams)
+    if (fila) next.set("visao", "orcamentos")
+    else next.delete("visao")
+    setSearchParams(next, { replace: true })
+  }
+
+  const detalheTo = (id: string) =>
+    visaoOrcamentos ? `/manutencoes/${id}?origem=orcamentos` : `/manutencoes/${id}`
+
+  const { data, isLoading, isError, isPlaceholderData, refetch } = useSolicitacoesManutencao(
     condominioId,
     filters,
   )
@@ -135,7 +225,9 @@ export default function ManutencoesPage() {
         <div className="rounded-full bg-red-50 p-4">
           <Hammer className="text-red-500" />
         </div>
-        <h3 className="mt-4 text-lg font-semibold text-foreground">Erro ao carregar solicitações</h3>
+        <h3 className="mt-4 text-lg font-semibold text-foreground">
+          {visaoOrcamentos ? "Erro ao carregar orçamentos" : "Erro ao carregar solicitações"}
+        </h3>
         <p className="mt-1 text-sm text-gray-500">Verifique sua conexão e tente novamente.</p>
         <Button variant="outline" className="mt-6" onClick={() => refetch()}>
           <RefreshCw className="mr-2 h-4 w-4" />
@@ -153,7 +245,9 @@ export default function ManutencoesPage() {
             Solicitações de Manutenção
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Acompanhe e gerencie os chamados de manutenção.
+            {visaoOrcamentos
+              ? "Chamados que ainda pedem uma proposta, uma escolha ou a aprovação do síndico."
+              : "Acompanhe e gerencie os chamados de manutenção."}
           </p>
         </div>
         <Button
@@ -180,22 +274,58 @@ export default function ManutencoesPage() {
         </div>
       )}
 
+      {admin && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Visão da lista">
+          <Button
+            type="button"
+            size="sm"
+            variant={visaoOrcamentos ? "outline" : "default"}
+            onClick={() => setVisao(false)}
+          >
+            Chamados
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={visaoOrcamentos ? "default" : "outline"}
+            onClick={() => setVisao(true)}
+          >
+            Fila de orçamento
+          </Button>
+        </div>
+      )}
+
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex flex-wrap gap-2">
-          {STATUS_TABS.map((tab) => (
-            <Button
-              key={tab}
-              type="button"
-              size="sm"
-              variant={statusTab === tab ? "default" : "outline"}
-              onClick={() => {
-                setStatusTab(tab)
-                setPage(1)
-              }}
-            >
-              {STATUS_TAB_LABEL[tab]}
-            </Button>
-          ))}
+          {visaoOrcamentos
+            ? FILTROS_FILA.map((item) => (
+                <Button
+                  key={item}
+                  type="button"
+                  size="sm"
+                  variant={filtroFila === item ? "default" : "outline"}
+                  onClick={() => {
+                    setFiltroFila(item)
+                    setPage(1)
+                  }}
+                >
+                  {FILTRO_FILA_LABEL[item]}
+                </Button>
+              ))
+            : STATUS_TABS.map((tab) => (
+                <Button
+                  key={tab}
+                  type="button"
+                  size="sm"
+                  variant={statusTab === tab ? "default" : "outline"}
+                  onClick={() => {
+                    setStatusTab(tab)
+                    setPage(1)
+                  }}
+                >
+                  {STATUS_TAB_LABEL[tab]}
+                </Button>
+              ))}
         </div>
         <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
           <div className="relative w-full sm:w-64">
@@ -204,7 +334,7 @@ export default function ManutencoesPage() {
               type="search"
               autoComplete="off"
               spellCheck={false}
-              aria-label="Buscar manutenções"
+              aria-label={visaoOrcamentos ? "Buscar chamados" : "Buscar manutenções"}
               placeholder="Buscar…"
               className="pl-10"
               value={search}
@@ -214,53 +344,117 @@ export default function ManutencoesPage() {
               }}
             />
           </div>
-          <Combobox
-            options={[
-              { value: "", label: "Todos os tipos" },
-              ...TIPOS.map((t) => ({ value: t, label: SOLICITACAO_TIPO_LABEL[t] })),
-            ]}
-            value={tipoFilter || ""}
-            onValueChange={(v) => { setTipoFilter(v as SolicitacaoTipoServico | ""); setPage(1) }}
-            placeholder="Buscar…"
-            className="w-full sm:w-[220px]"
-          />
-          <Combobox
-            options={[
-              { value: "", label: "Todos os orçamentos" },
-              ...(Object.keys(SITUACAO_ORCAMENTO_LABEL) as SituacaoOrcamento[]).map((situacao) => ({
-                value: situacao,
-                label: SITUACAO_ORCAMENTO_LABEL[situacao],
-              })),
-            ]}
-            value={situacaoFilter || ""}
-            onValueChange={(v) => { setSituacaoFilter(v as SituacaoOrcamento | ""); setPage(1) }}
-            placeholder="Orçamento"
-            className="w-full sm:w-[220px]"
-          />
+          {!visaoOrcamentos && (
+            <>
+              <Combobox
+                options={[
+                  { value: "", label: "Todos os tipos" },
+                  ...TIPOS.map((t) => ({ value: t, label: SOLICITACAO_TIPO_LABEL[t] })),
+                ]}
+                value={tipoFilter || ""}
+                onValueChange={(v) => { setTipoFilter(v as SolicitacaoTipoServico | ""); setPage(1) }}
+                placeholder="Buscar…"
+                className="w-full sm:w-[220px]"
+              />
+              <Combobox
+                options={[
+                  { value: "", label: "Todos os orçamentos" },
+                  ...(Object.keys(SITUACAO_ORCAMENTO_LABEL) as SituacaoOrcamento[]).map((situacao) => ({
+                    value: situacao,
+                    label: SITUACAO_ORCAMENTO_LABEL[situacao],
+                  })),
+                ]}
+                value={situacaoFilter || ""}
+                onValueChange={(v) => { setSituacaoFilter(v as SituacaoOrcamento | ""); setPage(1) }}
+                placeholder="Orçamento"
+                className="w-full sm:w-[220px]"
+              />
+            </>
+          )}
         </div>
       </div>
 
-      {!condoConfigured || list.length === 0 ? (
+      {!condoConfigured || (!isPlaceholderData && list.length === 0) ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
           <div className="rounded-full bg-gray-100 p-4">
             <Hammer className="text-muted-foreground" />
           </div>
           <h3 className="mt-4 text-lg font-semibold text-gray-700">
-            {!condoConfigured ? "Condomínio não configurado" : "Nenhuma solicitação"}
+            {!condoConfigured
+              ? "Condomínio não configurado"
+              : visaoOrcamentos
+                ? "Nenhum chamado nesta fila"
+                : "Nenhuma solicitação"}
           </h3>
           <p className="mt-1 text-sm text-gray-500">
             {!condoConfigured
               ? "Informe o ID do condomínio para listar e criar solicitações."
-              : "Abra um novo chamado de manutenção."}
+              : visaoOrcamentos
+                ? "Abra um chamado para registrar propostas."
+                : "Abra um novo chamado de manutenção."}
           </p>
-          <Button
-            className="mt-6"
-            disabled={!condoConfigured}
-            onClick={() => setFormOpen(true)}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Nova Solicitação
-          </Button>
+          {visaoOrcamentos && condoConfigured ? (
+            <Button className="mt-6" variant="outline" onClick={() => setVisao(false)}>
+              Ver chamados
+            </Button>
+          ) : (
+            <Button
+              className="mt-6"
+              disabled={!condoConfigured}
+              onClick={() => setFormOpen(true)}
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              Nova Solicitação
+            </Button>
+          )}
+        </div>
+      ) : visaoOrcamentos ? (
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Situação</TableHead>
+                  <TableHead>Chamado</TableHead>
+                  <TableHead>Local</TableHead>
+                  <TableHead>Propostas</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isPlaceholderData ? (
+                  <LinhaCarregando colunas={6} />
+                ) : list.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="cursor-pointer"
+                    onClick={() => navigate(detalheTo(row.id))}
+                  >
+                    <TableCell>
+                      <SituacaoOrcamentoBadge situacao={row.situacaoOrcamento} />
+                    </TableCell>
+                    <TableCell className="font-medium text-foreground">
+                      <Link to={detalheTo(row.id)} className="underline-offset-2 hover:underline" onClick={(event) => event.stopPropagation()}>
+                        {SOLICITACAO_TIPO_LABEL[row.tipoServico]}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="max-w-[180px] truncate">{row.local}</TableCell>
+                    <TableCell className="tabular-nums">{row.totalOrcamentos ?? 0}</TableCell>
+                    <TableCell>
+                      <SolicitacaoStatusBadge status={row.status} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to={detalheTo(row.id)} onClick={(event) => event.stopPropagation()}>Abrir</Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <Paginacao page={page} totalPages={totalPages} onPage={setPage} />
         </div>
       ) : (
         <div className="space-y-4">
@@ -279,7 +473,9 @@ export default function ManutencoesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {list.map((row) => (
+                {isPlaceholderData ? (
+                  <LinhaCarregando colunas={8} />
+                ) : list.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell>
                       <SolicitacaoStatusBadge status={row.status} />
@@ -339,33 +535,7 @@ export default function ManutencoesPage() {
             </Table>
           </div>
 
-          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-            <p className="text-sm text-muted-foreground">
-              Página {page} de {totalPages}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                <ChevronLeft className="mr-1 h-4 w-4" />
-                Anterior
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                Próxima
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          <Paginacao page={page} totalPages={totalPages} onPage={setPage} />
         </div>
       )}
 

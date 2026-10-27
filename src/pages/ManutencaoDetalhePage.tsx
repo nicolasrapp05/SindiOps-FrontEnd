@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useNavigate, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ArrowLeft, Hammer, Plus, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -35,10 +35,15 @@ import {
 
 export default function ManutencaoDetalhePage() {
   const { id = "" } = useParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const cargo = useAuthStore((s) => s.user?.cargo)
   const admin = canAccessAdmin(cargo)
   const sindico = cargo === "sindico"
+  const voltarPara =
+    admin && searchParams.get("origem") === "orcamentos"
+      ? "/manutencoes?visao=orcamentos"
+      : "/manutencoes"
 
   const solicitacaoQuery = useSolicitacaoManutencao(id)
   const orcamentosQuery = useOrcamentosManutencao(id, admin)
@@ -78,7 +83,7 @@ export default function ManutencaoDetalhePage() {
         </div>
         <h3 className="mt-4 text-lg font-semibold text-foreground">Não foi possível abrir a manutenção</h3>
         <p className="mt-1 text-sm text-gray-500">O chamado não existe ou você não tem acesso a ele.</p>
-        <Button variant="outline" className="mt-6" onClick={() => navigate("/manutencoes")}>
+        <Button variant="outline" className="mt-6" onClick={() => navigate(voltarPara)}>
           Voltar para manutenções
         </Button>
       </div>
@@ -112,7 +117,7 @@ export default function ManutencaoDetalhePage() {
     <div className="space-y-6">
       <div>
         <Button variant="ghost" className="-ml-2 px-2" asChild>
-          <Link to="/manutencoes">
+          <Link to={voltarPara}>
             <ArrowLeft className="mr-1.5 h-4 w-4" />
             Manutenções
           </Link>
