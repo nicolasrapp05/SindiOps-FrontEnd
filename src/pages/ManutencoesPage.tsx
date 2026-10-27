@@ -24,6 +24,7 @@ import { useDebounce } from "@/hooks/useDebounce"
 import { Link } from "react-router-dom"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { SolicitacaoStatusBadge } from "@/features/manutencoes/components/SolicitacaoStatusBadge"
+import { SituacaoOrcamentoBadge } from "@/features/manutencoes/components/SituacaoOrcamentoBadge"
 import SolicitacaoManutencaoForm from "@/features/manutencoes/components/SolicitacaoManutencaoForm"
 import {
   useSolicitacoesManutencao,
@@ -32,7 +33,9 @@ import {
 } from "@/features/manutencoes/hooks/useSolicitacoesManutencao"
 import {
   SOLICITACAO_TIPO_LABEL,
+  SITUACAO_ORCAMENTO_LABEL,
   type CreateSolicitacaoManutencaoRequest,
+  type SituacaoOrcamento,
   type SolicitacaoManutencao,
   type SolicitacaoStatus,
   type SolicitacaoTipoServico,
@@ -66,6 +69,7 @@ export default function ManutencoesPage() {
 
   const [statusTab, setStatusTab] = useState<SolicitacaoStatus | "todas">("todas")
   const [tipoFilter, setTipoFilter] = useState<SolicitacaoTipoServico | "">("")
+  const [situacaoFilter, setSituacaoFilter] = useState<SituacaoOrcamento | "">("")
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [formOpen, setFormOpen] = useState(false)
@@ -77,10 +81,11 @@ export default function ManutencoesPage() {
       search: debouncedSearch.trim() || undefined,
       status: statusTab === "todas" ? undefined : statusTab,
       tipoServico: tipoFilter || undefined,
+      situacaoOrcamento: situacaoFilter || undefined,
       page,
       pageSize: PAGE_SIZE,
     }),
-    [debouncedSearch, statusTab, tipoFilter, page],
+    [debouncedSearch, statusTab, tipoFilter, situacaoFilter, page],
   )
 
   const { data, isLoading, isError, refetch } = useSolicitacoesManutencao(
@@ -219,6 +224,19 @@ export default function ManutencoesPage() {
             placeholder="Buscar…"
             className="w-full sm:w-[220px]"
           />
+          <Combobox
+            options={[
+              { value: "", label: "Todos os orçamentos" },
+              ...(Object.keys(SITUACAO_ORCAMENTO_LABEL) as SituacaoOrcamento[]).map((situacao) => ({
+                value: situacao,
+                label: SITUACAO_ORCAMENTO_LABEL[situacao],
+              })),
+            ]}
+            value={situacaoFilter || ""}
+            onValueChange={(v) => { setSituacaoFilter(v as SituacaoOrcamento | ""); setPage(1) }}
+            placeholder="Orçamento"
+            className="w-full sm:w-[220px]"
+          />
         </div>
       </div>
 
@@ -252,6 +270,7 @@ export default function ManutencoesPage() {
                 <TableRow>
                   <TableHead>Status</TableHead>
                   <TableHead>Tipo de serviço</TableHead>
+                  <TableHead>Orçamento</TableHead>
                   <TableHead>Local</TableHead>
                   <TableHead>Responsável</TableHead>
                   <TableHead>Fornecedor</TableHead>
@@ -266,7 +285,21 @@ export default function ManutencoesPage() {
                       <SolicitacaoStatusBadge status={row.status} />
                     </TableCell>
                     <TableCell className="font-medium text-foreground">
-                      {SOLICITACAO_TIPO_LABEL[row.tipoServico]}
+                      <Link
+                        to={`/manutencoes/${row.id}`}
+                        className="underline-offset-2 hover:underline"
+                      >
+                        {SOLICITACAO_TIPO_LABEL[row.tipoServico]}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      {row.situacaoOrcamento ? (
+                        <Link to={`/manutencoes/${row.id}`} className="inline-flex">
+                          <SituacaoOrcamentoBadge situacao={row.situacaoOrcamento} />
+                        </Link>
+                      ) : (
+                        "—"
+                      )}
                     </TableCell>
                     <TableCell className="max-w-[160px] truncate">{row.local}</TableCell>
                     <TableCell>

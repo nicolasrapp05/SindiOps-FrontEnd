@@ -29,7 +29,7 @@ export const SOLICITACAO_TIPO_LABEL: Record<SolicitacaoTipoServico, string> = {
 
 export interface SolicitacaoManutencao {
   id: string
-  condominioId: string
+  condominioId?: string
   tipoServico: SolicitacaoTipoServico
   local: string
   responsavel: "fornecedor" | "zelador"
@@ -39,6 +39,26 @@ export interface SolicitacaoManutencao {
   fornecedor?: { id: string; nome: string }
   registradoPor: { id: string; nome: string }
   criadoEm: string
+  totalOrcamentos: number
+  temOrcamentoSelecionado: boolean
+  orcamentoAprovado: boolean
+  situacaoOrcamento: SituacaoOrcamento
+  orcamentoAprovadoPor?: { id: string; nome: string }
+}
+
+export type SituacaoOrcamento =
+  | "sem_orcamento"
+  | "aguardando_proposta"
+  | "proposta_selecionada"
+  | "aprovado"
+  | "encerrado"
+
+export const SITUACAO_ORCAMENTO_LABEL: Record<SituacaoOrcamento, string> = {
+  sem_orcamento: "Sem orçamento",
+  aguardando_proposta: "Aguardando escolha",
+  proposta_selecionada: "Proposta selecionada",
+  aprovado: "Aprovado",
+  encerrado: "Encerrado",
 }
 
 export interface CreateSolicitacaoManutencaoRequest {
@@ -55,6 +75,8 @@ export interface SolicitacaoFilters {
   status?: SolicitacaoStatus
   tipoServico?: SolicitacaoTipoServico
   responsavel?: "fornecedor" | "zelador"
+  situacaoOrcamento?: SituacaoOrcamento
+  pendenteOrcamento?: boolean
   page?: number
   pageSize?: number
 }

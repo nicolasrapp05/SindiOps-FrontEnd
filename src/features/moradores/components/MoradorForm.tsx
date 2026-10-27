@@ -1,3 +1,4 @@
+import { useLayoutEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -94,30 +95,28 @@ export default function MoradorForm({
   const selectedBloco = blocos?.find((b: Bloco) => b.id === selectedBlocoId)
   const unidades = selectedBloco?.unidades ?? []
 
-  const handleOpenChange = (next: boolean) => {
-    if (next) {
-      if (morador) {
-        reset({
-          nome: morador.nome,
-          blocoId: morador.bloco.id,
-          unidadeId: morador.unidade.id,
-          papel: morador.papel,
-          email: morador.email,
-          telefone: morador.telefone ?? "",
-        })
-      } else {
-        reset({
-          nome: "",
-          blocoId: "",
-          unidadeId: "",
-          papel: "" as FormData["papel"],
-          email: "",
-          telefone: "",
-        })
-      }
+  useLayoutEffect(() => {
+    if (!open) return
+    if (morador) {
+      reset({
+        nome: morador.nome,
+        blocoId: morador.bloco.id,
+        unidadeId: morador.unidade.id,
+        papel: morador.papel,
+        email: morador.email,
+        telefone: morador.telefone ?? "",
+      })
+      return
     }
-    onOpenChange(next)
-  }
+    reset({
+      nome: "",
+      blocoId: "",
+      unidadeId: "",
+      papel: "" as FormData["papel"],
+      email: "",
+      telefone: "",
+    })
+  }, [open, morador, reset])
 
   const handleFormSubmit = (data: FormData) => {
     onSubmit({
@@ -131,7 +130,7 @@ export default function MoradorForm({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">

@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Wrench,
   ClipboardCheck,
+  Receipt,
   ShoppingCart,
   BarChart2,
   Mail,
@@ -52,6 +53,12 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: "Ocorrências", href: "/ocorrencias", icon: AlertTriangle, allowedRoles: [...CARGO_GROUPS.ALL] },
       { label: "Manutenções", href: "/manutencoes", icon: Wrench, allowedRoles: [...CARGO_GROUPS.EXCEPT_PORTEIRO] },
+      {
+        label: "Orçamentos",
+        href: "/manutencoes/orcamentos",
+        icon: Receipt,
+        allowedRoles: [...CARGO_GROUPS.ADMIN],
+      },
       {
         label: "Manutenções Obrigatórias",
         href: "/manutencoes-obrigatorias",

@@ -17,6 +17,8 @@ import ContratosPage from "@/pages/ContratosPage"
 import OcorrenciasPage from "@/pages/OcorrenciasPage"
 import OcorrenciaDetalhePage from "@/pages/OcorrenciaDetalhePage"
 import ManutencoesPage from "@/pages/ManutencoesPage"
+import ManutencaoDetalhePage from "@/pages/ManutencaoDetalhePage"
+import OrcamentosManutencaoPage from "@/pages/OrcamentosManutencaoPage"
 import ManutencoesObrigatoriasPage from "@/pages/ManutencoesObrigatoriasPage"
 import ComprasPage from "@/pages/ComprasPage"
 import CotacoesPage from "@/pages/CotacoesPage"
@@ -71,6 +73,8 @@ export const router = createBrowserRouter([
             element: <RoleGuard allowedRoles={[...EXCEPT_PORTEIRO]} />,
             children: [
               { path: "manutencoes", element: <ManutencoesPage /> },
+              { path: "manutencoes/orcamentos", element: <OrcamentosManutencaoPage /> },
+              { path: "manutencoes/:id", element: <ManutencaoDetalhePage /> },
               {
                 path: "manutencoes-obrigatorias",
                 element: <ManutencoesObrigatoriasPage />,
