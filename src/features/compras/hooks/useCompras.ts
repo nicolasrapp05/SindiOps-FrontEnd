@@ -86,7 +86,7 @@ export function useCreateSolicitacaoCompra() {
       upsertPaginatedItem<SolicitacaoCompra>(qc, ["solicitacoes-compra"], solicitacao, {
         prependIfMissing: true,
       })
-      toast.success("Solicitação criada. Cadastre cotações em Cotações.")
+      toast.success("Solicitação criada")
     },
     onError: (err) =>
       toast.error(getApiErrorMessage(err, "Erro ao criar solicitação")),
@@ -112,7 +112,24 @@ export function useUpdateStatusCompra() {
     mutationFn: ({ id, status }: { id: string; status: CompraStatus }) =>
       updateSolicitacaoStatus(id, status),
     onSuccess: (solicitacao) => {
-      syncSolicitacaoCompraCache(qc, solicitacao)
+      upsertPaginatedItem<SolicitacaoCompra>(qc, ["solicitacoes-compra"], solicitacao)
+      patchDetailCache<SolicitacaoCompra>(
+        qc,
+        ["solicitacoes-compra", "detail", solicitacao.id],
+        (old) =>
+          old
+            ? {
+                ...old,
+                status: solicitacao.status,
+                aprovadoPor: solicitacao.aprovadoPor,
+                totalCotacoes: solicitacao.totalCotacoes,
+                temCotacaoSelecionada: solicitacao.temCotacaoSelecionada,
+                itens: solicitacao.itens,
+                tipoAprovacao: solicitacao.tipoAprovacao,
+                solicitadoPor: solicitacao.solicitadoPor,
+              }
+            : old,
+      )
       toast.success("Status atualizado")
     },
     onError: (err) =>

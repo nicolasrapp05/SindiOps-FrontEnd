@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import {
   Plus,
   ChevronDown,
@@ -24,11 +24,6 @@ import {
 } from "@/components/ui/table"
 import Combobox from "@/components/shared/Combobox"
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import {
   useSolicitacoesCompra,
   useSolicitacaoCompra,
   useCreateSolicitacaoCompra,
@@ -37,26 +32,24 @@ import {
 } from "@/features/compras/hooks/useCompras"
 import {
   COMPRA_CATEGORIA_LABEL,
+  SITUACAO_COTACAO_LABEL,
   type CompraCategoria,
   type CompraStatus,
   type CreateSolicitacaoCompraRequest,
-  type SolicitacaoCompra,
+  type SituacaoCotacao,
   type TipoAprovacao,
 } from "@/features/compras/types/compra.types"
 import CompraStatusBadge from "@/features/compras/components/CompraStatusBadge"
-import ItensSolicitacaoLista from "@/features/compras/components/ItensSolicitacaoLista"
 import SolicitacaoCompraForm from "@/features/compras/components/SolicitacaoCompraForm"
-import MapaCotacoes from "@/features/compras/components/MapaCotacoes"
+import PainelSolicitacaoCompra from "@/features/compras/components/PainelSolicitacaoCompra"
 import AprovarCompraDialog from "@/features/compras/components/AprovarCompraDialog"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import {
-  getAprovarBlockReason,
   getCotacaoReadinessLabel,
   isSindico,
   resumoItensCompra,
 } from "@/features/compras/lib/compra-flow"
 import { cn } from "@/lib/utils"
-import { formatBRL } from "@/lib/currency"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { useAuthStore } from "@/store/auth-store"
 
@@ -86,31 +79,27 @@ const CATEGORIAS: (CompraCategoria | "todas")[] = [
 
 const PAGE_SIZE = 10
 
+const SITUACOES_COTACAO = Object.keys(SITUACAO_COTACAO_LABEL) as SituacaoCotacao[]
+
+function statusDaUrl(value: string | null): StatusTab {
+  return STATUS_TABS.some((tab) => tab.value === value) ? (value as StatusTab) : "todas"
+}
+
 interface AprovarDialogState {
   id: string
   tipoAprovacao: TipoAprovacao
   valorTotal?: number
 }
 
-function resolveTemCotacaoSelecionada(
-  row: SolicitacaoCompra,
-  detail?: SolicitacaoCompra,
-): boolean {
-  const source = detail ?? row
-  return (
-    source.temCotacaoSelecionada ??
-    source.cotacoes?.some((c) => c.selecionada) ??
-    false
-  )
-}
-
 export default function ComprasPage() {
   const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
   const cargo = useAuthStore((s) => s.user?.cargo)
-  const sindico = isSindico(cargo ?? "sindico")
+  const sindico = !!cargo && isSindico(cargo)
+  const [searchParams] = useSearchParams()
 
-  const [statusTab, setStatusTab] = useState<StatusTab>("todas")
+  const [statusTab, setStatusTab] = useState<StatusTab>(() => statusDaUrl(searchParams.get("status")))
   const [categoriaFilter, setCategoriaFilter] = useState<CompraCategoria | "todas">("todas")
+  const [situacaoCotacao, setSituacaoCotacao] = useState<SituacaoCotacao | "">("")
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [formOpen, setFormOpen] = useState(false)
@@ -123,13 +112,17 @@ export default function ComprasPage() {
   const apiFilters = useMemo(
     () => ({
       search: debouncedSearch.trim() || undefined,
-      status: statusTab === "todas" ? undefined : statusTab,
+      status: situacaoCotacao ? "nova" : statusTab === "todas" ? undefined : statusTab,
       categoria: categoriaFilter === "todas" ? undefined : categoriaFilter,
+      situacaoCotacao: situacaoCotacao || undefined,
       page,
       pageSize: PAGE_SIZE,
     }),
-    [debouncedSearch, statusTab, categoriaFilter, page],
+    [categoriaFilter, debouncedSearch, page, situacaoCotacao, statusTab],
   )
+
+  const filtrosAtivos =
+    statusTab !== "todas" || categoriaFilter !== "todas" || !!situacaoCotacao || !!search.trim()
 
   const { data, isLoading, isError, refetch } = useSolicitacoesCompra(
     condominioId,
@@ -237,6 +230,7 @@ export default function ComprasPage() {
               variant={statusTab === t.value ? "default" : "outline"}
               onClick={() => {
                 setStatusTab(t.value)
+                if (t.value !== "nova") setSituacaoCotacao("")
                 setPage(1)
               }}
             >
@@ -271,6 +265,24 @@ export default function ComprasPage() {
             placeholder="Buscar…"
             className="w-full sm:w-[220px]"
           />
+          <Combobox
+            options={[
+              { value: "", label: "Todas as cotações" },
+              ...SITUACOES_COTACAO.map((situacao) => ({
+                value: situacao,
+                label: SITUACAO_COTACAO_LABEL[situacao],
+              })),
+            ]}
+            value={situacaoCotacao}
+            onValueChange={(value) => {
+              const situacao = value as SituacaoCotacao | ""
+              setSituacaoCotacao(situacao)
+              if (situacao) setStatusTab("nova")
+              setPage(1)
+            }}
+            placeholder="Cotações"
+            className="w-full sm:w-[220px]"
+          />
         </div>
       </div>
 
@@ -280,21 +292,43 @@ export default function ComprasPage() {
             <ShoppingCart className="text-muted-foreground" />
           </div>
           <h3 className="mt-4 text-lg font-semibold text-gray-700">
-            {!condoConfigured ? "Condomínio não configurado" : "Nenhuma solicitação"}
+            {!condoConfigured
+              ? "Condomínio não configurado"
+              : filtrosAtivos
+                ? "Nenhuma solicitação encontrada"
+                : "Nenhuma solicitação"}
           </h3>
           <p className="mt-1 text-sm text-gray-500">
             {!condoConfigured
               ? "Informe o ID do condomínio para listar e criar solicitações."
-              : "Crie a primeira solicitação de compra."}
+              : filtrosAtivos
+                ? "Não há solicitações com os filtros aplicados."
+                : "Crie a primeira solicitação de compra."}
           </p>
-          <Button
-            className="mt-6"
-            disabled={!condoConfigured}
-            onClick={() => setFormOpen(true)}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Nova Solicitação
-          </Button>
+          {condoConfigured && filtrosAtivos ? (
+            <Button
+              variant="outline"
+              className="mt-6"
+              onClick={() => {
+                setStatusTab("todas")
+                setCategoriaFilter("todas")
+                setSituacaoCotacao("")
+                setSearch("")
+                setPage(1)
+              }}
+            >
+              Limpar filtros
+            </Button>
+          ) : (
+            <Button
+              className="mt-6"
+              disabled={!condoConfigured}
+              onClick={() => setFormOpen(true)}
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              Nova Solicitação
+            </Button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -309,6 +343,7 @@ export default function ComprasPage() {
                   <TableHead className="text-right">Itens</TableHead>
                   <TableHead>Solicitante</TableHead>
                   <TableHead>Tipo aprovação</TableHead>
+                  <TableHead>Cotações</TableHead>
                   <TableHead>Data</TableHead>
                 </TableRow>
               </TableHeader>
@@ -316,19 +351,11 @@ export default function ComprasPage() {
                 {list.map((row) => {
                   const open = expandedId === row.id
                   const detail = open ? expandedDetail : undefined
-                  const temCotacaoSelecionada = resolveTemCotacaoSelecionada(row, detail)
                   const readiness = getCotacaoReadinessLabel(
                     row.status,
-                    row.totalCotacoes,
-                    temCotacaoSelecionada,
+                    detail?.totalCotacoes ?? row.totalCotacoes,
+                    detail?.temCotacaoSelecionada ?? row.temCotacaoSelecionada ?? false,
                   )
-                  const aprovarBlockReason = getAprovarBlockReason(
-                    row.status,
-                    row.totalCotacoes,
-                    temCotacaoSelecionada,
-                  )
-                  const cotacoes = detail?.cotacoes ?? row.cotacoes ?? []
-                  const cotacaoSelecionada = cotacoes.find((c) => c.selecionada)
                   const itensResumo = resumoItensCompra(row.itens)
 
                   return (
@@ -359,19 +386,7 @@ export default function ComprasPage() {
                           </Button>
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
-                          <div className="flex flex-col gap-1.5">
-                            <CompraStatusBadge status={row.status} />
-                            {readiness && (
-                              <span
-                                className={cn(
-                                  "inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                                  readiness.className,
-                                )}
-                              >
-                                {readiness.label}
-                              </span>
-                            )}
-                          </div>
+                          <CompraStatusBadge status={row.status} />
                         </TableCell>
                         <TableCell title={itensResumo.categoriasTitulo}>
                           {itensResumo.categoria}
@@ -400,115 +415,45 @@ export default function ComprasPage() {
                           </div>
                         </TableCell>
                         <TableCell>{TIPO_APROVACAO_LABEL[row.tipoAprovacao]}</TableCell>
+                        <TableCell>
+                          {readiness ? (
+                            <span
+                              className={cn(
+                                "inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                                readiness.className,
+                              )}
+                            >
+                              {readiness.label}
+                            </span>
+                          ) : (
+                            <span className="text-sm tabular-nums text-muted-foreground">
+                              {row.totalCotacoes}
+                            </span>
+                          )}
+                        </TableCell>
                         <TableCell className="whitespace-nowrap text-muted-foreground">
                           {new Date(row.criadoEm).toLocaleDateString("pt-BR")}
                         </TableCell>
                       </TableRow>
                       {open && (
                         <TableRow className="bg-muted/20 hover:bg-muted/20">
-                          <TableCell colSpan={8} className="p-4">
-                            {detailLoading ? (
-                              <Skeleton className="h-40 w-full rounded-xl" />
-                            ) : (
-                              <div className="space-y-4">
-                                <ItensSolicitacaoLista
-                                  itens={detail?.itens ?? row.itens}
-                                  justificativa={detail?.justificativa}
-                                />
-                                <div className="mb-3 flex items-center justify-between gap-2">
-                                  <p className="text-sm font-medium text-muted-foreground">
-                                    Mapa de cotações
-                                  </p>
-                                  <Link
-                                    to="/compras/cotacoes"
-                                    className="text-sm font-medium text-emerald-700 hover:text-emerald-800 hover:underline"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    Gerenciar cotações →
-                                  </Link>
-                                </div>
-                                <MapaCotacoes
-                                  cotacoes={cotacoes}
-                                  itens={detail?.itens ?? row.itens}
-                                />
-                                {row.status !== "finalizada" && sindico && (
-                                  <div className="flex items-center justify-end gap-3 border-t pt-4">
-                                    {row.status === "cancelada" && (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={updateStatusMutation.isPending}
-                                        onClick={() =>
-                                          updateStatusMutation.mutate({ id: row.id, status: "em_andamento" })
-                                        }
-                                      >
-                                        Reativar Solicitação
-                                      </Button>
-                                    )}
-                                    {(row.status === "nova" || row.status === "em_andamento") && (
-                                      <Button
-                                        variant="outline"
-                                        className="border-red-200 text-red-600 hover:bg-red-50"
-                                        size="sm"
-                                        disabled={updateStatusMutation.isPending}
-                                        onClick={() =>
-                                          setCancelarDialog({ id: row.id, nome: itensResumo.descricao })
-                                        }
-                                      >
-                                        Cancelar Solicitação
-                                      </Button>
-                                    )}
-                                    {row.status === "nova" && (() => {
-                                      const label = cotacaoSelecionada
-                                        ? `Aprovar Compra (${formatBRL(cotacaoSelecionada.valorTotal)})`
-                                        : "Aprovar Compra"
-                                      const blocked = aprovarBlockReason !== null
-                                      const btn = (
-                                        <Button
-                                          
-                                          size="sm"
-                                          disabled={aprovarMutation.isPending || blocked}
-                                          onClick={() =>
-                                            setAprovarDialog({
-                                              id: row.id,
-                                              tipoAprovacao: row.tipoAprovacao,
-                                              valorTotal: cotacaoSelecionada?.valorTotal,
-                                            })
-                                          }
-                                        >
-                                          {label}
-                                        </Button>
-                                      )
-                                      if (!blocked) return btn
-                                      return (
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <span tabIndex={0} className="inline-flex">
-                                              {btn}
-                                            </span>
-                                          </TooltipTrigger>
-                                          <TooltipContent side="top" className="max-w-[240px]">
-                                            {aprovarBlockReason}
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      )
-                                    })()}
-                                    {row.status === "em_andamento" && (
-                                      <Button
-                                        
-                                        size="sm"
-                                        disabled={updateStatusMutation.isPending}
-                                        onClick={() =>
-                                          updateStatusMutation.mutate({ id: row.id, status: "finalizada" })
-                                        }
-                                      >
-                                        Finalizar Compra
-                                      </Button>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                          <TableCell colSpan={9} className="p-4">
+                            <PainelSolicitacaoCompra
+                              row={row}
+                              detail={detail}
+                              detailLoading={detailLoading}
+                              sindico={sindico}
+                              statusPending={updateStatusMutation.isPending}
+                              aprovarPending={aprovarMutation.isPending}
+                              onAprovar={setAprovarDialog}
+                              onCancelar={setCancelarDialog}
+                              onReativar={(id) =>
+                                updateStatusMutation.mutate({ id, status: "em_andamento" })
+                              }
+                              onFinalizar={(id) =>
+                                updateStatusMutation.mutate({ id, status: "finalizada" })
+                              }
+                            />
                           </TableCell>
                         </TableRow>
                       )}
