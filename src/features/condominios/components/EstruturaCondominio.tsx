@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+import { useState } from "react"
 import {
   Building2,
   Plus,
@@ -47,17 +47,10 @@ interface RenameInputProps {
 
 function RenameInput({ initialValue, onConfirm, onCancel, isPending }: RenameInputProps) {
   const [value, setValue] = useState(initialValue)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    inputRef.current?.focus()
-    inputRef.current?.select()
-  }, [])
 
   return (
     <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
       <Input
-        ref={inputRef}
         className="h-7 w-32 text-xs"
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -190,7 +183,6 @@ function AddUnidadesPopover({
                 if (e.key === "Enter") handleIndividual()
                 if (e.key === "Escape") onClose()
               }}
-              autoFocus
             />
           </div>
           <Button
@@ -581,7 +573,6 @@ export default function EstruturaCondominio({
                     setNewBlocoName("")
                   }
                 }}
-                autoFocus
               />
               <Button
                 size="sm"

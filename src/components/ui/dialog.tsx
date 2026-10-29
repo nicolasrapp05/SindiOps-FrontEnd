@@ -63,6 +63,7 @@ function DialogContent({
           className
         )}
         {...props}
+        onOpenAutoFocus={(event) => event.preventDefault()}
       >
         {children}
         {showCloseButton && (

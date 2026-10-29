@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   ChevronLeft,
   ChevronRight,
@@ -31,19 +31,23 @@ import SolicitacaoManutencaoForm from "@/features/manutencoes/components/Solicit
 import {
   useSolicitacoesManutencao,
   useCreateSolicitacaoManutencao,
-  useUpdateSolicitacaoStatus,
 } from "@/features/manutencoes/hooks/useSolicitacoesManutencao"
+import {
+  FILTROS_FILA,
+  manutencaoDetalheTo,
+  readManutencaoListParams,
+  writeManutencaoListParams,
+  type FiltroFila,
+  type ManutencaoListParams,
+} from "@/features/manutencoes/lib/manutencao-list-params"
 import {
   SOLICITACAO_TIPO_LABEL,
   SITUACAO_ORCAMENTO_LABEL,
   type CreateSolicitacaoManutencaoRequest,
   type SituacaoOrcamento,
-  type SolicitacaoManutencao,
   type SolicitacaoStatus,
   type SolicitacaoTipoServico,
 } from "@/features/manutencoes/types/solicitacao-manutencao.types"
-import { proximosStatus, isStatusFinal, FLUXO_STATUS_LABEL } from "@/lib/status-transitions"
-import type { FluxoStatus } from "@/lib/status-transitions"
 
 const PAGE_SIZE = 10
 
@@ -115,9 +119,6 @@ const STATUS_TAB_LABEL: Record<SolicitacaoStatus | "todas", string> = {
   cancelada: "Cancelada",
 }
 
-const FILTROS_FILA = ["pendentes", ...Object.keys(SITUACAO_ORCAMENTO_LABEL), "todas"] as const
-type FiltroFila = (typeof FILTROS_FILA)[number]
-
 const FILTRO_FILA_LABEL: Record<FiltroFila, string> = {
   pendentes: "Pendentes",
   ...SITUACAO_ORCAMENTO_LABEL,
@@ -131,52 +132,67 @@ export default function ManutencoesPage() {
   const admin = canAccessAdmin(cargo)
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const visaoOrcamentos = admin && searchParams.get("visao") === "orcamentos"
-
-  const [statusTab, setStatusTab] = useState<SolicitacaoStatus | "todas">("todas")
-  const [tipoFilter, setTipoFilter] = useState<SolicitacaoTipoServico | "">("")
-  const [situacaoFilter, setSituacaoFilter] = useState<SituacaoOrcamento | "">("")
-  const [filtroFila, setFiltroFila] = useState<FiltroFila>("pendentes")
-  const [search, setSearch] = useState("")
-  const [page, setPage] = useState(1)
+  const query = searchParams.toString()
+  const parsed = useMemo(() => readManutencaoListParams(new URLSearchParams(query)), [query])
+  const visaoOrcamentos = admin && parsed.visao === "orcamentos"
+  const viewState = useMemo<ManutencaoListParams>(
+    () => (visaoOrcamentos ? parsed : { ...parsed, visao: "chamados" }),
+    [parsed, visaoOrcamentos],
+  )
+  const canonicalQuery = useMemo(() => writeManutencaoListParams(parsed).toString(), [parsed])
   const [formOpen, setFormOpen] = useState(false)
+  const debouncedSearch = useDebounce(viewState.search)
 
-  const debouncedSearch = useDebounce(search)
+  useEffect(() => {
+    if (canonicalQuery !== query) {
+      setSearchParams(canonicalQuery, { replace: true })
+    }
+  }, [canonicalQuery, query, setSearchParams])
+
+  const updateList = (patch: Partial<ManutencaoListParams>) => {
+    const current = readManutencaoListParams(new URLSearchParams(query))
+    const base: ManutencaoListParams =
+      admin && current.visao === "orcamentos" ? current : { ...current, visao: "chamados" }
+    setSearchParams(writeManutencaoListParams({ ...base, ...patch }), { replace: true })
+  }
 
   const filters = useMemo(() => {
     if (visaoOrcamentos) {
       return {
         search: debouncedSearch.trim() || undefined,
         situacaoOrcamento:
-          filtroFila !== "pendentes" && filtroFila !== "todas"
-            ? (filtroFila as SituacaoOrcamento)
+          viewState.fila !== "pendentes" && viewState.fila !== "todas"
+            ? (viewState.fila as SituacaoOrcamento)
             : undefined,
-        pendenteOrcamento: filtroFila === "pendentes" ? true : undefined,
-        page,
+        pendenteOrcamento: viewState.fila === "pendentes" ? true : undefined,
+        page: viewState.page,
         pageSize: PAGE_SIZE,
       }
     }
 
     return {
       search: debouncedSearch.trim() || undefined,
-      status: statusTab === "todas" ? undefined : statusTab,
-      tipoServico: tipoFilter || undefined,
-      situacaoOrcamento: situacaoFilter || undefined,
-      page,
+      status: viewState.status === "todas" ? undefined : viewState.status,
+      tipoServico: viewState.tipoServico || undefined,
+      situacaoOrcamento: viewState.situacaoOrcamento || undefined,
+      page: viewState.page,
       pageSize: PAGE_SIZE,
     }
-  }, [debouncedSearch, filtroFila, page, situacaoFilter, statusTab, tipoFilter, visaoOrcamentos])
+  }, [debouncedSearch, viewState, visaoOrcamentos])
 
   const setVisao = (fila: boolean) => {
-    setPage(1)
-    const next = new URLSearchParams(searchParams)
-    if (fila) next.set("visao", "orcamentos")
-    else next.delete("visao")
-    setSearchParams(next, { replace: true })
+    const current = readManutencaoListParams(new URLSearchParams(query))
+    setSearchParams(
+      writeManutencaoListParams({
+        ...current,
+        visao: fila ? "orcamentos" : "chamados",
+        page: 1,
+      }),
+      { replace: true },
+    )
   }
 
-  const detalheTo = (id: string) =>
-    visaoOrcamentos ? `/manutencoes/${id}?origem=orcamentos` : `/manutencoes/${id}`
+  const detalheTo = (id: string) => manutencaoDetalheTo(id, viewState)
 
   const { data, isLoading, isError, isPlaceholderData, refetch } = useSolicitacoesManutencao(
     condominioId,
@@ -184,7 +200,6 @@ export default function ManutencoesPage() {
   )
 
   const createMutation = useCreateSolicitacaoManutencao()
-  const updateStatusMutation = useUpdateSolicitacaoStatus()
 
   const list = data?.data ?? []
   const totalCount = data?.totalCount
@@ -193,15 +208,6 @@ export default function ManutencoesPage() {
 
   const handleCreate = (payload: CreateSolicitacaoManutencaoRequest) => {
     createMutation.mutate(payload, { onSuccess: () => setFormOpen(false) })
-  }
-
-  const statusChange = (row: SolicitacaoManutencao, status: SolicitacaoStatus) => {
-    updateStatusMutation.mutate({
-      id: row.id,
-      status,
-      dataConclusao:
-        status === "finalizada" ? new Date().toISOString().slice(0, 10) : undefined,
-    })
   }
 
   const condoConfigured = !!condominioId
@@ -303,11 +309,8 @@ export default function ManutencoesPage() {
                   key={item}
                   type="button"
                   size="sm"
-                  variant={filtroFila === item ? "default" : "outline"}
-                  onClick={() => {
-                    setFiltroFila(item)
-                    setPage(1)
-                  }}
+                  variant={parsed.fila === item ? "default" : "outline"}
+                  onClick={() => updateList({ fila: item, page: 1 })}
                 >
                   {FILTRO_FILA_LABEL[item]}
                 </Button>
@@ -317,11 +320,8 @@ export default function ManutencoesPage() {
                   key={tab}
                   type="button"
                   size="sm"
-                  variant={statusTab === tab ? "default" : "outline"}
-                  onClick={() => {
-                    setStatusTab(tab)
-                    setPage(1)
-                  }}
+                  variant={viewState.status === tab ? "default" : "outline"}
+                  onClick={() => updateList({ status: tab, page: 1 })}
                 >
                   {STATUS_TAB_LABEL[tab]}
                 </Button>
@@ -337,11 +337,8 @@ export default function ManutencoesPage() {
               aria-label={visaoOrcamentos ? "Buscar chamados" : "Buscar manutenções"}
               placeholder="Buscar…"
               className="pl-10"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value)
-                setPage(1)
-              }}
+              value={viewState.search}
+              onChange={(e) => updateList({ search: e.target.value, page: 1 })}
             />
           </div>
           {!visaoOrcamentos && (
@@ -351,8 +348,8 @@ export default function ManutencoesPage() {
                   { value: "", label: "Todos os tipos" },
                   ...TIPOS.map((t) => ({ value: t, label: SOLICITACAO_TIPO_LABEL[t] })),
                 ]}
-                value={tipoFilter || ""}
-                onValueChange={(v) => { setTipoFilter(v as SolicitacaoTipoServico | ""); setPage(1) }}
+                value={viewState.tipoServico || ""}
+                onValueChange={(v) => updateList({ tipoServico: v as SolicitacaoTipoServico | "", page: 1 })}
                 placeholder="Buscar…"
                 className="w-full sm:w-[220px]"
               />
@@ -364,8 +361,8 @@ export default function ManutencoesPage() {
                     label: SITUACAO_ORCAMENTO_LABEL[situacao],
                   })),
                 ]}
-                value={situacaoFilter || ""}
-                onValueChange={(v) => { setSituacaoFilter(v as SituacaoOrcamento | ""); setPage(1) }}
+                value={viewState.situacaoOrcamento || ""}
+                onValueChange={(v) => updateList({ situacaoOrcamento: v as SituacaoOrcamento | "", page: 1 })}
                 placeholder="Orçamento"
                 className="w-full sm:w-[220px]"
               />
@@ -454,7 +451,7 @@ export default function ManutencoesPage() {
               </TableBody>
             </Table>
           </div>
-          <Paginacao page={page} totalPages={totalPages} onPage={setPage} />
+          <Paginacao page={viewState.page} totalPages={totalPages} onPage={(page) => updateList({ page })} />
         </div>
       ) : (
         <div className="space-y-4">
@@ -469,28 +466,36 @@ export default function ManutencoesPage() {
                   <TableHead>Responsável</TableHead>
                   <TableHead>Fornecedor</TableHead>
                   <TableHead>Data conclusão</TableHead>
-                  <TableHead className="min-w-[200px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isPlaceholderData ? (
-                  <LinhaCarregando colunas={8} />
+                  <LinhaCarregando colunas={7} />
                 ) : list.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow
+                    key={row.id}
+                    className="cursor-pointer"
+                    onClick={() => navigate(detalheTo(row.id))}
+                  >
                     <TableCell>
                       <SolicitacaoStatusBadge status={row.status} />
                     </TableCell>
                     <TableCell className="font-medium text-foreground">
                       <Link
-                        to={`/manutencoes/${row.id}`}
+                        to={detalheTo(row.id)}
                         className="underline-offset-2 hover:underline"
+                        onClick={(event) => event.stopPropagation()}
                       >
                         {SOLICITACAO_TIPO_LABEL[row.tipoServico]}
                       </Link>
                     </TableCell>
                     <TableCell>
                       {row.situacaoOrcamento ? (
-                        <Link to={`/manutencoes/${row.id}`} className="inline-flex">
+                        <Link
+                          to={detalheTo(row.id)}
+                          className="inline-flex"
+                          onClick={(event) => event.stopPropagation()}
+                        >
                           <SituacaoOrcamentoBadge situacao={row.situacaoOrcamento} />
                         </Link>
                       ) : (
@@ -509,33 +514,13 @@ export default function ManutencoesPage() {
                         ? new Date(row.dataConclusao + "T00:00:00").toLocaleDateString("pt-BR")
                         : "-"}
                     </TableCell>
-                    <TableCell>
-                      {isStatusFinal(row.status as FluxoStatus) ? (
-                        <span className="text-xs text-muted-foreground">Status final</span>
-                      ) : (
-                        <div className="flex flex-col gap-1">
-                          <span className="text-xs text-gray-500">Mover para</span>
-                          <Combobox
-                            options={proximosStatus(row.status as FluxoStatus).map((s) => ({
-                              value: s,
-                              label: FLUXO_STATUS_LABEL[s],
-                            }))}
-                            value={undefined}
-                            onValueChange={(v) => statusChange(row, v as SolicitacaoStatus)}
-                            disabled={updateStatusMutation.isPending}
-                            placeholder="Selecionar..."
-                            className="w-full min-w-[160px]"
-                          />
-                        </div>
-                      )}
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
 
-          <Paginacao page={page} totalPages={totalPages} onPage={setPage} />
+          <Paginacao page={viewState.page} totalPages={totalPages} onPage={(page) => updateList({ page })} />
         </div>
       )}
 

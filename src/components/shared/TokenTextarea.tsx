@@ -8,7 +8,6 @@ export interface TokenDef {
 
 export interface TokenTextareaHandle {
   insertToken: (token: string, label: string) => void
-  focus: () => void
 }
 
 interface TokenTextareaProps {
@@ -171,9 +170,6 @@ const TokenTextarea = forwardRef<TokenTextareaHandle, TokenTextareaProps>(
         // Trigger onChange
         const inputEv = new Event("input", { bubbles: true })
         div.dispatchEvent(inputEv)
-      },
-      focus() {
-        divRef.current?.focus()
       },
     }))
 

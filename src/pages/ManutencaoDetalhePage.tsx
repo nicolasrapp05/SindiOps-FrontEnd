@@ -4,12 +4,11 @@ import { ArrowLeft, Hammer, Plus, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import Combobox from "@/components/shared/Combobox"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import { useAuthStore } from "@/store/auth-store"
 import { canAccessAdmin } from "@/lib/cargo-permissions"
-import { FLUXO_STATUS_LABEL, isStatusFinal, proximosStatus } from "@/lib/status-transitions"
-import type { FluxoStatus } from "@/lib/status-transitions"
+import AcoesStatusChamado from "@/features/manutencoes/components/AcoesStatusChamado"
+import { isStatusFinal } from "@/lib/status-transitions"
 import { SolicitacaoStatusBadge } from "@/features/manutencoes/components/SolicitacaoStatusBadge"
 import { SituacaoOrcamentoBadge } from "@/features/manutencoes/components/SituacaoOrcamentoBadge"
 import MapaOrcamentos from "@/features/manutencoes/components/MapaOrcamentos"
@@ -25,13 +24,11 @@ import {
   useSelecionarOrcamentoManutencao,
   useUpdateOrcamentoManutencao,
 } from "@/features/manutencoes/hooks/useOrcamentosManutencao"
+import { manutencaoListaFromDetalhe } from "@/features/manutencoes/lib/manutencao-list-params"
 import { podeEditarOrcamentos, textoProximaAcao } from "@/features/manutencoes/lib/orcamento-flow"
 import { nomeOrcamento, type OrcamentoManutencao } from "@/features/manutencoes/types/orcamento-manutencao.types"
 import type { CreateOrcamentoManutencaoRequest } from "@/features/manutencoes/types/orcamento-manutencao.types"
-import {
-  SOLICITACAO_TIPO_LABEL,
-  type SolicitacaoStatus,
-} from "@/features/manutencoes/types/solicitacao-manutencao.types"
+import { SOLICITACAO_TIPO_LABEL } from "@/features/manutencoes/types/solicitacao-manutencao.types"
 
 export default function ManutencaoDetalhePage() {
   const { id = "" } = useParams<{ id: string }>()
@@ -40,10 +37,7 @@ export default function ManutencaoDetalhePage() {
   const cargo = useAuthStore((s) => s.user?.cargo)
   const admin = canAccessAdmin(cargo)
   const sindico = cargo === "sindico"
-  const voltarPara =
-    admin && searchParams.get("origem") === "orcamentos"
-      ? "/manutencoes?visao=orcamentos"
-      : "/manutencoes"
+  const voltarPara = manutencaoListaFromDetalhe(searchParams)
 
   const solicitacaoQuery = useSolicitacaoManutencao(id)
   const orcamentosQuery = useOrcamentosManutencao(id, admin)
@@ -99,6 +93,7 @@ export default function ManutencaoDetalhePage() {
     cargo,
     aprovadoPor: solicitacao.orcamentoAprovadoPor?.nome,
   })
+  const temAcaoStatus = !isStatusFinal(solicitacao.status)
 
   const salvar = (payload: CreateOrcamentoManutencaoRequest) => {
     if (editando) {
@@ -167,40 +162,32 @@ export default function ManutencaoDetalhePage() {
         <div className="rounded-2xl bg-card p-5 ring-1 ring-border">
           <h2 className="text-sm font-medium text-foreground">Próxima ação</h2>
           <p className="mt-2 text-sm text-muted-foreground">{proxima}</p>
-          <div className="mt-4 flex flex-col gap-2">
-            {podeAprovar && (
-              <Button onClick={() => setAprovarOpen(true)} disabled={aprovarMutation.isPending}>
-                Aprovar proposta
-              </Button>
-            )}
-            {podeReabrir && (
-              <Button variant="outline" onClick={() => setReabrirOpen(true)}>
-                Reabrir orçamento
-              </Button>
-            )}
-            {!isStatusFinal(solicitacao.status as FluxoStatus) && (
-              <div className="space-y-1">
-                <span className="text-xs text-gray-500">Mover chamado para</span>
-                <Combobox
-                  options={proximosStatus(solicitacao.status as FluxoStatus).map((status) => ({
-                    value: status,
-                    label: FLUXO_STATUS_LABEL[status],
-                  }))}
-                  value={undefined}
-                  onValueChange={(status) =>
-                    statusMutation.mutate({
-                      id: solicitacao.id,
-                      status: status as SolicitacaoStatus,
-                      dataConclusao:
-                        status === "finalizada" ? new Date().toISOString().slice(0, 10) : undefined,
-                    })
-                  }
-                  disabled={statusMutation.isPending}
-                  placeholder="Selecionar..."
-                />
-              </div>
-            )}
-          </div>
+          {(podeAprovar || podeReabrir || temAcaoStatus) && (
+            <div className="mt-4 flex flex-col gap-2">
+              {podeAprovar && (
+                <Button onClick={() => setAprovarOpen(true)} disabled={aprovarMutation.isPending}>
+                  Aprovar proposta
+                </Button>
+              )}
+              {podeReabrir && (
+                <Button variant="outline" onClick={() => setReabrirOpen(true)}>
+                  Reabrir orçamento
+                </Button>
+              )}
+              <AcoesStatusChamado
+                status={solicitacao.status}
+                pending={statusMutation.isPending}
+                onChange={(status) =>
+                  statusMutation.mutateAsync({
+                    id: solicitacao.id,
+                    status,
+                    dataConclusao:
+                      status === "finalizada" ? new Date().toISOString().slice(0, 10) : undefined,
+                  })
+                }
+              />
+            </div>
+          )}
         </div>
       </section>
 
