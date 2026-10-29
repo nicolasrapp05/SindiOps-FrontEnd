@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import AuthGuard from "./AuthGuard"
 import RoleGuard from "./RoleGuard"
+import NotFoundRoute from "./NotFoundRoute"
 import AppLayout from "@/components/shared/AppLayout"
 import { CARGO_GROUPS } from "@/lib/cargo-permissions"
 
@@ -111,14 +112,13 @@ export const router = createBrowserRouter([
               { path: "configuracoes/equipe", element: <EquipePage /> },
             ],
           },
-
-          /* 404 - rotas autenticadas inexistentes (com sidebar) */
-          { path: "*", element: <NotFoundPage /> },
         ],
       },
     ],
   },
 
-  /* 404 - URLs públicas inexistentes (sem layout) */
-  { path: "*", element: <NotFoundPage /> },
+  {
+    element: <NotFoundRoute />,
+    children: [{ path: "*", element: <NotFoundPage /> }],
+  },
 ])

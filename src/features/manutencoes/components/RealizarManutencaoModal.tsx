@@ -18,15 +18,18 @@ import {
 import { toastFormValidationError } from "@/lib/form-utils"
 import type { RealizarManutencaoRequest } from "../types/manutencao-obrigatoria.types"
 
+function dataLocalHoje() {
+  const hoje = new Date()
+  const mes = String(hoje.getMonth() + 1).padStart(2, "0")
+  const dia = String(hoje.getDate()).padStart(2, "0")
+  return `${hoje.getFullYear()}-${mes}-${dia}`
+}
+
 const schema = z.object({
   dataRealizacao: z
     .string()
     .min(1, "Informe a data da realização")
-    .refine((val) => {
-      const d = new Date(val + "T23:59:59")
-      const now = new Date()
-      return d <= now
-    }, "A data não pode ser futura"),
+    .refine((val) => val <= dataLocalHoje(), "A data não pode ser futura"),
   observacoes: z.string().optional().or(z.literal("")),
 })
 
@@ -70,7 +73,7 @@ export default function RealizarManutencaoModal({
     })
   }
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = dataLocalHoje()
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,7 +88,7 @@ export default function RealizarManutencaoModal({
             atualizado conforme as regras do condomínio.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit, toastFormValidationError)} className="space-y-4">
+        <form noValidate onSubmit={handleSubmit(onSubmit, toastFormValidationError)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor={`data-realizacao-${manutencaoId}`}>Data da Realização<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller

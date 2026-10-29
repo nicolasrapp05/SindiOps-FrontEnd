@@ -236,6 +236,7 @@ interface UnidadeChipProps {
 
 function UnidadeChip({ unidade, blocoId, condominioId }: UnidadeChipProps) {
   const [editando, setEditando] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const updateUnidade = useUpdateUnidade(condominioId)
   const deleteUnidade = useDeleteUnidade(condominioId)
 
@@ -279,6 +280,34 @@ function UnidadeChip({ unidade, blocoId, condominioId }: UnidadeChipProps) {
     )
   }
 
+  if (confirmDelete) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-2 py-1 text-xs">
+        <span className="text-red-700">Remover {unidade.numero}?</span>
+        <button
+          type="button"
+          className="font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
+          onClick={handleDelete}
+          disabled={deleteUnidade.isPending}
+        >
+          {deleteUnidade.isPending ? (
+            <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+          ) : (
+            "Confirmar"
+          )}
+        </button>
+        <button
+          type="button"
+          className="text-muted-foreground hover:text-foreground"
+          onClick={() => setConfirmDelete(false)}
+          disabled={deleteUnidade.isPending}
+        >
+          Cancelar
+        </button>
+      </span>
+    )
+  }
+
   return (
     <span className="inline-flex items-center gap-0.5 rounded-lg bg-muted px-1 py-0.5 text-sm font-medium text-foreground">
       <button
@@ -293,7 +322,7 @@ function UnidadeChip({ unidade, blocoId, condominioId }: UnidadeChipProps) {
       <button
         type="button"
         className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-card hover:text-red-600"
-        onClick={handleDelete}
+        onClick={() => setConfirmDelete(true)}
         disabled={deleteUnidade.isPending}
         aria-label={`Remover unidade ${unidade.numero}`}
       >
@@ -489,7 +518,10 @@ export default function EstruturaCondominio({
   const createBloco = useCreateBloco(condominioId)
 
   function handleCreateBloco() {
-    if (!newBlocoName.trim()) return
+    if (!newBlocoName.trim()) {
+      toast.error("O nome do bloco é obrigatório")
+      return
+    }
     createBloco.mutate(newBlocoName.trim(), {
       onSuccess: () => {
         setNewBlocoName("")

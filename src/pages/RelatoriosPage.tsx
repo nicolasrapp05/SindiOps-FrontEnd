@@ -85,6 +85,10 @@ export default function RelatoriosPage() {
       toast.error("Selecione um condomínio")
       return null
     }
+    if (dataInicio && dataFim && dataInicio > dataFim) {
+      toast.error("A data inicial deve ser igual ou anterior à data final")
+      return null
+    }
     return {
       tipo,
       condominioId,

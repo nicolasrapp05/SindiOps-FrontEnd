@@ -300,20 +300,22 @@ export default function DashboardPage() {
     [alertas, cargo],
   )
 
+  const agendaDoCargo = useMemo(
+    () => (data?.agenda ?? []).filter((item) => canSeeAgendaTipo(cargo, item.tipo)),
+    [data?.agenda, cargo],
+  )
+
   const sortedAgenda = useMemo(
-    () => {
-      const agenda = data?.agenda ?? []
-      return [...agenda]
-        .filter((item) => canSeeAgendaTipo(cargo, item.tipo))
+    () =>
+      [...agendaDoCargo]
         .sort(
           (a, b) =>
             new Date(a.dataVencimento).getTime() -
             new Date(b.dataVencimento).getTime(),
         )
         .filter((item) => tipoFilter === "all" || item.tipo === tipoFilter)
-        .filter((item) => statusFilter === "all" || item.status === statusFilter)
-    },
-    [data?.agenda, cargo, tipoFilter, statusFilter],
+        .filter((item) => statusFilter === "all" || item.status === statusFilter),
+    [agendaDoCargo, tipoFilter, statusFilter],
   )
 
   const tipoFilterOptions = useMemo(() => getTipoFilterOptions(cargo), [cargo])
@@ -327,18 +329,26 @@ export default function DashboardPage() {
       tipo: "agenda_prazos",
       condominioId: selectedCondominioId,
       formato: "excel",
-      filtros: {},
+      filtros: {
+        ...(tipoFilter !== "all" ? { tipo: tipoFilter } : {}),
+        ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+      },
     })
   }
 
   const firstName = user?.nome?.split(" ")[0] ?? "Usuário"
   const pendencias = visibleAlertas.reduce((total, alerta) => total + alerta.valor, 0)
+  const prazosAgenda = agendaDoCargo.length
   const resumoAtencao =
-    pendencias === 0
+    pendencias === 0 && prazosAgenda === 0
       ? "Nada urgente neste condomínio."
-      : pendencias === 1
-        ? "1 item pede atenção."
-        : `${pendencias} itens pedem atenção.`
+      : pendencias === 0 && prazosAgenda === 1
+        ? "1 prazo na agenda."
+        : pendencias === 0
+          ? `${prazosAgenda} prazos na agenda.`
+          : pendencias === 1
+            ? "1 item pede atenção."
+            : `${pendencias} itens pedem atenção.`
 
   return (
     <div className="space-y-8">

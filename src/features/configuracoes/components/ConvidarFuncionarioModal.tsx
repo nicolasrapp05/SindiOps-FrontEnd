@@ -28,7 +28,7 @@ import { toastFormValidationError } from "@/lib/form-utils"
 import { toast } from "sonner"
 
 const schema = z.object({
-  nome: z.string().min(1, "O nome é obrigatório"),
+  nome: z.string().trim().min(1, "O nome é obrigatório"),
   email: z.string().min(1, "O email é obrigatório").email("Formato de email inválido"),
   cargo: z.enum(["zelador", "secretario", "porteiro", "outro"]),
   condominioIds: z.array(z.string()).min(1, "Selecione ao menos um condomínio"),

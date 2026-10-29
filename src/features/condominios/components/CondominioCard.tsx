@@ -89,13 +89,15 @@ export default function CondominioCard({
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Building2 className="h-4 w-4 text-muted-foreground" />
           <span>
-            <strong className="font-semibold">{condominio.totalBlocos}</strong> Blocos
+            <strong className="font-semibold">{condominio.totalBlocos}</strong>{" "}
+            {condominio.totalBlocos === 1 ? "Bloco" : "Blocos"}
           </span>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <DoorOpen className="h-4 w-4 text-muted-foreground" />
           <span>
-            <strong className="font-semibold">{condominio.totalUnidades}</strong> Unidades
+            <strong className="font-semibold">{condominio.totalUnidades}</strong>{" "}
+            {condominio.totalUnidades === 1 ? "Unidade" : "Unidades"}
           </span>
         </div>
       </div>

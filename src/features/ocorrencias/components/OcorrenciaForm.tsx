@@ -108,7 +108,7 @@ export default function OcorrenciaForm({
       tipoLocal: data.tipoLocal as TipoLocal,
       tipoOcorrencia: data.tipoOcorrencia as OcorrenciaTipo,
       descricao: data.descricao,
-      ocorreuEm: data.ocorreuEm,
+      ocorreuEm: new Date(data.ocorreuEm).toISOString(),
       moradorId: data.moradorId || undefined,
       blocoId: data.blocoId || undefined,
       unidadeId: data.unidadeId || undefined,

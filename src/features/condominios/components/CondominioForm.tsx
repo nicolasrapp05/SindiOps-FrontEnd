@@ -25,12 +25,15 @@ const optionalDate = z
 
 const condominioSchema = z
   .object({
-  nome: z.string().min(1, "O nome é obrigatório"),
+  nome: z.string().trim().min(1, "O nome é obrigatório"),
   enderecoRua: z.string().optional().or(z.literal("")),
   enderecoNumero: z.string().optional().or(z.literal("")),
   enderecoBairro: z.string().optional().or(z.literal("")),
   enderecoCidade: z.string().optional().or(z.literal("")),
-  enderecoCep: z.string().optional().or(z.literal("")),
+  enderecoCep: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || /^\d{5}-?\d{3}$/.test(v), "CEP inválido"),
   dataEleicao: optionalDate,
   vencimentoMandato: optionalDate,
 })
@@ -177,6 +180,9 @@ export default function CondominioForm({
             <div className="space-y-1.5">
               <Label htmlFor="enderecoCep">CEP</Label>
               <Input id="enderecoCep" placeholder="01234-000" {...register("enderecoCep")} />
+              {errors.enderecoCep && (
+                <p className="text-xs text-destructive">{errors.enderecoCep.message}</p>
+              )}
             </div>
           </div>
 

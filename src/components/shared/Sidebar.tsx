@@ -7,6 +7,7 @@ import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { useAuth } from "@/hooks/useAuth"
 import { useCondominios } from "@/features/condominios/hooks/useCondominios"
 import { canAccessAdmin } from "@/lib/cargo-permissions"
+import { formatCargoLabel } from "@/types"
 import { navGroups } from "./sidebar-nav"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
@@ -237,8 +238,8 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
             <span className="block truncate text-sm font-medium text-white">
               {user?.nome || "Usuário"}
             </span>
-            <span className="block truncate text-xs capitalize text-white/65">
-              {cargo || "Sem cargo"}
+            <span className="block truncate text-xs text-white/65">
+              {cargo ? formatCargoLabel(cargo) : "Sem cargo"}
             </span>
           </span>
         </Link>
