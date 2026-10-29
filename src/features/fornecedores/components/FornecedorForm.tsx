@@ -28,6 +28,23 @@ function cnpjMask(value: string): string {
   return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`
 }
 
+function cnpjValido(value: string): boolean {
+  const digitos = value.replace(/\D/g, "")
+  if (digitos.length !== 14 || new Set(digitos).size === 1) return false
+  const numeros = [...digitos].map((c) => Number(c))
+  const digito = (tamanho: number) => {
+    let soma = 0
+    let peso = tamanho - 7
+    for (let i = 0; i < tamanho; i++) {
+      soma += numeros[i] * peso
+      peso = peso === 2 ? 9 : peso - 1
+    }
+    const resto = soma % 11
+    return resto < 2 ? 0 : 11 - resto
+  }
+  return digito(12) === numeros[12] && digito(13) === numeros[13]
+}
+
 function normalizeServicos(servicos: Fornecedor["servicos"] = []) {
   return servicos.map((s) => ({
     tipo: s.tipo,
@@ -49,8 +66,8 @@ const formSchema = z
     .string()
     .optional()
     .or(z.literal(""))
-    .refine((val) => !val || val.replace(/\D/g, "").length === 14, {
-      message: "CNPJ inválido - informe 14 dígitos",
+    .refine((val) => !val || cnpjValido(val), {
+      message: "CNPJ inválido",
     }),
   enderecoRua: z.string().optional().or(z.literal("")),
   enderecoNumero: z.string().optional().or(z.literal("")),
@@ -58,7 +75,12 @@ const formSchema = z
   enderecoCidade: z.string().optional().or(z.literal("")),
   enderecoCep: z.string().optional().or(z.literal("")),
   telefone: z.string().optional().or(z.literal("")),
-  email: z.string().optional().or(z.literal("")),
+  email: z
+    .string()
+    .trim()
+    .refine((val) => val === "" || z.string().email().safeParse(val).success, {
+      message: "Formato de email inválido",
+    }),
   instagram: z.string().optional().or(z.literal("")),
   website: z.string().optional().or(z.literal("")),
   nomeContato: z.string().optional().or(z.literal("")),
@@ -271,6 +293,7 @@ export default function FornecedorForm({
             <div className="space-y-1.5">
               <Label>Email</Label>
               <Input placeholder="contato@empresa.com" {...register("email")} />
+              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">

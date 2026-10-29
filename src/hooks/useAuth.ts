@@ -17,7 +17,13 @@ export function useAuth() {
       password,
     })
 
-    if (error) throw error
+    if (error) {
+      const message =
+        error.message === "Invalid login credentials"
+          ? "E-mail ou senha incorretos"
+          : error.message
+      throw new Error(message)
+    }
     if (!data.session) throw new Error("Sessão não retornada")
 
     const authUser: AuthUser = authUserFromSupabase(data.session.user)
