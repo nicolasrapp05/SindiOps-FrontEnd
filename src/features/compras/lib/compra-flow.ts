@@ -44,6 +44,32 @@ export function getAprovarBlockReason(
   return null
 }
 
+export function textoProximaAcaoCompra(input: {
+  status: CompraStatus
+  totalCotacoes: number
+  temCotacaoSelecionada: boolean
+  sindico: boolean
+  aprovadoPor?: string
+}): string {
+  if (input.status === "finalizada") {
+    return "Compra finalizada. As cotações ficam apenas para consulta."
+  }
+  if (input.status === "cancelada") {
+    return "Solicitação cancelada. As cotações ficam bloqueadas."
+  }
+  if (input.status === "em_andamento") {
+    const aprovacao = input.aprovadoPor ? ` Aprovada por ${input.aprovadoPor}.` : ""
+    return input.sindico
+      ? `A compra foi aprovada.${aprovacao} Finalize quando a entrega estiver concluída.`
+      : `Compra em andamento.${aprovacao} A finalização cabe ao síndico.`
+  }
+  if (input.totalCotacoes < 1) return "Cadastre a primeira cotação para comparar fornecedores."
+  if (!input.temCotacaoSelecionada) return "Compare as cotações e selecione uma vencedora."
+  return input.sindico
+    ? "Aprove a cotação selecionada para seguir com a compra."
+    : "Cotação selecionada. A aprovação cabe ao síndico."
+}
+
 export function getCotacaoReadinessLabel(
   status: CompraStatus,
   totalCotacoes: number,

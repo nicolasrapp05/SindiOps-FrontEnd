@@ -21,6 +21,7 @@ import ManutencoesPage from "@/pages/ManutencoesPage"
 import ManutencaoDetalhePage from "@/pages/ManutencaoDetalhePage"
 import ManutencoesObrigatoriasPage from "@/pages/ManutencoesObrigatoriasPage"
 import ComprasPage from "@/pages/ComprasPage"
+import CompraDetalhePage from "@/pages/CompraDetalhePage"
 import TemplatesPage from "@/pages/TemplatesPage"
 import HistoricoEnviosPage from "@/pages/HistoricoEnviosPage"
 import RelatoriosPage from "@/pages/RelatoriosPage"
@@ -96,6 +97,7 @@ export const router = createBrowserRouter([
               { path: "contratos", element: <ContratosPage /> },
               { path: "compras", element: <ComprasPage /> },
               { path: "compras/cotacoes", element: <Navigate to="/compras?status=nova" replace /> },
+              { path: "compras/:id", element: <CompraDetalhePage /> },
               { path: "comunicacao/templates", element: <TemplatesPage /> },
               {
                 path: "comunicacao/historico",
