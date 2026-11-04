@@ -56,4 +56,6 @@ export interface ManutencaoFilters {
   tipo?: ManutencaoTipo
   page?: number
   pageSize?: number
+  sort?: string
+  dir?: "asc" | "desc"
 }

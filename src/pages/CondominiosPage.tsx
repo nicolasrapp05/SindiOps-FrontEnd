@@ -18,6 +18,7 @@ import CondominioCard from "@/features/condominios/components/CondominioCard"
 import CondominioForm from "@/features/condominios/components/CondominioForm"
 import EstruturaCondominioModal from "@/features/condominios/components/EstruturaCondominioModal"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import EmptyState from "@/components/shared/EmptyState"
 
 export default function CondominiosPage() {
   const { data: condominios, isLoading, isError, refetch } = useCondominios()
@@ -152,24 +153,17 @@ export default function CondominiosPage() {
 
       {/* Empty state */}
       {isEmpty ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
-          <div className="rounded-full bg-gray-100 p-4">
-            <Building2 className="text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-700">
-            Nenhum condomínio cadastrado
-          </h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Comece cadastrando seu primeiro condomínio.
-          </p>
-          <Button
-            className="mt-6"
-            onClick={openCreate}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Cadastrar Condomínio
-          </Button>
-        </div>
+        <EmptyState
+          icon={Building2}
+          title="Nenhum condomínio cadastrado"
+          description="Comece cadastrando seu primeiro condomínio."
+          action={
+            <Button onClick={openCreate}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Cadastrar Condomínio
+            </Button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {condominios.map((c) => (

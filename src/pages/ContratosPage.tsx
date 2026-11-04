@@ -6,8 +6,6 @@ import {
   FileText,
   Pencil,
   RefreshCw,
-  ChevronLeft,
-  ChevronRight,
   CheckCircle2,
   Clock,
   AlertCircle,
@@ -28,6 +26,13 @@ import {
 } from "@/components/ui/table"
 import Combobox from "@/components/shared/Combobox"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import EmptyState from "@/components/shared/EmptyState"
+import ListPagination from "@/components/shared/ListPagination"
+import ListPanel from "@/components/shared/ListPanel"
+import ListRecord from "@/components/shared/ListRecord"
+import ListSortMenu from "@/components/shared/ListSortMenu"
+import SortableHead from "@/components/shared/SortableHead"
+import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import {
   useContratos,
   useCreateContrato,
@@ -58,6 +63,15 @@ const SUMMARY_CARDS = [
   { key: "cancelled", label: "Cancelados", icon: XCircle,      color: "text-gray-500 bg-gray-100"      },
 ] as const
 
+const SORT_COLUMNS: SortColumn[] = [
+  { key: "tipo", label: "Tipo de serviço" },
+  { key: "fornecedor", label: "Fornecedor" },
+  { key: "inicio", label: "Início" },
+  { key: "termino", label: "Término" },
+  { key: "valor", label: "Valor mensal" },
+  { key: "status", label: "Status" },
+]
+
 function formatDate(iso?: string): string {
   if (!iso) return "-"
   return new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR")
@@ -67,6 +81,8 @@ export default function ContratosPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | ContratoStatus>("all")
   const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<string>()
+  const [dir, setDir] = useState<SortDir>()
   const [formOpen, setFormOpen] = useState(false)
   const [editingContrato, setEditingContrato] = useState<Contrato | null>(null)
   const [pendingCancel, setPendingCancel] = useState<Contrato | null>(null)
@@ -82,6 +98,15 @@ export default function ContratosPage() {
     status: statusFilter !== "all" ? statusFilter : undefined,
     page,
     pageSize: PAGE_SIZE,
+    sort,
+    dir,
+  }
+
+  const sortBy = (column: string) => {
+    const next = nextSort(sort, dir, column)
+    setSort(next.sort)
+    setDir(next.dir)
+    setPage(1)
   }
 
   const summaryFilters = { page: 1, pageSize: 2000 }
@@ -210,7 +235,7 @@ export default function ContratosPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-4">
         {SUMMARY_CARDS.map((card) => {
           const Icon = card.icon
           return (
@@ -230,6 +255,16 @@ export default function ContratosPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
+        <ListSortMenu
+          columns={SORT_COLUMNS}
+          sort={sort}
+          dir={dir}
+          onChange={(nextSortKey, nextDir) => {
+            setSort(nextSortKey)
+            setDir(nextDir)
+            setPage(1)
+          }}
+        />
         <div className="relative w-full sm:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
@@ -251,35 +286,90 @@ export default function ContratosPage() {
           value={statusFilter}
           onValueChange={(v) => { setStatusFilter(v as "all" | ContratoStatus); setPage(1) }}
           placeholder="Buscar…"
-          className="w-[200px]"
+          className="w-full sm:w-[200px]"
         />
       </div>
 
       {contratoList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
-          <div className="rounded-full bg-gray-100 p-4">
-            <FileText className="text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-700">Nenhum contrato encontrado</h3>
-          <p className="mt-1 text-sm text-gray-500">Cadastre o primeiro contrato de serviço.</p>
-          <Button className="mt-6" onClick={openCreate}>
-            <Plus className="mr-1.5 h-4 w-4" />
-            Novo Contrato
-          </Button>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="Nenhum contrato encontrado"
+          description="Cadastre o primeiro contrato de serviço."
+          action={
+            <Button onClick={openCreate}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Novo Contrato
+            </Button>
+          }
+        />
       ) : (
-        <div className="rounded-2xl bg-card ring-1 ring-border">
-          <div className="overflow-x-auto">
+        <div className="space-y-4">
+          <div className="space-y-3 md:hidden">
+            {contratoList.map((c) => {
+              const contato =
+                [c.nomeContato, c.telefoneContato].filter(Boolean).join(" · ") || "-"
+              const actionBusy =
+                (cancelMutation.isPending && cancelMutation.variables === c.id) ||
+                (reativarMutation.isPending && reativarMutation.variables === c.id)
+              return (
+                <ListRecord
+                  key={c.id}
+                  className={contratoRowHighlightClass(c.status)}
+                  title={TIPO_SERVICO_LABEL[c.tipoServico]}
+                  fields={[
+                    { label: "Fornecedor", value: c.fornecedor.nome },
+                    { label: "Contato", value: contato },
+                    { label: "Início", value: formatDate(c.dataInicio) },
+                    { label: "Término", value: formatDate(c.dataFim) },
+                    { label: "Valor mensal", value: c.valorMensal != null ? formatBRL(c.valorMensal) : "-" },
+                    { label: "Status", value: <ContratoStatusBadge status={c.status} /> },
+                  ]}
+                  actions={
+                    <>
+                      {podeCancelarContrato(c.status) && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="min-h-11 text-gray-600"
+                          disabled={actionBusy}
+                          onClick={() => setPendingCancel(c)}
+                        >
+                          <Ban className="mr-1.5 h-3.5 w-3.5" />
+                          Cancelar
+                        </Button>
+                      )}
+                      {podeReativarContrato(c.status) && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="min-h-11 text-emerald-700"
+                          disabled={actionBusy}
+                          onClick={() => reativarMutation.mutate(c.id)}
+                        >
+                          <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                          Reativar
+                        </Button>
+                      )}
+                      <Button type="button" variant="ghost" className="min-h-11" onClick={() => openEdit(c)}>
+                        Editar
+                      </Button>
+                    </>
+                  }
+                />
+              )
+            })}
+          </div>
+          <ListPanel className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Tipo de serviço</TableHead>
-                  <TableHead>Fornecedor</TableHead>
+                  <SortableHead label="Tipo de serviço" column="tipo" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Fornecedor" column="fornecedor" sort={sort} dir={dir} onSort={sortBy} />
                   <TableHead>Contato</TableHead>
-                  <TableHead>Início</TableHead>
-                  <TableHead>Término</TableHead>
-                  <TableHead>Valor mensal</TableHead>
-                  <TableHead>Status</TableHead>
+                  <SortableHead label="Início" column="inicio" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Término" column="termino" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Valor mensal" column="valor" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} />
                   <TableHead className="w-[200px] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -350,34 +440,16 @@ export default function ContratosPage() {
                 })}
               </TableBody>
             </Table>
-          </div>
-
+          </ListPanel>
           {totalCount != null && (
-            <div className="flex items-center justify-between border-t px-4 py-3">
-              <p className="text-sm text-gray-500">
-                {totalCount} contrato{totalCount !== 1 ? "s" : ""}
-              </p>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                 aria-label="Página anterior"><ChevronLeft className="h-4 w-4" aria-hidden="true" /></Button>
-                <span className="px-2 text-sm text-gray-600">
-                  Página {page} de {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  aria-label="Próxima página"
-                >
-                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </div>
-            </div>
+            <ListPagination
+              page={page}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              singular="contrato"
+              pluralLabel="contratos"
+              onPage={setPage}
+            />
           )}
         </div>
       )}

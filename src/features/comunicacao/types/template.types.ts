@@ -81,6 +81,14 @@ export interface EmailTemplate {
   atualizadoEm: string | null
 }
 
+export interface TemplateFilters {
+  tipo?: string
+  page?: number
+  pageSize?: number
+  sort?: string
+  dir?: "asc" | "desc"
+}
+
 export interface CreateTemplateRequest {
   nome: string
   tipo: TemplateTipo

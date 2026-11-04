@@ -3,8 +3,6 @@ import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api"
 import {
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   ClipboardList,
   Pencil,
   Plus,
@@ -25,6 +23,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import Combobox from "@/components/shared/Combobox"
+import EmptyState from "@/components/shared/EmptyState"
+import ListPagination from "@/components/shared/ListPagination"
+import ListPanel from "@/components/shared/ListPanel"
+import ListRecord from "@/components/shared/ListRecord"
+import ListSortMenu from "@/components/shared/ListSortMenu"
+import SortableHead from "@/components/shared/SortableHead"
+import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import { Link } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
@@ -48,6 +53,13 @@ import {
 } from "@/features/manutencoes/types/manutencao-obrigatoria.types"
 
 const PAGE_SIZE = 10
+const SORT_COLUMNS: SortColumn[] = [
+  { key: "tipo", label: "Tipo" },
+  { key: "condominio", label: "Condomínio" },
+  { key: "vencimento", label: "Data vencimento" },
+  { key: "ultimaRealizacao", label: "Última realização" },
+  { key: "status", label: "Status" },
+]
 
 const TIPOS = Object.keys(MANUTENCAO_TIPO_LABEL) as ManutencaoTipo[]
 
@@ -68,6 +80,8 @@ export default function ManutencoesObrigatoriasPage() {
   const [tipoFilter, setTipoFilter] = useState<ManutencaoTipo | "">("")
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<string>()
+  const [dir, setDir] = useState<SortDir>()
   const [formOpen, setFormOpen] = useState(false)
 
   const debouncedSearch = useDebounce(search)
@@ -83,9 +97,18 @@ export default function ManutencoesObrigatoriasPage() {
       tipo: tipoFilter || undefined,
       page,
       pageSize: PAGE_SIZE,
+      sort,
+      dir,
     }),
-    [debouncedSearch, statusTab, tipoFilter, page],
+    [debouncedSearch, statusTab, tipoFilter, page, sort, dir],
   )
+
+  const sortBy = (column: string) => {
+    const next = nextSort(sort, dir, column)
+    setSort(next.sort)
+    setDir(next.dir)
+    setPage(1)
+  }
 
   const { data, isLoading, isError, refetch } = useManutencoesObrigatorias(
     condominioId,
@@ -97,15 +120,7 @@ export default function ManutencoesObrigatoriasPage() {
   const realizarMutation = useRealizarManutencao()
   const deleteMutation = useDeleteManutencaoObrigatoria()
 
-  const sortedList = useMemo(
-    () =>
-      [...(data?.data ?? [])].sort(
-        (a, b) =>
-          new Date(a.dataVencimento + "T00:00:00").getTime() -
-          new Date(b.dataVencimento + "T00:00:00").getTime(),
-      ),
-    [data],
-  )
+  const list = data?.data ?? []
 
   const totalCount = data?.totalCount
   const totalPages =
@@ -222,12 +237,23 @@ export default function ManutencoesObrigatoriasPage() {
       )}
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <ListSortMenu
+          columns={SORT_COLUMNS}
+          sort={sort}
+          dir={dir}
+          onChange={(nextSortKey, nextDir) => {
+            setSort(nextSortKey)
+            setDir(nextDir)
+            setPage(1)
+          }}
+        />
         <div className="flex flex-wrap gap-2">
           {(Object.keys(TAB_LABELS) as StatusTab[]).map((tab) => (
             <Button
               key={tab}
               type="button"
               size="sm"
+              className="min-h-11"
               variant={statusTab === tab ? "default" : "outline"}
               onClick={() => {
                 setStatusTab(tab)
@@ -268,44 +294,85 @@ export default function ManutencoesObrigatoriasPage() {
         </div>
       </div>
 
-      {!condoConfigured || sortedList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
-          <div className="rounded-full bg-gray-100 p-4">
-            <ClipboardList className="text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-700">
-            {!condoConfigured ? "Condomínio não configurado" : "Nenhuma manutenção"}
-          </h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {!condoConfigured
+      {!condoConfigured || list.length === 0 ? (
+        <EmptyState
+          icon={ClipboardList}
+          title={!condoConfigured ? "Condomínio não configurado" : "Nenhuma manutenção"}
+          description={
+            !condoConfigured
               ? "Informe o ID do condomínio para listar e criar manutenções."
-              : "Cadastre a primeira obrigação."}
-          </p>
-          <Button
-            className="mt-6"
-            disabled={!condoConfigured}
-            onClick={openCreate}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Nova Manutenção
-          </Button>
-        </div>
+              : "Cadastre a primeira obrigação."
+          }
+          action={
+            <Button disabled={!condoConfigured} onClick={openCreate}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Nova Manutenção
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border">
+          <div className="space-y-3 md:hidden">
+            {list.map((m) => (
+              <ListRecord
+                key={m.id}
+                className={cn(m.status === "overdue" && "bg-red-50/50")}
+                title={MANUTENCAO_TIPO_LABEL[m.tipo]}
+                fields={[
+                  { label: "Condomínio", value: m.condominio.nome },
+                  {
+                    label: "Data vencimento",
+                    value: new Date(m.dataVencimento + "T00:00:00").toLocaleDateString("pt-BR"),
+                  },
+                  {
+                    label: "Última realização",
+                    value: m.ultimaRealizacao
+                      ? new Date(m.ultimaRealizacao + "T00:00:00").toLocaleDateString("pt-BR")
+                      : "-",
+                  },
+                  { label: "Status", value: <ManutencaoStatusBadge status={m.status} /> },
+                ]}
+                actions={
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-11 border-emerald-200 text-emerald-800 hover:bg-emerald-50"
+                      onClick={() => openRealizar(m.id)}
+                    >
+                      <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                      Marcar como Realizada
+                    </Button>
+                    <Button type="button" variant="ghost" className="min-h-11" onClick={() => openEdit(m)}>
+                      Editar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="min-h-11 text-red-600 hover:text-red-700"
+                      onClick={() => handleDelete(m)}
+                    >
+                      Excluir
+                    </Button>
+                  </>
+                }
+              />
+            ))}
+          </div>
+          <ListPanel className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Condomínio</TableHead>
-                  <TableHead>Data vencimento</TableHead>
-                  <TableHead>Última realização</TableHead>
-                  <TableHead>Status</TableHead>
+                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Data vencimento" column="vencimento" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Última realização" column="ultimaRealizacao" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} />
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedList.map((m) => (
+                {list.map((m) => (
                   <TableRow
                     key={m.id}
                     className={cn(m.status === "overdue" && "bg-red-50/50")}
@@ -361,35 +428,15 @@ export default function ManutencoesObrigatoriasPage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
-
-          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-            <p className="text-sm text-muted-foreground">
-              Página {page} de {totalPages}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                <ChevronLeft className="mr-1 h-4 w-4" />
-                Anterior
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                Próxima
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          </ListPanel>
+          <ListPagination
+            page={page}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            singular="resultado"
+            pluralLabel="resultados"
+            onPage={setPage}
+          />
         </div>
       )}
 

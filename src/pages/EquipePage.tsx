@@ -12,6 +12,13 @@ import {
 } from "@/components/ui/table"
 import Combobox from "@/components/shared/Combobox"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import EmptyState from "@/components/shared/EmptyState"
+import ListPagination from "@/components/shared/ListPagination"
+import ListPanel from "@/components/shared/ListPanel"
+import ListRecord from "@/components/shared/ListRecord"
+import ListSortMenu from "@/components/shared/ListSortMenu"
+import SortableHead from "@/components/shared/SortableHead"
+import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   useFuncionarios,
@@ -35,12 +42,23 @@ import EditarFuncionarioModal from "@/features/configuracoes/components/EditarFu
 import { cn, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth-store"
 
+const PAGE_SIZE = 20
+const SORT_COLUMNS: SortColumn[] = [
+  { key: "nome", label: "Nome" },
+  { key: "cargo", label: "Cargo" },
+  { key: "email", label: "E-mail" },
+  { key: "criadoEm", label: "Data de cadastro" },
+]
+
 type CargoFilter = FuncionarioCargo | "todas"
 type AtivoFilter = "todos" | "ativos" | "inativos"
 
 export default function EquipePage() {
   const [cargoFilter, setCargoFilter] = useState<CargoFilter>("todas")
   const [ativoFilter, setAtivoFilter] = useState<AtivoFilter>("todos")
+  const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<string>()
+  const [dir, setDir] = useState<SortDir>()
   const [modalOpen, setModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingFuncionario, setEditingFuncionario] = useState<Funcionario | null>(null)
@@ -57,8 +75,19 @@ export default function EquipePage() {
           : ativoFilter === "ativos"
             ? true
             : false,
+      page,
+      pageSize: PAGE_SIZE,
+      sort,
+      dir,
     }
-  }, [cargoFilter, ativoFilter])
+  }, [cargoFilter, ativoFilter, page, sort, dir])
+
+  const sortBy = (column: string) => {
+    const next = nextSort(sort, dir, column)
+    setSort(next.sort)
+    setDir(next.dir)
+    setPage(1)
+  }
 
   const { data, isLoading, isError, refetch } = useFuncionarios(apiFilters)
   const convidar = useConvidarFuncionario()
@@ -68,7 +97,9 @@ export default function EquipePage() {
   const desativar = useDesativarFuncionario()
   const excluir = useDeleteFuncionario()
 
-  const list = Array.isArray(data) ? data : []
+  const list = data?.data ?? []
+  const totalCount = data?.totalCount
+  const totalPages = totalCount != null ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : 1
   const CARGOS: CargoFilter[] = ["todas", "zelador", "secretario", "porteiro", "outro"]
 
   const handleConvidar = (payload: ConvidarFuncionarioRequest) => {
@@ -153,13 +184,26 @@ export default function EquipePage() {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <ListSortMenu
+          columns={SORT_COLUMNS}
+          sort={sort}
+          dir={dir}
+          onChange={(nextSortKey, nextDir) => {
+            setSort(nextSortKey)
+            setDir(nextDir)
+            setPage(1)
+          }}
+        />
         <Combobox
           options={CARGOS.map((c) => ({
             value: c,
             label: c === "todas" ? "Todos os cargos" : CARGO_LABEL[c],
           }))}
           value={cargoFilter}
-          onValueChange={(v) => setCargoFilter(v as CargoFilter)}
+          onValueChange={(v) => {
+            setCargoFilter(v as CargoFilter)
+            setPage(1)
+          }}
           placeholder="Buscar…"
           className="w-full sm:w-[200px]"
         />
@@ -170,39 +214,112 @@ export default function EquipePage() {
             { value: "inativos", label: "Inativos" },
           ]}
           value={ativoFilter}
-          onValueChange={(v) => setAtivoFilter(v as AtivoFilter)}
+          onValueChange={(v) => {
+            setAtivoFilter(v as AtivoFilter)
+            setPage(1)
+          }}
           placeholder="Buscar…"
           className="w-full sm:w-[200px]"
         />
       </div>
 
       {list.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
-          <div className="rounded-full bg-gray-100 p-4">
-            <Users className="text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-700">Nenhum funcionário</h3>
-          <p className="mt-1 text-sm text-gray-500">Convide o primeiro membro da equipe.</p>
-          <Button
-            className="mt-6"
-            onClick={() => setModalOpen(true)}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Convidar Funcionário
-          </Button>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="Nenhum funcionário"
+          description="Convide o primeiro membro da equipe."
+          action={
+            <Button onClick={() => setModalOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Convidar Funcionário
+            </Button>
+          }
+        />
       ) : (
-        <div className="rounded-2xl bg-card ring-1 ring-border">
-          <div className="overflow-x-auto">
+        <>
+        <div className="space-y-3 md:hidden">
+          {list.map((f) => (
+            <ListRecord
+              key={f.id}
+              className={cn(!f.ativo && "opacity-60")}
+              title={f.nome}
+              fields={[
+                { label: "Cargo", value: CARGO_LABEL[f.cargo] },
+                { label: "Email", value: f.email },
+                {
+                  label: "Condomínios",
+                  value: f.condominios?.length ? f.condominios.map((c) => c.nome).join(", ") : "Todos",
+                },
+                {
+                  label: "Status",
+                  value: <FuncionarioStatusBadge ativo={f.ativo} convitePendente={f.convitePendente} />,
+                },
+                { label: "Data de cadastro", value: new Date(f.criadoEm).toLocaleDateString("pt-BR") },
+              ]}
+              actions={
+                <>
+                  {f.ativo && f.convitePendente && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-11"
+                      disabled={reenviarConvite.isPending}
+                      onClick={() => reenviarConvite.mutate(f.id)}
+                    >
+                      Reenviar convite
+                    </Button>
+                  )}
+                  {f.ativo ? (
+                    f.id !== currentUserId && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="min-h-11 text-amber-600 hover:text-amber-800"
+                        disabled={desativar.isPending}
+                        onClick={() => setPendingDeactivate(f)}
+                      >
+                        Desativar
+                      </Button>
+                    )
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-11 text-emerald-700"
+                      disabled={ativar.isPending}
+                      onClick={() => ativar.mutate(f.id)}
+                    >
+                      Ativar
+                    </Button>
+                  )}
+                  <Button type="button" variant="ghost" className="min-h-11" onClick={() => openEditModal(f)}>
+                    Editar
+                  </Button>
+                  {f.id !== currentUserId && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="min-h-11 text-red-500 hover:text-red-700"
+                      onClick={() => setPendingDelete(f)}
+                    >
+                      Remover
+                    </Button>
+                  )}
+                </>
+              }
+            />
+          ))}
+        </div>
+        <ListPanel className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Cargo</TableHead>
-                  <TableHead>Email</TableHead>
+                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Cargo" column="cargo" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Email" column="email" sort={sort} dir={dir} onSort={sortBy} />
                   <TableHead>Condomínios</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Data de cadastro</TableHead>
+                  <SortableHead label="Data de cadastro" column="criadoEm" sort={sort} dir={dir} onSort={sortBy} />
                   <TableHead className="w-36 text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -310,8 +427,16 @@ export default function EquipePage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
-        </div>
+        </ListPanel>
+        <ListPagination
+          page={page}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          singular="funcionário"
+          pluralLabel="funcionários"
+          onPage={setPage}
+        />
+        </>
       )}
 
       <ConvidarFuncionarioModal

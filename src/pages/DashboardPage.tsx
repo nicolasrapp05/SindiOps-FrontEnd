@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useEffect, useState, useMemo } from "react"
 import {
   AlertTriangle,
   Clock,
@@ -34,6 +34,11 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import ListPagination from "@/components/shared/ListPagination"
+import ListRecord from "@/components/shared/ListRecord"
+import ListSortMenu from "@/components/shared/ListSortMenu"
+import SortableHead from "@/components/shared/SortableHead"
+import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import {
   Table,
   TableBody,
@@ -250,7 +255,7 @@ function FilterChips<T extends string>({
             aria-pressed={selected}
             onClick={() => onChange(option.value)}
             className={cn(
-              "h-9 rounded-full px-3 text-sm font-medium transition-colors duration-200",
+              "h-11 rounded-full px-3 text-sm font-medium transition-colors duration-200",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               selected
                 ? "bg-primary text-primary-foreground"
@@ -265,6 +270,14 @@ function FilterChips<T extends string>({
   )
 }
 
+const AGENDA_PAGE_SIZE = 10
+const AGENDA_SORT_COLUMNS: SortColumn[] = [
+  { key: "tipo", label: "Tipo" },
+  { key: "condominio", label: "Condomínio" },
+  { key: "vencimento", label: "Vencimento" },
+  { key: "status", label: "Status" },
+]
+
 function getTipoFilterOptions(cargo: UserCargo | null | undefined) {
   return TIPO_FILTER_OPTIONS.filter(
     (option) => option.value === "all" || canSeeAgendaTipo(cargo, option.value as AgendaItem["tipo"]),
@@ -278,10 +291,30 @@ export default function DashboardPage() {
 
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("all")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+  const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<string>()
+  const [dir, setDir] = useState<SortDir>()
 
-  const { data, isLoading, isError, refetch } = useDashboard(
-    selectedCondominioId ?? undefined,
-  )
+  useEffect(() => {
+    setPage(1)
+  }, [selectedCondominioId])
+
+  const { data, isLoading, isError, refetch } = useDashboard({
+    condominioId: selectedCondominioId ?? undefined,
+    page,
+    pageSize: AGENDA_PAGE_SIZE,
+    sort,
+    dir,
+    tipo: tipoFilter === "all" ? undefined : tipoFilter,
+    status: statusFilter === "all" ? undefined : statusFilter,
+  })
+
+  const sortBy = (column: string) => {
+    const next = nextSort(sort, dir, column)
+    setSort(next.sort)
+    setDir(next.dir)
+    setPage(1)
+  }
   const exportar = useGerarRelatorio()
 
   const alertas = data?.alertas
@@ -300,23 +333,10 @@ export default function DashboardPage() {
     [alertas, cargo],
   )
 
-  const agendaDoCargo = useMemo(
-    () => (data?.agenda ?? []).filter((item) => canSeeAgendaTipo(cargo, item.tipo)),
-    [data?.agenda, cargo],
-  )
-
-  const sortedAgenda = useMemo(
-    () =>
-      [...agendaDoCargo]
-        .sort(
-          (a, b) =>
-            new Date(a.dataVencimento).getTime() -
-            new Date(b.dataVencimento).getTime(),
-        )
-        .filter((item) => tipoFilter === "all" || item.tipo === tipoFilter)
-        .filter((item) => statusFilter === "all" || item.status === statusFilter),
-    [agendaDoCargo, tipoFilter, statusFilter],
-  )
+  const agenda = data?.agenda ?? []
+  const agendaTotal = data?.agendaTotal ?? 0
+  const agendaCount = data?.agendaCount ?? 0
+  const agendaPages = Math.max(1, Math.ceil(agendaCount / AGENDA_PAGE_SIZE))
 
   const tipoFilterOptions = useMemo(() => getTipoFilterOptions(cargo), [cargo])
 
@@ -338,7 +358,7 @@ export default function DashboardPage() {
 
   const firstName = user?.nome?.split(" ")[0] ?? "Usuário"
   const pendencias = visibleAlertas.reduce((total, alerta) => total + alerta.valor, 0)
-  const prazosAgenda = agendaDoCargo.length
+  const prazosAgenda = agendaTotal
   const resumoAtencao =
     pendencias === 0 && prazosAgenda === 0
       ? "Nada urgente neste condomínio."
@@ -391,15 +411,16 @@ export default function DashboardPage() {
                 Agenda de vencimentos
               </h2>
               <span className="text-sm tabular-nums text-muted-foreground">
-                {sortedAgenda.length}
+                {agendaCount}
               </span>
             </div>
             {canExportRelatorios(cargo) && (
+              <div className="flex flex-col items-start gap-1">
               <Button
                 variant="outline"
                 size="sm"
+                className="min-h-11"
                 disabled={!selectedCondominioId || exportar.isPending}
-                title={selectedCondominioId ? undefined : "Selecione um condomínio"}
                 onClick={handleExportar}
               >
                 {exportar.isPending ? (
@@ -409,25 +430,45 @@ export default function DashboardPage() {
                 )}
                 {exportar.isPending ? "Exportando…" : "Exportar"}
               </Button>
+              {!selectedCondominioId ? (
+                <p className="text-sm text-muted-foreground">Selecione um condomínio</p>
+              ) : null}
+              </div>
             )}
           </div>
           <div className="flex flex-col gap-2">
+            <ListSortMenu
+              columns={AGENDA_SORT_COLUMNS}
+              sort={sort}
+              dir={dir}
+              onChange={(nextSortKey, nextDir) => {
+                setSort(nextSortKey)
+                setDir(nextDir)
+                setPage(1)
+              }}
+            />
             <FilterChips
               label="Filtrar por tipo"
               value={tipoFilter}
               options={tipoFilterOptions}
-              onChange={setTipoFilter}
+              onChange={(value) => {
+                setTipoFilter(value)
+                setPage(1)
+              }}
             />
             <FilterChips
               label="Filtrar por status"
               value={statusFilter}
               options={STATUS_FILTER_OPTIONS}
-              onChange={setStatusFilter}
+              onChange={(value) => {
+                setStatusFilter(value)
+                setPage(1)
+              }}
             />
           </div>
         </div>
 
-        {sortedAgenda.length === 0 ? (
+        {agenda.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="rounded-full bg-muted p-3">
               <Inbox className="size-6 text-muted-foreground" aria-hidden="true" />
@@ -446,10 +487,11 @@ export default function DashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="mt-4"
+                className="mt-4 min-h-11"
                 onClick={() => {
                   setTipoFilter("all")
                   setStatusFilter("all")
+                  setPage(1)
                 }}
               >
                 Limpar filtros
@@ -457,19 +499,56 @@ export default function DashboardPage() {
             )}
           </div>
         ) : (
-          <div className="mt-4 overflow-x-auto">
+          <div className="mt-6 space-y-4">
+          <div className="space-y-3 md:hidden">
+            {agenda.map((item, idx) => (
+              <ListRecord
+                key={`${item.referenciaId}-${idx}`}
+                className={
+                  item.status === "overdue" || item.status === "vencida" ? "bg-red-50/80" : undefined
+                }
+                title={formatDescricao(item)}
+                fields={[
+                  {
+                    label: "Tipo",
+                    value: (
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${TIPO_COLORS[item.tipo]}`}
+                      >
+                        {TIPO_LABELS[item.tipo]}
+                      </span>
+                    ),
+                  },
+                  { label: "Condomínio", value: item.condominioNome },
+                  { label: "Vencimento", value: formatPrazo(item.dataVencimento) },
+                  {
+                    label: "Status",
+                    value: (
+                      <Badge
+                        variant="secondary"
+                        className={STATUS_COLORS[item.status] ?? "bg-gray-100 text-gray-700"}
+                      >
+                        {statusLabel(item.status)}
+                      </Badge>
+                    ),
+                  },
+                ]}
+              />
+            ))}
+          </div>
+          <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-32">Tipo</TableHead>
+                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-32" />
                   <TableHead>Descrição</TableHead>
-                  <TableHead>Condomínio</TableHead>
-                  <TableHead className="min-w-44">Vencimento</TableHead>
-                  <TableHead className="w-28">Status</TableHead>
+                  <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Vencimento" column="vencimento" sort={sort} dir={dir} onSort={sortBy} className="min-w-44" />
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-28" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedAgenda.map((item, idx) => (
+                {agenda.map((item, idx) => (
                   <TableRow
                     key={`${item.referenciaId}-${idx}`}
                     className={cn(
@@ -509,6 +588,15 @@ export default function DashboardPage() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+          <ListPagination
+            page={page}
+            totalPages={agendaPages}
+            totalCount={agendaCount}
+            singular="prazo"
+            pluralLabel="prazos"
+            onPage={setPage}
+          />
           </div>
         )}
       </section>

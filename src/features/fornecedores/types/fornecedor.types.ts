@@ -43,4 +43,6 @@ export interface FornecedoresFilters {
   search?: string
   page?: number
   pageSize?: number
+  sort?: string
+  dir?: "asc" | "desc"
 }

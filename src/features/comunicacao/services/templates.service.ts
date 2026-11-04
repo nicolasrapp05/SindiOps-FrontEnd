@@ -1,8 +1,8 @@
-import { get, post, put, del } from "@/lib/api"
-import type { CreateTemplateRequest, EmailTemplate } from "../types/template.types"
+import { get, getPaginated, post, put, del } from "@/lib/api"
+import type { CreateTemplateRequest, EmailTemplate, TemplateFilters } from "../types/template.types"
 
-export function getTemplates(tipo?: string) {
-  return get<EmailTemplate[]>("/email-templates", tipo ? { tipo } : undefined)
+export function getTemplates(filters?: TemplateFilters) {
+  return getPaginated<EmailTemplate>("/email-templates", filters)
 }
 
 export function getTemplate(id: string) {

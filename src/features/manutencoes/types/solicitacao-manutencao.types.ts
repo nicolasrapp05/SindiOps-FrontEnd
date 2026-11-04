@@ -79,4 +79,6 @@ export interface SolicitacaoFilters {
   pendenteOrcamento?: boolean
   page?: number
   pageSize?: number
+  sort?: string
+  dir?: "asc" | "desc"
 }

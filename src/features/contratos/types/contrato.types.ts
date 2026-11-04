@@ -64,4 +64,6 @@ export interface ContratosFilters {
   page?: number
   pageSize?: number
   search?: string
+  sort?: string
+  dir?: "asc" | "desc"
 }

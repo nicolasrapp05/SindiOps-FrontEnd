@@ -18,6 +18,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import EmptyState from "@/components/shared/EmptyState"
+import ListPagination from "@/components/shared/ListPagination"
+import ListPanel from "@/components/shared/ListPanel"
+import ListRecord from "@/components/shared/ListRecord"
+import ListSortMenu from "@/components/shared/ListSortMenu"
+import SortableHead from "@/components/shared/SortableHead"
+import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import {
   useTemplates,
   useCreateTemplate,
@@ -31,22 +38,47 @@ import type {
 import { TemplateTipoBadge } from "@/features/comunicacao/components/TemplateTipoBadge"
 import { TemplateEditor } from "@/features/comunicacao/components/TemplateEditor"
 
+const PAGE_SIZE = 20
+const SORT_COLUMNS: SortColumn[] = [
+  { key: "nome", label: "Nome" },
+  { key: "tipo", label: "Tipo" },
+  { key: "assunto", label: "Assunto" },
+  { key: "atualizadoEm", label: "Última atualização" },
+]
+
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "-"
   return new Date(iso).toLocaleDateString("pt-BR")
 }
 
 export default function TemplatesPage() {
+  const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<string>()
+  const [dir, setDir] = useState<SortDir>()
   const [editorOpen, setEditorOpen] = useState(false)
   const [editing, setEditing] = useState<EmailTemplate | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<EmailTemplate | null>(null)
 
-  const { data: templates, isLoading, isError, refetch } = useTemplates()
+  const { data: templates, isLoading, isError, refetch } = useTemplates({
+    page,
+    pageSize: PAGE_SIZE,
+    sort,
+    dir,
+  })
+
+  const sortBy = (column: string) => {
+    const next = nextSort(sort, dir, column)
+    setSort(next.sort)
+    setDir(next.dir)
+    setPage(1)
+  }
   const createMutation = useCreateTemplate()
   const updateMutation = useUpdateTemplate()
   const deleteMutation = useDeleteTemplate()
 
-  const list = Array.isArray(templates) ? templates : []
+  const list = templates?.data ?? []
+  const totalCount = templates?.totalCount
+  const totalPages = totalCount != null ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : 1
 
   function openCreate() {
     setEditing(null)
@@ -122,28 +154,70 @@ export default function TemplatesPage() {
         </Button>
       </div>
 
+      <ListSortMenu
+        columns={SORT_COLUMNS}
+        sort={sort}
+        dir={dir}
+        onChange={(nextSortKey, nextDir) => {
+          setSort(nextSortKey)
+          setDir(nextDir)
+          setPage(1)
+        }}
+      />
+
       {list.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
-          <div className="rounded-full bg-gray-100 p-4">
-            <Mail className="text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-700">Nenhum template cadastrado</h3>
-          <p className="mt-1 text-sm text-gray-500">Crie o primeiro template de e-mail.</p>
-          <Button className="mt-6" onClick={openCreate}>
-            <Plus className="mr-1.5 h-4 w-4" />
-            Criar template
-          </Button>
-        </div>
+        <EmptyState
+          icon={Mail}
+          title="Nenhum template cadastrado"
+          description="Crie o primeiro template de e-mail."
+          action={
+            <Button onClick={openCreate}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Criar template
+            </Button>
+          }
+        />
       ) : (
-        <div className="rounded-2xl bg-card ring-1 ring-border">
-          <div className="overflow-x-auto">
+        <>
+        <div className="space-y-3 md:hidden">
+          {list.map((t) => (
+            <ListRecord
+              key={t.id}
+              title={t.nome}
+              fields={[
+                { label: "Tipo", value: <TemplateTipoBadge tipo={t.tipo} /> },
+                { label: "Assunto", value: t.assunto },
+                {
+                  label: "Última atualização",
+                  value: t.atualizadoEm ? formatDate(t.atualizadoEm) : `Criado em ${formatDate(t.criadoEm)}`,
+                },
+              ]}
+              actions={
+                <>
+                  <Button type="button" variant="ghost" className="min-h-11" onClick={() => openEdit(t)}>
+                    Editar
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="min-h-11 text-red-500 hover:text-red-700"
+                    onClick={() => setDeleteTarget(t)}
+                  >
+                    Excluir
+                  </Button>
+                </>
+              }
+            />
+          ))}
+        </div>
+        <ListPanel className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Assunto</TableHead>
-                  <TableHead>Última Atualização</TableHead>
+                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Assunto" column="assunto" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Última atualização" column="atualizadoEm" sort={sort} dir={dir} onSort={sortBy} />
                   <TableHead className="w-28 text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -189,8 +263,16 @@ export default function TemplatesPage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
-        </div>
+        </ListPanel>
+        <ListPagination
+          page={page}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          singular="modelo"
+          pluralLabel="modelos"
+          onPage={setPage}
+        />
+        </>
       )}
 
       <TemplateEditor

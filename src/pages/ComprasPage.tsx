@@ -1,13 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import {
-  Plus,
-  RefreshCw,
-  Search,
-  ShoppingCart,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react"
+import { Plus, RefreshCw, Search, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -22,6 +15,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import Combobox from "@/components/shared/Combobox"
+import EmptyState from "@/components/shared/EmptyState"
+import ListPagination from "@/components/shared/ListPagination"
+import ListPanel from "@/components/shared/ListPanel"
+import ListRecord from "@/components/shared/ListRecord"
+import ListSortMenu from "@/components/shared/ListSortMenu"
+import SortableHead from "@/components/shared/SortableHead"
+import { nextSort, type SortColumn } from "@/lib/list-sort"
 import { useCreateSolicitacaoCompra, useSolicitacoesCompra } from "@/features/compras/hooks/useCompras"
 import {
   COMPRA_CATEGORIA_LABEL,
@@ -71,6 +71,14 @@ const CATEGORIAS: (CompraCategoria | "todas")[] = [
 const PAGE_SIZE = 10
 
 const SITUACOES_COTACAO = Object.keys(SITUACAO_COTACAO_LABEL) as SituacaoCotacao[]
+const COMPRA_SORT_COLUMNS: SortColumn[] = [
+  { key: "status", label: "Status" },
+  { key: "itens", label: "Itens" },
+  { key: "solicitante", label: "Solicitante" },
+  { key: "tipoAprovacao", label: "Tipo aprovação" },
+  { key: "cotacoes", label: "Cotações" },
+  { key: "data", label: "Data" },
+]
 
 export default function ComprasPage() {
   const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
@@ -94,6 +102,11 @@ export default function ComprasPage() {
     setSearchParams(writeCompraListParams({ ...current, ...patch }), { replace: true })
   }
 
+  const sortBy = (column: string) => {
+    const next = nextSort(filters.sort, filters.dir, column)
+    updateList({ sort: next.sort, dir: next.dir, page: 1 })
+  }
+
   const apiFilters = useMemo(
     () => ({
       search: debouncedSearch.trim() || undefined,
@@ -102,6 +115,8 @@ export default function ComprasPage() {
       situacaoCotacao: filters.situacaoCotacao || undefined,
       page: filters.page,
       pageSize: PAGE_SIZE,
+      sort: filters.sort,
+      dir: filters.dir,
     }),
     [debouncedSearch, filters],
   )
@@ -191,6 +206,12 @@ export default function ComprasPage() {
       )}
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <ListSortMenu
+          columns={COMPRA_SORT_COLUMNS}
+          sort={filters.sort}
+          dir={filters.dir}
+          onChange={(sort, dir) => updateList({ sort, dir, page: 1 })}
+        />
         <div className="flex flex-wrap gap-2">
           {STATUS_TABS.map((t) => (
             <Button
@@ -198,6 +219,7 @@ export default function ComprasPage() {
               type="button"
               size="sm"
               variant={filters.status === t.value ? "default" : "outline"}
+              className="min-h-11"
               onClick={() =>
                 updateList({
                   status: t.value,
@@ -258,57 +280,84 @@ export default function ComprasPage() {
       </div>
 
       {!condoConfigured || list.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
-          <div className="rounded-full bg-gray-100 p-4">
-            <ShoppingCart className="text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-700">
-            {!condoConfigured
+        <EmptyState
+          icon={ShoppingCart}
+          title={
+            !condoConfigured
               ? "Condomínio não configurado"
               : filtrosAtivos
                 ? "Nenhuma solicitação encontrada"
-                : "Nenhuma solicitação"}
-          </h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {!condoConfigured
+                : "Nenhuma solicitação"
+          }
+          description={
+            !condoConfigured
               ? "Informe o ID do condomínio para listar e criar solicitações."
               : filtrosAtivos
                 ? "Não há solicitações com os filtros aplicados."
-                : "Crie a primeira solicitação de compra."}
-          </p>
-          {condoConfigured && filtrosAtivos ? (
-            <Button
-              variant="outline"
-              className="mt-6"
-              onClick={() => setSearchParams(new URLSearchParams(), { replace: true })}
-            >
-              Limpar filtros
-            </Button>
-          ) : (
-            <Button
-              className="mt-6"
-              disabled={!condoConfigured}
-              onClick={() => setFormOpen(true)}
-            >
-              <Plus className="mr-1.5 h-4 w-4" />
-              Nova Solicitação
-            </Button>
-          )}
-        </div>
+                : "Crie a primeira solicitação de compra."
+          }
+          action={
+            condoConfigured && filtrosAtivos ? (
+              <Button
+                variant="outline"
+                onClick={() => setSearchParams(new URLSearchParams(), { replace: true })}
+              >
+                Limpar filtros
+              </Button>
+            ) : (
+              <Button disabled={!condoConfigured} onClick={() => setFormOpen(true)}>
+                <Plus className="mr-1.5 h-4 w-4" />
+                Nova Solicitação
+              </Button>
+            )
+          }
+        />
       ) : (
-        <div className="space-y-4">
-          <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border">
+        <>
+          <div className="space-y-3 md:hidden">
+            {list.map((row) => {
+              const readiness = getCotacaoReadinessLabel(
+                row.status,
+                row.totalCotacoes,
+                row.temCotacaoSelecionada ?? false,
+              )
+              const itensResumo = resumoItensCompra(row.itens)
+              return (
+                <ListRecord
+                  key={row.id}
+                  title={itensResumo.descricao}
+                  onClick={() => navigate(detalheTo(row.id))}
+                  fields={[
+                    { label: "Status", value: <CompraStatusBadge status={row.status} /> },
+                    { label: "Categoria", value: itensResumo.categoria },
+                    { label: "Itens", value: itensResumo.quantidade },
+                    { label: "Solicitante", value: row.solicitadoPor.nome },
+                    { label: "Tipo aprovação", value: TIPO_APROVACAO_LABEL[row.tipoAprovacao] },
+                    {
+                      label: "Cotações",
+                      value: readiness ? readiness.label : row.totalCotacoes,
+                    },
+                    {
+                      label: "Data",
+                      value: new Date(row.criadoEm).toLocaleDateString("pt-BR"),
+                    },
+                  ]}
+                />
+              )
+            })}
+          </div>
+          <ListPanel className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Status</TableHead>
+                  <SortableHead label="Status" column="status" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
                   <TableHead>Categoria</TableHead>
                   <TableHead>Item</TableHead>
-                  <TableHead className="text-right">Itens</TableHead>
-                  <TableHead>Solicitante</TableHead>
-                  <TableHead>Tipo aprovação</TableHead>
-                  <TableHead>Cotações</TableHead>
-                  <TableHead>Data</TableHead>
+                  <SortableHead label="Itens" column="itens" sort={filters.sort} dir={filters.dir} onSort={sortBy} align="right" className="text-right" />
+                  <SortableHead label="Solicitante" column="solicitante" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
+                  <SortableHead label="Tipo aprovação" column="tipoAprovacao" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
+                  <SortableHead label="Cotações" column="cotacoes" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
+                  <SortableHead label="Data" column="data" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -386,39 +435,17 @@ export default function ComprasPage() {
                 })}
               </TableBody>
             </Table>
-          </div>
-
-          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-            <p className="text-sm text-muted-foreground">
-              {totalCount != null ? `${totalCount} resultado${totalCount !== 1 ? "s" : ""} · ` : ""}
-              Página {filters.page} de {totalPages}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={filters.page <= 1}
-                onClick={() => updateList({ page: Math.max(1, filters.page - 1) })}
-              >
-                <ChevronLeft className="mr-1 h-4 w-4" />
-                Anterior
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={filters.page >= totalPages}
-                onClick={() => updateList({ page: Math.min(totalPages, filters.page + 1) })}
-              >
-                Próxima
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
+          </ListPanel>
+          <ListPagination
+            page={filters.page}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            singular="resultado"
+            pluralLabel="resultados"
+            onPage={(page) => updateList({ page })}
+          />
+        </>
       )}
-
       <SolicitacaoCompraForm
         open={formOpen}
         onOpenChange={setFormOpen}

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api"
-import { removeListItem, upsertListItem } from "@/lib/query-cache"
+import { removePaginatedItem, upsertPaginatedItem } from "@/lib/query-cache"
 import {
   getFuncionarios,
   convidarFuncionario,
@@ -26,7 +26,7 @@ export function useConvidarFuncionario() {
   return useMutation({
     mutationFn: (data: ConvidarFuncionarioRequest) => convidarFuncionario(data),
     onSuccess: (funcionario) => {
-      upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario, { prependIfMissing: true })
+      upsertPaginatedItem<Funcionario>(qc, ["funcionarios"], funcionario, { prependIfMissing: true })
       if (funcionario.conviteEnviado === false) {
         toast.warning(
           "Funcionário cadastrado, mas o email de convite não foi enviado. Verifique a configuração de email.",
@@ -46,7 +46,7 @@ export function useUpdateFuncionario() {
     mutationFn: ({ id, data }: { id: string; data: UpdateFuncionarioRequest }) =>
       updateFuncionario(id, data),
     onSuccess: (funcionario) => {
-      upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario)
+      upsertPaginatedItem<Funcionario>(qc, ["funcionarios"], funcionario)
       toast.success("Funcionário atualizado")
     },
     onError: (err) =>
@@ -59,7 +59,7 @@ export function useAtivarFuncionario() {
   return useMutation({
     mutationFn: (id: string) => ativarFuncionario(id),
     onSuccess: (funcionario) => {
-      upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario)
+      upsertPaginatedItem<Funcionario>(qc, ["funcionarios"], funcionario)
       toast.success("Funcionário ativado")
     },
     onError: (err) =>
@@ -72,7 +72,7 @@ export function useDesativarFuncionario() {
   return useMutation({
     mutationFn: (id: string) => desativarFuncionario(id),
     onSuccess: (funcionario) => {
-      upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario)
+      upsertPaginatedItem<Funcionario>(qc, ["funcionarios"], funcionario)
       toast.success("Funcionário desativado")
     },
     onError: (err) =>
@@ -85,7 +85,7 @@ export function useReenviarConviteFuncionario() {
   return useMutation({
     mutationFn: (id: string) => reenviarConviteFuncionario(id),
     onSuccess: (funcionario) => {
-      upsertListItem<Funcionario>(qc, ["funcionarios"], funcionario)
+      upsertPaginatedItem<Funcionario>(qc, ["funcionarios"], funcionario)
       toast.success("Convite reenviado com sucesso")
     },
     onError: (err) =>
@@ -98,7 +98,7 @@ export function useDeleteFuncionario() {
   return useMutation({
     mutationFn: (id: string) => deleteFuncionario(id),
     onSuccess: (_data, id) => {
-      removeListItem<Funcionario>(qc, ["funcionarios"], id)
+      removePaginatedItem<Funcionario>(qc, ["funcionarios"], id)
       toast.success("Funcionário removido com sucesso")
     },
     onError: (err) =>

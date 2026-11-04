@@ -9,8 +9,6 @@ import {
   Trash2,
   Eye,
   RefreshCw,
-  ChevronLeft,
-  ChevronRight,
   Package,
   Wrench,
   FileText,
@@ -42,7 +40,19 @@ import type {
 import FornecedorForm from "@/features/fornecedores/components/FornecedorForm"
 import FornecedorExpandido from "@/features/fornecedores/components/FornecedorExpandido"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import EmptyState from "@/components/shared/EmptyState"
+import ListPagination from "@/components/shared/ListPagination"
+import ListPanel from "@/components/shared/ListPanel"
+import ListRecord from "@/components/shared/ListRecord"
+import ListSortMenu from "@/components/shared/ListSortMenu"
+import SortableHead from "@/components/shared/SortableHead"
+import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import { useDebounce } from "@/hooks/useDebounce"
+
+const SORT_COLUMNS: SortColumn[] = [
+  { key: "nome", label: "Nome" },
+  { key: "cnpj", label: "CNPJ" },
+]
 
 const SUMMARY_CARDS = [
   { key: "total",        label: "Total",           icon: Package,    color: "text-blue-600 bg-blue-50"      },
@@ -54,6 +64,8 @@ const SUMMARY_CARDS = [
 export default function FornecedoresPage() {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<string>()
+  const [dir, setDir] = useState<SortDir>()
   const [formOpen, setFormOpen] = useState(false)
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -61,7 +73,14 @@ export default function FornecedoresPage() {
 
   const debouncedSearch = useDebounce(search)
 
-  const filters = { search: debouncedSearch || undefined, page, pageSize: 20 }
+  const filters = { search: debouncedSearch || undefined, page, pageSize: 20, sort, dir }
+
+  const sortBy = (column: string) => {
+    const next = nextSort(sort, dir, column)
+    setSort(next.sort)
+    setDir(next.dir)
+    setPage(1)
+  }
   const { data: fornecedores, isLoading, isError, refetch } = useFornecedores(filters)
   const { data: summaryData } = useFornecedores({ page: 1, pageSize: 2000 })
   const { data: contratosGlobais } = useContratosGlobais({ pageSize: 2000 })
@@ -134,7 +153,7 @@ export default function FornecedoresPage() {
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-10 w-44" />
         </div>
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
@@ -178,7 +197,7 @@ export default function FornecedoresPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-4">
         {SUMMARY_CARDS.map((card) => {
           const Icon = card.icon
           return (
@@ -199,6 +218,16 @@ export default function FornecedoresPage() {
 
       {/* Search */}
       <div className="flex items-center gap-3">
+        <ListSortMenu
+          columns={SORT_COLUMNS}
+          sort={sort}
+          dir={dir}
+          onChange={(nextSortKey, nextDir) => {
+            setSort(nextSortKey)
+            setDir(nextDir)
+            setPage(1)
+          }}
+        />
         <div className="relative w-full sm:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
@@ -219,25 +248,74 @@ export default function FornecedoresPage() {
 
       {/* Table */}
       {fornecedorList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
-          <div className="rounded-full bg-gray-100 p-4">
-            <Truck className="text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-700">Nenhum fornecedor encontrado</h3>
-          <p className="mt-1 text-sm text-gray-500">Cadastre o primeiro fornecedor.</p>
-          <Button className="mt-6" onClick={openCreate}>
-            <Plus className="mr-1.5 h-4 w-4" />
-            Cadastrar Fornecedor
-          </Button>
-        </div>
+        <EmptyState
+          icon={Truck}
+          title="Nenhum fornecedor encontrado"
+          description="Cadastre o primeiro fornecedor."
+          action={
+            <Button onClick={openCreate}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Cadastrar Fornecedor
+            </Button>
+          }
+        />
       ) : (
-        <div className="rounded-2xl bg-card ring-1 ring-border">
-          <div className="overflow-x-auto">
+        <div className="space-y-4">
+          <div className="space-y-3 md:hidden">
+            {fornecedorList.map((f) => {
+              const servicos = f.servicos ?? []
+              return (
+                <ListRecord
+                  key={f.id}
+                  title={f.nome}
+                  onClick={() => setExpandedId(expandedId === f.id ? null : f.id)}
+                  fields={[
+                    { label: "CNPJ", value: f.cnpj || "-" },
+                    { label: "Contato", value: f.nomeContato || "-" },
+                    { label: "Telefone", value: f.telefone || "-" },
+                    { label: "Email", value: f.email || "-" },
+                    {
+                      label: "Serviços",
+                      value: servicos.length
+                        ? servicos.map((s) => s.tipo.replace(/_/g, " ")).join(", ")
+                        : "-",
+                    },
+                  ]}
+                  actions={
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="min-h-11"
+                        onClick={() => setExpandedId(expandedId === f.id ? null : f.id)}
+                      >
+                        {expandedId === f.id ? "Ocultar" : "Ver detalhes"}
+                      </Button>
+                      <Button type="button" variant="ghost" className="min-h-11" onClick={() => openEdit(f)}>
+                        Editar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="min-h-11 text-red-500 hover:text-red-700"
+                        onClick={() => handleDelete(f)}
+                      >
+                        Excluir
+                      </Button>
+                    </>
+                  }
+                >
+                  {expandedId === f.id ? <FornecedorExpandido fornecedorId={f.id} /> : null}
+                </ListRecord>
+              )
+            })}
+          </div>
+          <ListPanel className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Nome</TableHead>
-                  <TableHead>CNPJ</TableHead>
+                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="CNPJ" column="cnpj" sort={sort} dir={dir} onSort={sortBy} />
                   <TableHead>Contato</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead>Email</TableHead>
@@ -328,35 +406,16 @@ export default function FornecedoresPage() {
                 })}
               </TableBody>
             </Table>
-          </div>
-
-          {/* Pagination */}
+          </ListPanel>
           {totalCount != null && (
-            <div className="flex items-center justify-between border-t px-4 py-3">
-              <p className="text-sm text-gray-500">
-                {totalCount} fornecedor{totalCount !== 1 ? "es" : ""}
-              </p>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                 aria-label="Página anterior"><ChevronLeft className="h-4 w-4" aria-hidden="true" /></Button>
-                <span className="px-2 text-sm text-gray-600">
-                  Página {page} de {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  aria-label="Próxima página"
-                >
-                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </div>
-            </div>
+            <ListPagination
+              page={page}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              singular="fornecedor"
+              pluralLabel="fornecedores"
+              onPage={setPage}
+            />
           )}
         </div>
       )}

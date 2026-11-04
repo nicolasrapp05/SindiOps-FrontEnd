@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import {
-  Plus, Search, AlertTriangle, RefreshCw, Eye,
-  ChevronLeft, ChevronRight, Bell, Clock, CheckCircle2, XCircle,
+  Plus, Search, AlertTriangle, RefreshCw, Eye, Bell, Clock, CheckCircle2, XCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,6 +10,13 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
 import Combobox from "@/components/shared/Combobox"
+import EmptyState from "@/components/shared/EmptyState"
+import ListPagination from "@/components/shared/ListPagination"
+import ListPanel from "@/components/shared/ListPanel"
+import ListRecord from "@/components/shared/ListRecord"
+import ListSortMenu from "@/components/shared/ListSortMenu"
+import SortableHead from "@/components/shared/SortableHead"
+import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import { useOcorrencias, useCreateOcorrencia } from "@/features/ocorrencias/hooks/useOcorrencias"
 import OcorrenciaStatusBadge from "@/features/ocorrencias/components/OcorrenciaStatusBadge"
 import OcorrenciaForm from "@/features/ocorrencias/components/OcorrenciaForm"
@@ -31,6 +37,14 @@ const SUMMARY_CARDS = [
   { key: "cancelada",   label: "Canceladas",   icon: XCircle,       color: "text-gray-500 bg-gray-100"     },
 ] as const
 
+const SORT_COLUMNS: SortColumn[] = [
+  { key: "status", label: "Status" },
+  { key: "tipo", label: "Tipo" },
+  { key: "origem", label: "Origem" },
+  { key: "local", label: "Local" },
+  { key: "data", label: "Data" },
+]
+
 export default function OcorrenciasPage() {
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState<OcorrenciaStatus | "">("")
@@ -39,6 +53,8 @@ export default function OcorrenciasPage() {
   const [search, setSearch] = useState("")
   const [formOpen, setFormOpen] = useState(false)
   const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<string>()
+  const [dir, setDir] = useState<SortDir>()
 
   const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
   const condoConfigured = !!condominioId
@@ -52,7 +68,16 @@ export default function OcorrenciasPage() {
     ...(origemFilter ? { origem: origemFilter as OcorrenciaOrigem } : {}),
     page,
     pageSize: 20,
-  }), [debouncedSearch, statusFilter, tipoFilter, origemFilter, page])
+    sort,
+    dir,
+  }), [debouncedSearch, statusFilter, tipoFilter, origemFilter, page, sort, dir])
+
+  const sortBy = (column: string) => {
+    const next = nextSort(sort, dir, column)
+    setSort(next.sort)
+    setDir(next.dir)
+    setPage(1)
+  }
 
   const { data: ocorrenciasPage, isLoading, isError, refetch } = useOcorrencias(condominioId, filters)
   const { data: summaryData } = useOcorrencias(condominioId, { pageSize: 500 })
@@ -88,7 +113,7 @@ export default function OcorrenciasPage() {
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-10 w-44" />
         </div>
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
@@ -151,7 +176,7 @@ export default function OcorrenciasPage() {
         <p className="mb-2 text-sm text-muted-foreground">
           Selecione um resumo para filtrar a lista.
         </p>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 lg:grid-cols-4">
           {SUMMARY_CARDS.map((card) => {
             const Icon = card.icon
             const selected = statusFilter === card.key
@@ -192,6 +217,16 @@ export default function OcorrenciasPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
+        <ListSortMenu
+          columns={SORT_COLUMNS}
+          sort={sort}
+          dir={dir}
+          onChange={(nextSortKey, nextDir) => {
+            setSort(nextSortKey)
+            setDir(nextDir)
+            setPage(1)
+          }}
+        />
         <div className="relative w-full sm:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
@@ -242,26 +277,53 @@ export default function OcorrenciasPage() {
 
       {/* Table */}
       {isEmpty ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card py-16">
-          <AlertTriangle className="mb-4 h-12 w-12 text-gray-300" />
-          <h3 className="text-lg font-semibold text-gray-700">Nenhuma ocorrência encontrada</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Registre a primeira ocorrência do condomínio.</p>
-          <Button className="mt-4" onClick={() => setFormOpen(true)}>
-            <Plus className="mr-1.5 h-4 w-4" /> Nova Ocorrência
-          </Button>
-        </div>
+        <EmptyState
+          icon={AlertTriangle}
+          title="Nenhuma ocorrência encontrada"
+          description="Registre a primeira ocorrência do condomínio."
+          action={
+            <Button onClick={() => setFormOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" /> Nova Ocorrência
+            </Button>
+          }
+        />
       ) : (
-        <div className="rounded-2xl bg-card ring-1 ring-border">
-          <div className="overflow-x-auto">
+        <div className="space-y-4">
+          <div className="space-y-3 md:hidden">
+            {ocList.map((o) => (
+              <ListRecord
+                key={o.id}
+                title={TIPO_LABEL[o.tipoOcorrencia]}
+                onClick={() => navigate(`/ocorrencias/${o.id}`)}
+                fields={[
+                  { label: "Status", value: <OcorrenciaStatusBadge status={o.status} /> },
+                  { label: "Origem", value: ORIGEM_LABEL[o.origem] },
+                  { label: "Local", value: TIPO_LOCAL_LABEL[o.tipoLocal] },
+                  { label: "Descrição", value: o.descricao.slice(0, 150) },
+                  { label: "Data", value: new Date(o.ocorreuEm).toLocaleDateString("pt-BR") },
+                ]}
+                actions={
+                  <Button
+                    variant="outline"
+                    className="min-h-11"
+                    onClick={() => navigate(`/ocorrencias/${o.id}`)}
+                  >
+                    Abrir
+                  </Button>
+                }
+              />
+            ))}
+          </div>
+          <ListPanel className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-28">Status</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Origem</TableHead>
-                  <TableHead>Local</TableHead>
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-28" />
+                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Origem" column="origem" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Local" column="local" sort={sort} dir={dir} onSort={sortBy} />
                   <TableHead className="max-w-[200px]">Descrição</TableHead>
-                  <TableHead className="w-32">Data</TableHead>
+                  <SortableHead label="Data" column="data" sort={sort} dir={dir} onSort={sortBy} className="w-32" />
                   <TableHead className="w-20">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -289,20 +351,15 @@ export default function OcorrenciasPage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
-          {/* Pagination */}
-          <div className="flex items-center justify-between border-t px-4 py-3">
-            <p className="text-sm text-gray-500">
-              {totalCount} ocorrência{totalCount !== 1 ? "s" : ""}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)} aria-label="Página anterior"><ChevronLeft className="h-4 w-4" aria-hidden="true" /></Button>
-              <span className="text-sm text-gray-600">Página {page} de {totalPages}</span>
-              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)} aria-label="Próxima página">
-                <ChevronRight className="h-4 w-4" aria-hidden="true" />
-              </Button>
-            </div>
-          </div>
+          </ListPanel>
+          <ListPagination
+            page={page}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            singular="ocorrência"
+            pluralLabel="ocorrências"
+            onPage={setPage}
+          />
         </div>
       )}
 

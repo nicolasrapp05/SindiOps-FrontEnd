@@ -42,6 +42,8 @@ export interface MoradoresFilters {
   search?: string
   page?: number
   pageSize?: number
+  sort?: string
+  dir?: "asc" | "desc"
 }
 
 export interface MoradoresListResponse {

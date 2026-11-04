@@ -1,4 +1,4 @@
-import { del, get, post, put, patch } from "@/lib/api"
+import { del, getPaginated, post, put, patch } from "@/lib/api"
 import type {
   Funcionario,
   ConvidarFuncionarioRequest,
@@ -7,7 +7,7 @@ import type {
 } from "../types/funcionario.types"
 
 export function getFuncionarios(filters?: FuncionarioFilters) {
-  return get<Funcionario[]>("/funcionarios", filters)
+  return getPaginated<Funcionario>("/funcionarios", filters)
 }
 
 export function convidarFuncionario(data: ConvidarFuncionarioRequest) {

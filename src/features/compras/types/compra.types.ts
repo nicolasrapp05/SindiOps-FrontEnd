@@ -96,4 +96,6 @@ export interface ComprasFilters {
   situacaoCotacao?: SituacaoCotacao
   page?: number
   pageSize?: number
+  sort?: string
+  dir?: "asc" | "desc"
 }

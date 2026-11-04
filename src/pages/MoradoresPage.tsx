@@ -10,8 +10,6 @@ import {
   Trash2,
   Eye,
   RefreshCw,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,6 +24,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import Combobox from "@/components/shared/Combobox"
+import EmptyState from "@/components/shared/EmptyState"
+import ListPagination from "@/components/shared/ListPagination"
+import ListPanel from "@/components/shared/ListPanel"
+import ListRecord from "@/components/shared/ListRecord"
+import ListSortMenu from "@/components/shared/ListSortMenu"
+import SortableHead from "@/components/shared/SortableHead"
+import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import { useQuery } from "@tanstack/react-query"
 import { getBlocos } from "@/features/condominios/services/condominios.service"
 import type { Bloco } from "@/features/condominios/types/condominio.types"
@@ -48,6 +53,13 @@ import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { useDebounce } from "@/hooks/useDebounce"
 
+const SORT_COLUMNS: SortColumn[] = [
+  { key: "nome", label: "Nome" },
+  { key: "papel", label: "Papel" },
+  { key: "bloco", label: "Bloco" },
+  { key: "unidade", label: "Unidade" },
+]
+
 const PAPEL_CLASS: Record<MoradorPapel, string> = {
   proprietario: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100",
   inquilino: "bg-blue-100 text-blue-700 hover:bg-blue-100",
@@ -58,6 +70,8 @@ export default function MoradoresPage() {
   const [search, setSearch] = useState("")
   const [blocoFilter, setBlocoFilter] = useState<string>("all")
   const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<string>()
+  const [dir, setDir] = useState<SortDir>()
   const [formOpen, setFormOpen] = useState(false)
   const [editingMorador, setEditingMorador] = useState<Morador | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -73,6 +87,15 @@ export default function MoradoresPage() {
     blocoId: blocoFilter !== "all" ? blocoFilter : undefined,
     page,
     pageSize: 20,
+    sort,
+    dir,
+  }
+
+  const sortBy = (column: string) => {
+    const next = nextSort(sort, dir, column)
+    setSort(next.sort)
+    setDir(next.dir)
+    setPage(1)
   }
 
   const { data: moradores, isLoading, isError, refetch } = useMoradores(condominioId, filters)
@@ -203,6 +226,16 @@ export default function MoradoresPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
+        <ListSortMenu
+          columns={SORT_COLUMNS}
+          sort={sort}
+          dir={dir}
+          onChange={(nextSortKey, nextDir) => {
+            setSort(nextSortKey)
+            setDir(nextDir)
+            setPage(1)
+          }}
+        />
         <div className="relative w-full sm:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
@@ -233,31 +266,75 @@ export default function MoradoresPage() {
 
       {/* Table */}
       {moradorList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
-          <div className="rounded-full bg-gray-100 p-4">
-            <Users className="text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-700">Nenhum morador encontrado</h3>
-          <p className="mt-1 text-sm text-gray-500">Cadastre o primeiro morador do condomínio.</p>
-          <Button
-            className="mt-6"
-            disabled={!condoConfigured}
-            onClick={openCreate}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Cadastrar Morador
-          </Button>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="Nenhum morador encontrado"
+          description="Cadastre o primeiro morador do condomínio."
+          action={
+            <Button disabled={!condoConfigured} onClick={openCreate}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Cadastrar Morador
+            </Button>
+          }
+        />
       ) : (
-        <div className="rounded-2xl bg-card ring-1 ring-border">
-          <div className="overflow-x-auto">
+        <div className="space-y-4">
+          <div className="space-y-3 md:hidden">
+            {moradorList.map((m) => (
+              <ListRecord
+                key={m.id}
+                title={m.nome}
+                onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}
+                fields={[
+                  {
+                    label: "Papel",
+                    value: (
+                      <Badge variant="secondary" className={cn("font-medium", PAPEL_CLASS[m.papel])}>
+                        {MORADOR_PAPEL_LABEL[m.papel]}
+                      </Badge>
+                    ),
+                  },
+                  { label: "Bloco", value: m.bloco.nome },
+                  { label: "Unidade", value: m.unidade.numero },
+                  { label: "Email", value: m.email },
+                  { label: "Telefone", value: m.telefone || "-" },
+                ]}
+                actions={
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-11"
+                      onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}
+                    >
+                      {expandedId === m.id ? "Ocultar" : "Ver detalhes"}
+                    </Button>
+                    <Button type="button" variant="ghost" className="min-h-11" onClick={() => openEdit(m)}>
+                      Editar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="min-h-11 text-red-500 hover:text-red-700"
+                      onClick={() => handleDelete(m)}
+                    >
+                      Excluir
+                    </Button>
+                  </>
+                }
+              >
+                {expandedId === m.id ? <MoradorExpandido moradorId={m.id} /> : null}
+              </ListRecord>
+            ))}
+          </div>
+          <ListPanel className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Papel</TableHead>
-                  <TableHead>Bloco</TableHead>
-                  <TableHead>Unidade</TableHead>
+                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Papel" column="papel" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Bloco" column="bloco" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Unidade" column="unidade" sort={sort} dir={dir} onSort={sortBy} />
                   <TableHead>Email</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead className="w-28 text-right">Ações</TableHead>
@@ -329,35 +406,16 @@ export default function MoradoresPage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
-
-          {/* Pagination */}
+          </ListPanel>
           {totalCount != null && (
-            <div className="flex items-center justify-between border-t px-4 py-3">
-              <p className="text-sm text-gray-500">
-                {totalCount} morador{totalCount !== 1 ? "es" : ""}
-              </p>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                 aria-label="Página anterior"><ChevronLeft className="h-4 w-4" aria-hidden="true" /></Button>
-                <span className="px-2 text-sm text-gray-600">
-                  Página {page} de {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  aria-label="Próxima página"
-                >
-                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </div>
-            </div>
+            <ListPagination
+              page={page}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              singular="morador"
+              pluralLabel="moradores"
+              onPage={setPage}
+            />
           )}
         </div>
       )}

@@ -9,6 +9,17 @@ import {
 const STATUS: SolicitacaoStatus[] = ["nova", "em_andamento", "finalizada", "cancelada"]
 const TIPOS = Object.keys(SOLICITACAO_TIPO_LABEL) as SolicitacaoTipoServico[]
 const SITUACOES = Object.keys(SITUACAO_ORCAMENTO_LABEL) as SituacaoOrcamento[]
+const SORTS = [
+  "situacao",
+  "orcamento",
+  "tipo",
+  "local",
+  "propostas",
+  "responsavel",
+  "fornecedor",
+  "status",
+  "dataConclusao",
+]
 
 export const FILTROS_FILA = ["pendentes", ...SITUACOES, "todas"] as const
 export type FiltroFila = (typeof FILTROS_FILA)[number]
@@ -21,6 +32,8 @@ export interface ManutencaoListParams {
   fila: FiltroFila
   search: string
   page: number
+  sort?: string
+  dir?: "asc" | "desc"
 }
 
 function readPage(value: string | null): number {
@@ -49,7 +62,14 @@ export function readManutencaoListParams(params: URLSearchParams): ManutencaoLis
     fila: isFiltroFila(filaRaw) ? filaRaw : "pendentes",
     search: params.get("search") ?? "",
     page: readPage(params.get("page")),
+    ...readSort(params.get("sort"), params.get("dir")),
   }
+}
+
+function readSort(sort: string | null, dir: string | null): { sort?: string; dir?: "asc" | "desc" } {
+  if (!sort || !SORTS.includes(sort)) return {}
+  if (dir !== "asc" && dir !== "desc") return {}
+  return { sort, dir }
 }
 
 export function writeManutencaoListParams(state: ManutencaoListParams): URLSearchParams {
@@ -63,6 +83,10 @@ export function writeManutencaoListParams(state: ManutencaoListParams): URLSearc
     if (state.situacaoOrcamento) next.set("situacaoOrcamento", state.situacaoOrcamento)
   }
   if (state.search.trim()) next.set("search", state.search)
+  if (state.sort && state.dir) {
+    next.set("sort", state.sort)
+    next.set("dir", state.dir)
+  }
   if (state.page > 1) next.set("page", String(state.page))
   return next
 }

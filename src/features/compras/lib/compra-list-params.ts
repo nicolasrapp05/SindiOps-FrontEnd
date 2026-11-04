@@ -9,6 +9,7 @@ import {
 const STATUS: CompraStatus[] = ["nova", "em_andamento", "finalizada", "cancelada"]
 const CATEGORIAS = Object.keys(COMPRA_CATEGORIA_LABEL) as CompraCategoria[]
 const SITUACOES = Object.keys(SITUACAO_COTACAO_LABEL) as SituacaoCotacao[]
+const SORTS = ["status", "itens", "solicitante", "tipoAprovacao", "cotacoes", "data"]
 
 export interface CompraListParams {
   status: CompraStatus | "todas"
@@ -16,6 +17,8 @@ export interface CompraListParams {
   situacaoCotacao: SituacaoCotacao | ""
   search: string
   page: number
+  sort?: string
+  dir?: "asc" | "desc"
 }
 
 function readPage(value: string | null): number {
@@ -44,7 +47,14 @@ export function readCompraListParams(params: URLSearchParams): CompraListParams 
     situacaoCotacao,
     search: params.get("search") ?? "",
     page: readPage(params.get("page")),
+    ...readSort(params.get("sort"), params.get("dir")),
   }
+}
+
+function readSort(sort: string | null, dir: string | null): { sort?: string; dir?: "asc" | "desc" } {
+  if (!sort || !SORTS.includes(sort)) return {}
+  if (dir !== "asc" && dir !== "desc") return {}
+  return { sort, dir }
 }
 
 export function writeCompraListParams(state: CompraListParams): URLSearchParams {
@@ -57,6 +67,10 @@ export function writeCompraListParams(state: CompraListParams): URLSearchParams 
   }
   if (state.categoria !== "todas") next.set("categoria", state.categoria)
   if (state.search.trim()) next.set("search", state.search)
+  if (state.sort && state.dir) {
+    next.set("sort", state.sort)
+    next.set("dir", state.dir)
+  }
   if (state.page > 1) next.set("page", String(state.page))
   return next
 }

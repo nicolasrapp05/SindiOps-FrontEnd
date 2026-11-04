@@ -63,10 +63,3 @@ export function canSeeAgendaTipo(
       return false
   }
 }
-
-export function filterAgendaByCargo<T extends { tipo: "manutencao_obrigatoria" | "contrato" | "mandato" }>(
-  cargo: UserCargo | null | undefined,
-  agenda: T[],
-): T[] {
-  return agenda.filter((item) => canSeeAgendaTipo(cargo, item.tipo))
-}

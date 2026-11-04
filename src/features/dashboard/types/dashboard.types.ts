@@ -19,4 +19,17 @@ export interface AgendaItem {
 export interface DashboardData {
   alertas: DashboardAlertas
   agenda: AgendaItem[]
+  agendaTotal: number
+  agendaCount: number
+  agendaPageSize: number
+}
+
+export interface DashboardQuery {
+  condominioId?: string
+  page?: number
+  pageSize?: number
+  sort?: string
+  dir?: "asc" | "desc"
+  tipo?: string
+  status?: string
 }

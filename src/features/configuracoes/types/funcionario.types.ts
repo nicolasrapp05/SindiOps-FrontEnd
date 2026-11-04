@@ -35,4 +35,8 @@ export interface UpdateFuncionarioRequest {
 export interface FuncionarioFilters {
   cargo?: FuncionarioCargo
   ativo?: boolean
+  page?: number
+  pageSize?: number
+  sort?: string
+  dir?: "asc" | "desc"
 }

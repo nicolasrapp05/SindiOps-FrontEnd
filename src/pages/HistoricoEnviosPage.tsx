@@ -2,8 +2,6 @@ import { Fragment, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import {
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ChevronUp,
   Mail,
   RefreshCw,
@@ -22,6 +20,13 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Combobox from "@/components/shared/Combobox"
+import EmptyState from "@/components/shared/EmptyState"
+import ListPagination from "@/components/shared/ListPagination"
+import ListPanel from "@/components/shared/ListPanel"
+import ListRecord from "@/components/shared/ListRecord"
+import ListSortMenu from "@/components/shared/ListSortMenu"
+import SortableHead from "@/components/shared/SortableHead"
+import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import { TemplateTipoBadge } from "@/features/comunicacao/components/TemplateTipoBadge"
 import { TEMPLATE_TIPO_LABEL, type TemplateTipo } from "@/features/comunicacao/types/template.types"
 import { StatusEntregaBadge } from "@/features/comunicacao/components/StatusEntregaBadge"
@@ -33,39 +38,42 @@ function ExpandedLogRow({ logId, log }: { logId: string; log: EmailLog }) {
   const { data: detail } = useEmailLog(logId)
   const corpo = detail?.corpoResolvido ?? log.corpoResolvido
   return (
-    <TableRow>
-      <TableCell colSpan={7} className="bg-gray-50/80 p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Detalhes do envio
-        </p>
-        <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-gray-500">Enviado por</dt>
-            <dd className="font-medium text-foreground">{log.enviadoPor.nome}</dd>
-          </div>
-          {log.template && (
-            <div>
-              <dt className="text-gray-500">Template</dt>
-              <dd className="font-medium text-foreground">{log.template.nome}</dd>
-            </div>
-          )}
-        </dl>
-        <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Pré-visualização do e-mail
-        </p>
-        <div className="mt-2 max-h-64 overflow-auto rounded-lg bg-gray-100 p-4 text-sm text-gray-800">
-          {corpo ? (
-            <pre className="whitespace-pre-wrap font-sans">{corpo}</pre>
-          ) : (
-            <span className="text-gray-500">Carregando conteúdo...</span>
-          )}
+    <div className="bg-gray-50/80 p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+        Detalhes do envio
+      </p>
+      <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="text-gray-500">Enviado por</dt>
+          <dd className="font-medium text-foreground">{log.enviadoPor.nome}</dd>
         </div>
-      </TableCell>
-    </TableRow>
+        {log.template && (
+          <div>
+            <dt className="text-gray-500">Template</dt>
+            <dd className="font-medium text-foreground">{log.template.nome}</dd>
+          </div>
+        )}
+      </dl>
+      <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        Pré-visualização do e-mail
+      </p>
+      <div className="mt-2 max-h-64 overflow-auto rounded-lg bg-gray-100 p-4 text-sm text-gray-800">
+        {corpo ? (
+          <pre className="whitespace-pre-wrap font-sans">{corpo}</pre>
+        ) : (
+          <span className="text-gray-500">Carregando conteúdo...</span>
+        )}
+      </div>
+    </div>
   )
 }
 
 const PAGE_SIZE = 20
+const SORT_COLUMNS: SortColumn[] = [
+  { key: "template", label: "Template" },
+  { key: "enviadoEm", label: "Enviado em" },
+  { key: "status", label: "Status" },
+]
 
 const STATUS_OPTIONS: { value: StatusEntrega; label: string }[] = [
   { value: "sent", label: "Enviado" },
@@ -80,6 +88,8 @@ export default function HistoricoEnviosPage() {
   const [dataInicio, setDataInicio] = useState("")
   const [dataFim, setDataFim] = useState("")
   const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<string>()
+  const [dir, setDir] = useState<SortDir>()
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const debouncedSearch = useDebounce(search)
@@ -93,9 +103,18 @@ export default function HistoricoEnviosPage() {
       ...(dataFim ? { dataFim } : {}),
       page,
       pageSize: PAGE_SIZE,
+      sort,
+      dir,
     }),
-    [debouncedSearch, templateTipo, statusFilter, dataInicio, dataFim, page],
+    [debouncedSearch, templateTipo, statusFilter, dataInicio, dataFim, page, sort, dir],
   )
+
+  const sortBy = (column: string) => {
+    const next = nextSort(sort, dir, column)
+    setSort(next.sort)
+    setDir(next.dir)
+    setPage(1)
+  }
 
   const { data, isLoading, isError, refetch, isFetching } = useEmailLogs(filters)
 
@@ -171,6 +190,16 @@ export default function HistoricoEnviosPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
+        <ListSortMenu
+          columns={SORT_COLUMNS}
+          sort={sort}
+          dir={dir}
+          onChange={(nextSortKey, nextDir) => {
+            setSort(nextSortKey)
+            setDir(nextDir)
+            setPage(1)
+          }}
+        />
         <div className="relative w-full sm:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
@@ -233,25 +262,80 @@ export default function HistoricoEnviosPage() {
       </div>
 
       {logs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
-          <div className="rounded-full bg-gray-100 p-4">
-            <Mail className="text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-700">Nenhum envio encontrado</h3>
-          <p className="mt-1 text-sm text-gray-500">Ajuste os filtros ou aguarde novos envios.</p>
-        </div>
+        <EmptyState
+          icon={Mail}
+          title="Nenhum envio encontrado"
+          description="Ajuste os filtros ou aguarde novos envios."
+        />
       ) : (
-        <div className="rounded-2xl bg-card ring-1 ring-border">
-          <div className="overflow-x-auto">
+        <div className="space-y-4">
+          <div className="space-y-3 md:hidden">
+            {logs.map((log) => (
+              <ListRecord
+                key={log.id}
+                title={log.morador.nome}
+                fields={[
+                  { label: "Email", value: log.emailDestinatario },
+                  {
+                    label: "Template",
+                    value: log.template ? (
+                      <TemplateTipoBadge tipo={log.template.tipo as TemplateTipo} />
+                    ) : (
+                      "-"
+                    ),
+                  },
+                  { label: "Assunto", value: log.assunto },
+                  {
+                    label: "Ocorrência",
+                    value: log.ocorrencia ? (
+                      <Link
+                        to={`/ocorrencias/${log.ocorrencia.id}`}
+                        className="font-medium text-emerald-700 underline-offset-2 hover:underline"
+                      >
+                        {log.ocorrencia.tipoOcorrencia}
+                      </Link>
+                    ) : (
+                      "-"
+                    ),
+                  },
+                  {
+                    label: "Enviado em",
+                    value: new Date(log.enviadoEm).toLocaleDateString("pt-BR", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }),
+                  },
+                  { label: "Status", value: <StatusEntregaBadge status={log.statusEntrega} /> },
+                ]}
+                actions={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11"
+                    aria-expanded={expandedId === log.id}
+                    onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
+                  >
+                    {expandedId === log.id ? "Ocultar detalhes" : "Mostrar detalhes"}
+                  </Button>
+                }
+              >
+                {expandedId === log.id ? <ExpandedLogRow logId={log.id} log={log} /> : null}
+              </ListRecord>
+            ))}
+          </div>
+          <ListPanel className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Destinatário</TableHead>
-                  <TableHead>Template</TableHead>
+                  <SortableHead label="Template" column="template" sort={sort} dir={dir} onSort={sortBy} />
                   <TableHead>Assunto</TableHead>
                   <TableHead>Ocorrência</TableHead>
-                  <TableHead>Enviado em</TableHead>
-                  <TableHead>Status</TableHead>
+                  <SortableHead label="Enviado em" column="enviadoEm" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} />
                   <TableHead className="w-24 text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -317,38 +401,26 @@ export default function HistoricoEnviosPage() {
                       </TableCell>
                     </TableRow>
                     {expandedId === log.id && (
-                      <ExpandedLogRow logId={log.id} log={log} />
+                      <TableRow>
+                        <TableCell colSpan={7} className="p-0">
+                          <ExpandedLogRow logId={log.id} log={log} />
+                        </TableCell>
+                      </TableRow>
                     )}
                   </Fragment>
                 ))}
               </TableBody>
             </Table>
-          </div>
-
+          </ListPanel>
           {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t px-4 py-3">
-              <p className="text-sm text-gray-500">
-                Página {page} de {totalPages}
-                {totalCount > 0 && ` · ${totalCount} registros`}
-              </p>
-              <div className="flex gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                 aria-label="Página anterior"><ChevronLeft className="h-4 w-4" aria-hidden="true" /></Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  aria-label="Próxima página"
-                >
-                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </div>
-            </div>
+            <ListPagination
+              page={page}
+              totalPages={totalPages}
+              totalCount={totalCount > 0 ? totalCount : null}
+              singular="registro"
+              pluralLabel="registros"
+              onPage={setPage}
+            />
           )}
         </div>
       )}

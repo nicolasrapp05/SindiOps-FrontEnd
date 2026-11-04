@@ -1,12 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import {
-  ChevronLeft,
-  ChevronRight,
-  Hammer,
-  Plus,
-  RefreshCw,
-  Search,
-} from "lucide-react"
+import { Hammer, Plus, RefreshCw, Search } from "lucide-react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -21,6 +14,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import Combobox from "@/components/shared/Combobox"
+import EmptyState from "@/components/shared/EmptyState"
+import ListPagination from "@/components/shared/ListPagination"
+import ListPanel from "@/components/shared/ListPanel"
+import ListRecord from "@/components/shared/ListRecord"
+import ListSortMenu from "@/components/shared/ListSortMenu"
+import SortableHead from "@/components/shared/SortableHead"
+import { nextSort, type SortColumn } from "@/lib/list-sort"
 import { useDebounce } from "@/hooks/useDebounce"
 import { canAccessAdmin } from "@/lib/cargo-permissions"
 import { useAuthStore } from "@/store/auth-store"
@@ -50,6 +50,22 @@ import {
 } from "@/features/manutencoes/types/solicitacao-manutencao.types"
 
 const PAGE_SIZE = 10
+const FILA_SORT_COLUMNS: SortColumn[] = [
+  { key: "situacao", label: "Situação" },
+  { key: "tipo", label: "Chamado" },
+  { key: "local", label: "Local" },
+  { key: "propostas", label: "Propostas" },
+  { key: "status", label: "Status" },
+]
+const CHAMADO_SORT_COLUMNS: SortColumn[] = [
+  { key: "status", label: "Status" },
+  { key: "tipo", label: "Tipo de serviço" },
+  { key: "orcamento", label: "Orçamento" },
+  { key: "local", label: "Local" },
+  { key: "responsavel", label: "Responsável" },
+  { key: "fornecedor", label: "Fornecedor" },
+  { key: "dataConclusao", label: "Data conclusão" },
+]
 
 function LinhaCarregando({ colunas }: { colunas: number }) {
   return (
@@ -58,46 +74,6 @@ function LinhaCarregando({ colunas }: { colunas: number }) {
         <Skeleton className="h-16 w-full" />
       </TableCell>
     </TableRow>
-  )
-}
-
-function Paginacao({
-  page,
-  totalPages,
-  onPage,
-}: {
-  page: number
-  totalPages: number
-  onPage: (page: number) => void
-}) {
-  return (
-    <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-      <p className="text-sm text-muted-foreground">
-        Página {page} de {totalPages}
-      </p>
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={page <= 1}
-          onClick={() => onPage(Math.max(1, page - 1))}
-        >
-          <ChevronLeft className="mr-1 h-4 w-4" />
-          Anterior
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={page >= totalPages}
-          onClick={() => onPage(Math.min(totalPages, page + 1))}
-        >
-          Próxima
-          <ChevronRight className="ml-1 h-4 w-4" />
-        </Button>
-      </div>
-    </div>
   )
 }
 
@@ -135,11 +111,19 @@ export default function ManutencoesPage() {
   const query = searchParams.toString()
   const parsed = useMemo(() => readManutencaoListParams(new URLSearchParams(query)), [query])
   const visaoOrcamentos = admin && parsed.visao === "orcamentos"
-  const viewState = useMemo<ManutencaoListParams>(
-    () => (visaoOrcamentos ? parsed : { ...parsed, visao: "chamados" }),
-    [parsed, visaoOrcamentos],
+  const sortColumns = visaoOrcamentos ? FILA_SORT_COLUMNS : CHAMADO_SORT_COLUMNS
+  const parsedLimpo = useMemo<ManutencaoListParams>(
+    () =>
+      sortColumns.some((column) => column.key === parsed.sort)
+        ? parsed
+        : { ...parsed, sort: undefined, dir: undefined },
+    [parsed, sortColumns],
   )
-  const canonicalQuery = useMemo(() => writeManutencaoListParams(parsed).toString(), [parsed])
+  const viewState = useMemo<ManutencaoListParams>(
+    () => (visaoOrcamentos ? parsedLimpo : { ...parsedLimpo, visao: "chamados" }),
+    [parsedLimpo, visaoOrcamentos],
+  )
+  const canonicalQuery = useMemo(() => writeManutencaoListParams(parsedLimpo).toString(), [parsedLimpo])
   const [formOpen, setFormOpen] = useState(false)
   const debouncedSearch = useDebounce(viewState.search)
 
@@ -156,6 +140,15 @@ export default function ManutencoesPage() {
     setSearchParams(writeManutencaoListParams({ ...base, ...patch }), { replace: true })
   }
 
+  const sortAtivo = sortColumns.some((column) => column.key === viewState.sort)
+    ? { sort: viewState.sort, dir: viewState.dir }
+    : undefined
+
+  const sortBy = (column: string) => {
+    const next = nextSort(sortAtivo?.sort, sortAtivo?.dir, column)
+    updateList({ sort: next.sort, dir: next.dir, page: 1 })
+  }
+
   const filters = useMemo(() => {
     if (visaoOrcamentos) {
       return {
@@ -167,6 +160,8 @@ export default function ManutencoesPage() {
         pendenteOrcamento: viewState.fila === "pendentes" ? true : undefined,
         page: viewState.page,
         pageSize: PAGE_SIZE,
+        sort: sortAtivo?.sort,
+        dir: sortAtivo?.dir,
       }
     }
 
@@ -177,8 +172,10 @@ export default function ManutencoesPage() {
       situacaoOrcamento: viewState.situacaoOrcamento || undefined,
       page: viewState.page,
       pageSize: PAGE_SIZE,
+      sort: sortAtivo?.sort,
+      dir: sortAtivo?.dir,
     }
-  }, [debouncedSearch, viewState, visaoOrcamentos])
+  }, [debouncedSearch, viewState, visaoOrcamentos, sortAtivo])
 
   const setVisao = (fila: boolean) => {
     const current = readManutencaoListParams(new URLSearchParams(query))
@@ -186,6 +183,8 @@ export default function ManutencoesPage() {
       writeManutencaoListParams({
         ...current,
         visao: fila ? "orcamentos" : "chamados",
+        sort: undefined,
+        dir: undefined,
         page: 1,
       }),
       { replace: true },
@@ -285,6 +284,7 @@ export default function ManutencoesPage() {
           <Button
             type="button"
             size="sm"
+            className="min-h-11"
             variant={visaoOrcamentos ? "outline" : "default"}
             onClick={() => setVisao(false)}
           >
@@ -293,6 +293,7 @@ export default function ManutencoesPage() {
           <Button
             type="button"
             size="sm"
+            className="min-h-11"
             variant={visaoOrcamentos ? "default" : "outline"}
             onClick={() => setVisao(true)}
           >
@@ -302,6 +303,12 @@ export default function ManutencoesPage() {
       )}
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <ListSortMenu
+          columns={sortColumns}
+          sort={sortAtivo?.sort}
+          dir={sortAtivo?.dir}
+          onChange={(sort, dir) => updateList({ sort, dir, page: 1 })}
+        />
         <div className="flex flex-wrap gap-2">
           {visaoOrcamentos
             ? FILTROS_FILA.map((item) => (
@@ -309,6 +316,7 @@ export default function ManutencoesPage() {
                   key={item}
                   type="button"
                   size="sm"
+                  className="min-h-11"
                   variant={parsed.fila === item ? "default" : "outline"}
                   onClick={() => updateList({ fila: item, page: 1 })}
                 >
@@ -320,6 +328,7 @@ export default function ManutencoesPage() {
                   key={tab}
                   type="button"
                   size="sm"
+                  className="min-h-11"
                   variant={viewState.status === tab ? "default" : "outline"}
                   onClick={() => updateList({ status: tab, page: 1 })}
                 >
@@ -372,50 +381,72 @@ export default function ManutencoesPage() {
       </div>
 
       {!condoConfigured || (!isPlaceholderData && list.length === 0) ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-20 text-center">
-          <div className="rounded-full bg-gray-100 p-4">
-            <Hammer className="text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-700">
-            {!condoConfigured
+        <EmptyState
+          icon={Hammer}
+          title={
+            !condoConfigured
               ? "Condomínio não configurado"
               : visaoOrcamentos
                 ? "Nenhum chamado nesta fila"
-                : "Nenhuma solicitação"}
-          </h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {!condoConfigured
+                : "Nenhuma solicitação"
+          }
+          description={
+            !condoConfigured
               ? "Informe o ID do condomínio para listar e criar solicitações."
               : visaoOrcamentos
                 ? "Abra um chamado para registrar propostas."
-                : "Abra um novo chamado de manutenção."}
-          </p>
-          {visaoOrcamentos && condoConfigured ? (
-            <Button className="mt-6" variant="outline" onClick={() => setVisao(false)}>
-              Ver chamados
-            </Button>
-          ) : (
-            <Button
-              className="mt-6"
-              disabled={!condoConfigured}
-              onClick={() => setFormOpen(true)}
-            >
-              <Plus className="mr-1.5 h-4 w-4" />
-              Nova Solicitação
-            </Button>
-          )}
-        </div>
+                : "Abra um novo chamado de manutenção."
+          }
+          action={
+            visaoOrcamentos && condoConfigured ? (
+              <Button variant="outline" onClick={() => setVisao(false)}>
+                Ver chamados
+              </Button>
+            ) : (
+              <Button disabled={!condoConfigured} onClick={() => setFormOpen(true)}>
+                <Plus className="mr-1.5 h-4 w-4" />
+                Nova Solicitação
+              </Button>
+            )
+          }
+        />
       ) : visaoOrcamentos ? (
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border">
+          {isPlaceholderData ? (
+            <div className="rounded-2xl bg-card p-4 ring-1 ring-border md:hidden">
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : (
+            <div className="space-y-3 md:hidden">
+              {list.map((row) => (
+                <ListRecord
+                  key={row.id}
+                  title={SOLICITACAO_TIPO_LABEL[row.tipoServico]}
+                  onClick={() => navigate(detalheTo(row.id))}
+                  fields={[
+                    { label: "Situação", value: <SituacaoOrcamentoBadge situacao={row.situacaoOrcamento} /> },
+                    { label: "Local", value: row.local },
+                    { label: "Propostas", value: row.totalOrcamentos ?? 0 },
+                    { label: "Status", value: <SolicitacaoStatusBadge status={row.status} /> },
+                  ]}
+                  actions={
+                    <Button variant="outline" className="min-h-11" asChild>
+                      <Link to={detalheTo(row.id)}>Abrir</Link>
+                    </Button>
+                  }
+                />
+              ))}
+            </div>
+          )}
+          <ListPanel className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Situação</TableHead>
-                  <TableHead>Chamado</TableHead>
-                  <TableHead>Local</TableHead>
-                  <TableHead>Propostas</TableHead>
-                  <TableHead>Status</TableHead>
+                  <SortableHead label="Situação" column="situacao" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Chamado" column="tipo" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Local" column="local" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Propostas" column="propostas" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Status" column="status" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
                   <TableHead className="text-right">Ação</TableHead>
                 </TableRow>
               </TableHeader>
@@ -450,22 +481,67 @@ export default function ManutencoesPage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
-          <Paginacao page={viewState.page} totalPages={totalPages} onPage={(page) => updateList({ page })} />
+          </ListPanel>
+          <ListPagination
+            page={viewState.page}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            singular="resultado"
+            pluralLabel="resultados"
+            onPage={(page) => updateList({ page })}
+          />
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border">
+          {isPlaceholderData ? (
+            <div className="rounded-2xl bg-card p-4 ring-1 ring-border md:hidden">
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : (
+            <div className="space-y-3 md:hidden">
+              {list.map((row) => (
+                <ListRecord
+                  key={row.id}
+                  title={SOLICITACAO_TIPO_LABEL[row.tipoServico]}
+                  onClick={() => navigate(detalheTo(row.id))}
+                  fields={[
+                    { label: "Status", value: <SolicitacaoStatusBadge status={row.status} /> },
+                    {
+                      label: "Orçamento",
+                      value: row.situacaoOrcamento ? (
+                        <SituacaoOrcamentoBadge situacao={row.situacaoOrcamento} />
+                      ) : (
+                        "—"
+                      ),
+                    },
+                    { label: "Local", value: row.local },
+                    {
+                      label: "Responsável",
+                      value: row.responsavel === "fornecedor" ? "Fornecedor" : "Zeladoria",
+                    },
+                    { label: "Fornecedor", value: row.fornecedor?.nome ?? "-" },
+                    {
+                      label: "Data conclusão",
+                      value: row.dataConclusao
+                        ? new Date(row.dataConclusao + "T00:00:00").toLocaleDateString("pt-BR")
+                        : "-",
+                    },
+                  ]}
+                />
+              ))}
+            </div>
+          )}
+          <ListPanel className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Tipo de serviço</TableHead>
-                  <TableHead>Orçamento</TableHead>
-                  <TableHead>Local</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Fornecedor</TableHead>
-                  <TableHead>Data conclusão</TableHead>
+                  <SortableHead label="Status" column="status" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Tipo de serviço" column="tipo" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Orçamento" column="orcamento" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Local" column="local" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Responsável" column="responsavel" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Fornecedor" column="fornecedor" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Data conclusão" column="dataConclusao" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -518,9 +594,15 @@ export default function ManutencoesPage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
-
-          <Paginacao page={viewState.page} totalPages={totalPages} onPage={(page) => updateList({ page })} />
+          </ListPanel>
+          <ListPagination
+            page={viewState.page}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            singular="resultado"
+            pluralLabel="resultados"
+            onPage={(page) => updateList({ page })}
+          />
         </div>
       )}
 

@@ -116,4 +116,6 @@ export interface OcorrenciasFilters {
   dataFim?: string
   page?: number
   pageSize?: number
+  sort?: string
+  dir?: "asc" | "desc"
 }
