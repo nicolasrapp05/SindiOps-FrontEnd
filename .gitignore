@@ -10,18 +10,23 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dev-dist
 *.local
+*.tsbuildinfo
+.eslintcache
 
 # Environment variables
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
+[Dd]esktop.ini
 *.suo
 *.ntvs*
 *.njsproj
