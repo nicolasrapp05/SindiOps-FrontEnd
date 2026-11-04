@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { Outlet, useLocation } from "react-router-dom"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -40,7 +40,7 @@ export default function AppLayout() {
           data-sidebar
         >
           <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
-          <Sidebar onNavigate={() => setSheetOpen(false)} />
+          <Sidebar onNavigate={() => setSheetOpen(false)} onClose={() => setSheetOpen(false)} />
         </SheetContent>
       </Sheet>
 
@@ -49,7 +49,7 @@ export default function AppLayout() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-white hover:bg-white/10 hover:text-white"
+            className="size-11 text-white hover:bg-white/10 hover:text-white"
             aria-label="Abrir menu"
             onClick={() => setSheetOpen(true)}
           >
@@ -70,7 +70,7 @@ export default function AppLayout() {
         <main
           id="conteudo"
           tabIndex={-1}
-          className="flex-1 overflow-y-auto bg-canvas px-4 py-6 outline-none md:px-8 md:py-8"
+          className="flex-1 overflow-y-auto bg-canvas px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] outline-none md:px-8 md:py-8"
         >
           <div key={pathname} className="rise-in">
             <Outlet />

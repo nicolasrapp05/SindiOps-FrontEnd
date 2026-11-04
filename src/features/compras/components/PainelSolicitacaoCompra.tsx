@@ -5,11 +5,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatCargoLabel } from "@/types"
 import { cn } from "@/lib/utils"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import { formatBRL } from "@/lib/currency"
 import {
@@ -294,16 +289,10 @@ function AprovarCompraButton({
   )
   if (!blocked || !reason) return button
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span tabIndex={0} className="inline-flex">
-          {button}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-[240px]">
-        {reason}
-      </TooltipContent>
-    </Tooltip>
+    <div className="flex flex-col items-start gap-1.5">
+      {button}
+      <p className="text-sm text-muted-foreground">{reason}</p>
+    </div>
   )
 }
 

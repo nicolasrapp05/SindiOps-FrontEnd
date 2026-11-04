@@ -129,8 +129,7 @@ export default function CondominioCard({
         {onOpenBlocosUnidades && (
           <Button
             variant="outline"
-            size="sm"
-            className="border-emerald-200 text-emerald-800 hover:bg-emerald-50"
+            className="min-h-11 border-emerald-200 text-emerald-800 hover:bg-emerald-50"
             onClick={() => onOpenBlocosUnidades(condominio)}
           >
             <DoorOpen className="mr-1 h-3.5 w-3.5" />
@@ -139,7 +138,7 @@ export default function CondominioCard({
         )}
         <Button
           variant="ghost"
-          size="sm"
+          className="min-h-11"
           onClick={() => onEdit(condominio)}
         >
           <Pencil className="mr-1 h-3.5 w-3.5" />
@@ -147,8 +146,7 @@ export default function CondominioCard({
         </Button>
         <Button
           variant="ghost"
-          size="sm"
-          className="text-red-600 hover:bg-red-50 hover:text-red-700"
+          className="min-h-11 text-red-600 hover:bg-red-50 hover:text-red-700"
           onClick={() => onDelete(condominio)}
         >
           <Trash2 className="mr-1 h-3.5 w-3.5" />

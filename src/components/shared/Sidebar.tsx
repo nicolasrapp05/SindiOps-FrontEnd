@@ -1,6 +1,6 @@
-﻿import { useEffect } from "react"
+import { useEffect } from "react"
 import { Link, NavLink } from "react-router-dom"
-import { ChevronDown, LogOut, Building } from "lucide-react"
+import { ChevronDown, LogOut, Building, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth-store"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
@@ -22,12 +22,13 @@ import {
 
 interface SidebarProps {
   onNavigate?: () => void
+  onClose?: () => void
 }
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-300"
 
-export default function Sidebar({ onNavigate }: SidebarProps) {
+export default function Sidebar({ onNavigate, onClose }: SidebarProps) {
   const user = useAuthStore((s) => s.user)
   const { logout } = useAuth()
   const cargo = user?.cargo
@@ -83,6 +84,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
 
   return (
     <div className="flex h-full w-64 flex-col bg-[#0f1b14]">
+      <div className="flex items-start justify-between">
       <Link
         to="/dashboard"
         onClick={onNavigate}
@@ -98,6 +100,20 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
           SíndiOps
         </span>
       </Link>
+      {onClose ? (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fechar menu"
+          className={cn(
+            "mr-3 mt-4 inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-white transition-colors duration-200 hover:bg-white/10",
+            focusRing,
+          )}
+        >
+          <X className="size-5" aria-hidden="true" />
+        </button>
+      ) : null}
+      </div>
 
       <div className="px-3 pb-4 pt-4">
         <p className="mb-1.5 px-1 text-[11px] font-semibold tracking-wide text-white/70">
@@ -200,7 +216,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
                     onClick={onNavigate}
                     className={({ isActive }) =>
                       cn(
-                        "flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors duration-200",
+                        "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors duration-200",
                         focusRing,
                         isActive
                           ? "bg-white/10 text-white shadow-[inset_3px_0_0_0_#6ee7b7]"
@@ -220,7 +236,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
 
       <Separator className="bg-white/10" />
 
-      <div className="flex items-center gap-2 px-3 py-3">
+      <div className="flex items-center gap-2 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <Link
           to="/configuracoes/perfil"
           onClick={onNavigate}
@@ -248,7 +264,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
           onClick={logout}
           aria-label="Sair"
           className={cn(
-            "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-white/75 transition-colors duration-200 hover:bg-white/10 hover:text-white",
+            "inline-flex h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-white/75 transition-colors duration-200 hover:bg-white/10 hover:text-white",
             focusRing,
           )}
         >
