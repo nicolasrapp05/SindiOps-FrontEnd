@@ -332,11 +332,10 @@ function UnidadeChip({ unidade, blocoId, condominioId }: UnidadeChipProps) {
 interface BlocoRowProps {
   bloco: Bloco
   condominioId: string
-  autoExpand: boolean
 }
 
-function BlocoRow({ bloco, condominioId, autoExpand }: BlocoRowProps) {
-  const [expanded, setExpanded] = useState(autoExpand)
+function BlocoRow({ bloco, condominioId }: BlocoRowProps) {
+  const [expanded, setExpanded] = useState(false)
   const [editandoNome, setEditandoNome] = useState(false)
   const [addingUnidade, setAddingUnidade] = useState(false)
   const [confirmDeleteBloco, setConfirmDeleteBloco] = useState(false)
@@ -616,7 +615,6 @@ export default function EstruturaCondominio({
             key={bloco.id}
             bloco={bloco}
             condominioId={condominioId}
-            autoExpand={(blocos?.length ?? 0) <= 3}
           />
         ))}
 
