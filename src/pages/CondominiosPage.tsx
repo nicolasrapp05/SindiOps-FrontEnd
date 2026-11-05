@@ -21,7 +21,7 @@ import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import EmptyState from "@/components/shared/EmptyState"
 
 export default function CondominiosPage() {
-  const { data: condominios, isLoading, isError, refetch } = useCondominios()
+  const { data: condominios, isLoading, isPlaceholderData, isError, refetch } = useCondominios()
   const createMutation = useCreateCondominio()
   const updateMutation = useUpdateCondominio()
   const deleteMutation = useDeleteCondominio()
@@ -90,23 +90,6 @@ export default function CondominiosPage() {
     }
   }
 
-  // ── Loading ─────────────────────────────────────────────────────
-  if (isLoading) {
-    return (
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-40" />
-        </div>
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-60 rounded-xl" />
-          ))}
-        </div>
-      </div>
-    )
-  }
-
   // ── Error ───────────────────────────────────────────────────────
   if (isError) {
     return (
@@ -129,6 +112,7 @@ export default function CondominiosPage() {
   }
 
   const isEmpty = !condominios || condominios.length === 0
+  const listaCarregando = isLoading || isPlaceholderData
 
   return (
     <div className="space-y-8">
@@ -152,7 +136,13 @@ export default function CondominiosPage() {
       </div>
 
       {/* Empty state */}
-      {isEmpty ? (
+      {listaCarregando ? (
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-60 rounded-2xl" />
+          ))}
+        </div>
+      ) : isEmpty ? (
         <EmptyState
           icon={Building2}
           title="Nenhum condomínio cadastrado"

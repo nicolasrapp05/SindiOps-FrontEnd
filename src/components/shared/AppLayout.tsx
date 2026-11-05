@@ -70,7 +70,7 @@ export default function AppLayout() {
         <main
           id="conteudo"
           tabIndex={-1}
-          className="flex-1 overflow-y-auto bg-canvas px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] outline-none md:px-8 md:py-8"
+          className="flex-1 overflow-y-auto bg-canvas px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] outline-none [scrollbar-gutter:stable] md:px-8 md:py-8"
         >
           <div key={pathname} className="rise-in">
             <Outlet />

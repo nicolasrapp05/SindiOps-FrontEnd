@@ -17,7 +17,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -44,6 +43,8 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
+import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
@@ -81,9 +82,9 @@ export default function FornecedoresPage() {
     setDir(next.dir)
     setPage(1)
   }
-  const { data: fornecedores, isLoading, isError, refetch } = useFornecedores(filters)
-  const { data: summaryData } = useFornecedores({ page: 1, pageSize: 2000 })
-  const { data: contratosGlobais } = useContratosGlobais({ pageSize: 2000 })
+  const { data: fornecedores, isLoading, isPlaceholderData, isError, refetch } = useFornecedores(filters)
+  const { data: summaryData, isLoading: resumoListaCarregando } = useFornecedores({ page: 1, pageSize: 2000 })
+  const { data: contratosGlobais, isLoading: contratosResumoCarregando } = useContratosGlobais({ pageSize: 2000 })
   const createMutation = useCreateFornecedor()
   const updateMutation = useUpdateFornecedor()
   const deleteMutation = useDeleteFornecedor()
@@ -108,6 +109,9 @@ export default function FornecedoresPage() {
       }).length,
     }
   }, [summaryData, contratosGlobais])
+
+  const listaCarregando = isLoading || isPlaceholderData
+  const resumoCarregando = (resumoListaCarregando && !summaryData) || (contratosResumoCarregando && !contratosGlobais)
 
   const openCreate = () => {
     setEditingFornecedor(null)
@@ -145,24 +149,6 @@ export default function FornecedoresPage() {
     }
   }
 
-  // ── Loading ─────────────────────────────────────
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-44" />
-        </div>
-        <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 rounded-xl" />
-          ))}
-        </div>
-        <Skeleton className="h-96 rounded-xl" />
-      </div>
-    )
-  }
-
   // ── Error ───────────────────────────────────────
   if (isError) {
     return (
@@ -197,16 +183,20 @@ export default function FornecedoresPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-4">
-        {SUMMARY_CARDS.map((card) => {
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {resumoCarregando
+          ? SUMMARY_CARDS.map((card) => (
+              <KpiCardSkeleton key={card.key} />
+            ))
+          : SUMMARY_CARDS.map((card) => {
           const Icon = card.icon
           return (
-            <div key={card.key} className="rounded-2xl bg-card p-5 ring-1 ring-border">
+            <div key={card.key} className="rounded-2xl bg-card p-3 ring-1 ring-border sm:p-5">
               <div className="flex items-center gap-3">
-                <div className={`rounded-lg p-2 ${card.color}`}>
+                <div className={`shrink-0 rounded-lg p-2 ${card.color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs font-medium text-gray-500">{card.label}</p>
                   <p className="text-2xl font-bold text-foreground">{summaryValues[card.key]}</p>
                 </div>
@@ -247,7 +237,7 @@ export default function FornecedoresPage() {
       </div>
 
       {/* Table */}
-      {fornecedorList.length === 0 ? (
+      {!listaCarregando && fornecedorList.length === 0 ? (
         <EmptyState
           icon={Truck}
           title="Nenhum fornecedor encontrado"
@@ -261,6 +251,9 @@ export default function FornecedoresPage() {
         />
       ) : (
         <div className="space-y-4">
+          {listaCarregando ? (
+            <ListSkeletonCards />
+          ) : (
           <div className="space-y-3 md:hidden">
             {fornecedorList.map((f) => {
               const servicos = f.servicos ?? []
@@ -310,21 +303,24 @@ export default function FornecedoresPage() {
               )
             })}
           </div>
+          )}
           <ListPanel className="hidden md:block">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="CNPJ" column="cnpj" sort={sort} dir={dir} onSort={sortBy} />
-                  <TableHead>Contato</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Serviços</TableHead>
-                  <TableHead className="w-28 text-right">Ações</TableHead>
+                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} className="w-[21%]" />
+                  <SortableHead label="CNPJ" column="cnpj" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
+                  <TableHead className="w-[13%]">Contato</TableHead>
+                  <TableHead className="w-[12%]">Telefone</TableHead>
+                  <TableHead className="w-[16%]">Email</TableHead>
+                  <TableHead className="w-[13%]">Serviços</TableHead>
+                  <TableHead className="w-[11%] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {fornecedorList.map((f) => {
+                {listaCarregando ? (
+                  <ListSkeletonRows columns={7} />
+                ) : fornecedorList.map((f) => {
                   const servicos = f.servicos ?? []
                   return (
                   <Fragment key={f.id}>
@@ -334,11 +330,11 @@ export default function FornecedoresPage() {
                         setExpandedId(expandedId === f.id ? null : f.id)
                       }
                     >
-                      <TableCell className="font-medium text-foreground">{f.nome}</TableCell>
-                      <TableCell className="text-gray-500">{f.cnpj || "-"}</TableCell>
-                      <TableCell className="text-gray-600">{f.nomeContato || "-"}</TableCell>
-                      <TableCell className="text-gray-500">{f.telefone || "-"}</TableCell>
-                      <TableCell className="text-gray-500">{f.email || "-"}</TableCell>
+                      <TableCell className="truncate font-medium text-foreground">{f.nome}</TableCell>
+                      <TableCell className="truncate text-gray-500">{f.cnpj || "-"}</TableCell>
+                      <TableCell className="truncate text-gray-600">{f.nomeContato || "-"}</TableCell>
+                      <TableCell className="truncate text-gray-500">{f.telefone || "-"}</TableCell>
+                      <TableCell className="truncate text-gray-500">{f.email || "-"}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {servicos.slice(0, 2).map((s) => (
@@ -407,7 +403,7 @@ export default function FornecedoresPage() {
               </TableBody>
             </Table>
           </ListPanel>
-          {totalCount != null && (
+          {!listaCarregando && totalCount != null && (
             <ListPagination
               page={page}
               totalPages={totalPages}

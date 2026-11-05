@@ -14,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -28,6 +27,7 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
@@ -98,7 +98,7 @@ export default function MoradoresPage() {
     setPage(1)
   }
 
-  const { data: moradores, isLoading, isError, refetch } = useMoradores(condominioId, filters)
+  const { data: moradores, isLoading, isPlaceholderData, isError, refetch } = useMoradores(condominioId, filters)
   const { data: blocos } = useQuery({
     queryKey: ["condominios", condominioId, "blocos"],
     queryFn: () => getBlocos(condominioId),
@@ -153,25 +153,7 @@ export default function MoradoresPage() {
   const moradorList = moradores?.data ?? []
   const totalCount = moradores?.totalCount
   const totalPages = totalCount ? Math.ceil(totalCount / 20) : 1
-
-  // ── Loading ─────────────────────────────────────────
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-40" />
-          <Skeleton className="h-10 w-40" />
-        </div>
-        <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
-          <div className="space-y-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const listaCarregando = condoConfigured && (isLoading || isPlaceholderData)
 
   // ── Error ───────────────────────────────────────────
   if (isError) {
@@ -225,7 +207,7 @@ export default function MoradoresPage() {
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-center">
         <ListSortMenu
           columns={SORT_COLUMNS}
           sort={sort}
@@ -235,8 +217,9 @@ export default function MoradoresPage() {
             setDir(nextDir)
             setPage(1)
           }}
+          className="w-full min-w-0 md:hidden"
         />
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full min-w-0 md:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
             type="search"
@@ -260,12 +243,12 @@ export default function MoradoresPage() {
           value={blocoFilter}
           onValueChange={(v) => { setBlocoFilter(v); setPage(1) }}
           placeholder="Buscar…"
-          className="w-44"
+          className="w-full min-w-0 md:w-44"
         />
       </div>
 
       {/* Table */}
-      {moradorList.length === 0 ? (
+      {!listaCarregando && moradorList.length === 0 ? (
         <EmptyState
           icon={Users}
           title="Nenhum morador encontrado"
@@ -279,6 +262,9 @@ export default function MoradoresPage() {
         />
       ) : (
         <div className="space-y-4">
+          {listaCarregando ? (
+            <ListSkeletonCards />
+          ) : (
           <div className="space-y-3 md:hidden">
             {moradorList.map((m) => (
               <ListRecord
@@ -327,36 +313,39 @@ export default function MoradoresPage() {
               </ListRecord>
             ))}
           </div>
+          )}
           <ListPanel className="hidden md:block">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Papel" column="papel" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Bloco" column="bloco" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Unidade" column="unidade" sort={sort} dir={dir} onSort={sortBy} />
-                  <TableHead>Email</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead className="w-28 text-right">Ações</TableHead>
+                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} className="w-[22%]" />
+                  <SortableHead label="Papel" column="papel" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
+                  <SortableHead label="Bloco" column="bloco" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
+                  <SortableHead label="Unidade" column="unidade" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
+                  <TableHead className="w-[20%]">Email</TableHead>
+                  <TableHead className="w-[14%]">Telefone</TableHead>
+                  <TableHead className="w-[12%] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {moradorList.map((m) => (
+                {listaCarregando ? (
+                  <ListSkeletonRows columns={7} />
+                ) : moradorList.map((m) => (
                   <Fragment key={m.id}>
                     <TableRow
                       className="cursor-pointer transition-colors hover:bg-muted/60"
                       onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}
                     >
-                      <TableCell className="font-medium text-foreground">{m.nome}</TableCell>
+                      <TableCell className="truncate font-medium text-foreground">{m.nome}</TableCell>
                       <TableCell>
                         <Badge variant="secondary" className={cn("font-medium", PAPEL_CLASS[m.papel])}>
                           {MORADOR_PAPEL_LABEL[m.papel]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-gray-600">{m.bloco.nome}</TableCell>
-                      <TableCell className="text-gray-600">{m.unidade.numero}</TableCell>
-                      <TableCell className="text-gray-500">{m.email}</TableCell>
-                      <TableCell className="text-gray-500">{m.telefone || "-"}</TableCell>
+                      <TableCell className="truncate text-gray-600">{m.bloco.nome}</TableCell>
+                      <TableCell className="truncate text-gray-600">{m.unidade.numero}</TableCell>
+                      <TableCell className="truncate text-gray-500">{m.email}</TableCell>
+                      <TableCell className="truncate text-gray-500">{m.telefone || "-"}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button
@@ -407,7 +396,7 @@ export default function MoradoresPage() {
               </TableBody>
             </Table>
           </ListPanel>
-          {totalCount != null && (
+          {!listaCarregando && totalCount != null && (
             <ListPagination
               page={page}
               totalPages={totalPages}

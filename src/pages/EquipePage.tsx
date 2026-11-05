@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react"
 import { Plus, RefreshCw, Users, Mail, Pencil, Trash2, UserCheck, UserX } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -16,6 +15,7 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
@@ -89,7 +89,7 @@ export default function EquipePage() {
     setPage(1)
   }
 
-  const { data, isLoading, isError, refetch } = useFuncionarios(apiFilters)
+  const { data, isLoading, isPlaceholderData, isError, refetch } = useFuncionarios(apiFilters)
   const convidar = useConvidarFuncionario()
   const atualizar = useUpdateFuncionario()
   const reenviarConvite = useReenviarConviteFuncionario()
@@ -100,6 +100,7 @@ export default function EquipePage() {
   const list = data?.data ?? []
   const totalCount = data?.totalCount
   const totalPages = totalCount != null ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : 1
+  const listaCarregando = isLoading || isPlaceholderData
   const CARGOS: CargoFilter[] = ["todas", "zelador", "secretario", "porteiro", "outro"]
 
   const handleConvidar = (payload: ConvidarFuncionarioRequest) => {
@@ -138,19 +139,6 @@ export default function EquipePage() {
     })
   }
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <Skeleton className="h-8 w-40" />
-          <Skeleton className="h-10 w-48" />
-        </div>
-        <Skeleton className="h-12 w-full max-w-md" />
-        <Skeleton className="h-96 rounded-xl" />
-      </div>
-    )
-  }
-
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -183,7 +171,7 @@ export default function EquipePage() {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-center">
         <ListSortMenu
           columns={SORT_COLUMNS}
           sort={sort}
@@ -193,6 +181,7 @@ export default function EquipePage() {
             setDir(nextDir)
             setPage(1)
           }}
+          className="w-full min-w-0 md:hidden"
         />
         <Combobox
           options={CARGOS.map((c) => ({
@@ -205,7 +194,7 @@ export default function EquipePage() {
             setPage(1)
           }}
           placeholder="Buscar…"
-          className="w-full sm:w-[200px]"
+          className="w-full min-w-0 md:w-[200px]"
         />
         <Combobox
           options={[
@@ -219,11 +208,11 @@ export default function EquipePage() {
             setPage(1)
           }}
           placeholder="Buscar…"
-          className="w-full sm:w-[200px]"
+          className="w-full min-w-0 md:w-[200px]"
         />
       </div>
 
-      {list.length === 0 ? (
+      {!listaCarregando && list.length === 0 ? (
         <EmptyState
           icon={Users}
           title="Nenhum funcionário"
@@ -237,6 +226,9 @@ export default function EquipePage() {
         />
       ) : (
         <>
+        {listaCarregando ? (
+          <ListSkeletonCards />
+        ) : (
         <div className="space-y-3 md:hidden">
           {list.map((f) => (
             <ListRecord
@@ -310,39 +302,42 @@ export default function EquipePage() {
             />
           ))}
         </div>
+        )}
         <ListPanel className="hidden md:block">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Cargo" column="cargo" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Email" column="email" sort={sort} dir={dir} onSort={sortBy} />
-                  <TableHead>Condomínios</TableHead>
-                  <TableHead>Status</TableHead>
-                  <SortableHead label="Data de cadastro" column="criadoEm" sort={sort} dir={dir} onSort={sortBy} />
-                  <TableHead className="w-36 text-right">Ações</TableHead>
+                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} className="w-[18%]" />
+                  <SortableHead label="Cargo" column="cargo" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
+                  <SortableHead label="Email" column="email" sort={sort} dir={dir} onSort={sortBy} className="w-[18%]" />
+                  <TableHead className="w-[14%]">Condomínios</TableHead>
+                  <TableHead className="w-[9%]">Status</TableHead>
+                  <SortableHead label="Data de cadastro" column="criadoEm" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
+                  <TableHead className="w-[15%] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {list.map((f) => (
+                {listaCarregando ? (
+                  <ListSkeletonRows columns={7} />
+                ) : list.map((f) => (
                   <TableRow key={f.id} className="transition-colors hover:bg-muted/60">
                     <TableCell className={cn(!f.ativo && "opacity-60")}>
-                      <div className="flex items-center gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
                         <Avatar size="sm">
                           <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
                             {getInitials(f.nome)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-medium text-foreground">{f.nome}</span>
+                        <span className="truncate font-medium text-foreground">{f.nome}</span>
                       </div>
                     </TableCell>
                     <TableCell className={cn("text-gray-600", !f.ativo && "opacity-60")}>
                       {CARGO_LABEL[f.cargo]}
                     </TableCell>
-                    <TableCell className={cn("text-gray-500", !f.ativo && "opacity-60")}>
+                    <TableCell className={cn("truncate text-gray-500", !f.ativo && "opacity-60")}>
                       {f.email}
                     </TableCell>
-                    <TableCell className={cn("max-w-[200px]", !f.ativo && "opacity-60")}>
+                    <TableCell className={cn(!f.ativo && "opacity-60")}>
                       {f.condominios?.length ? (
                         <span className="line-clamp-2 text-sm text-muted-foreground">
                           {f.condominios.map((c) => c.nome).join(", ")}
@@ -428,6 +423,7 @@ export default function EquipePage() {
               </TableBody>
             </Table>
         </ListPanel>
+        {!listaCarregando && (
         <ListPagination
           page={page}
           totalPages={totalPages}
@@ -436,6 +432,7 @@ export default function EquipePage() {
           pluralLabel="funcionários"
           onPage={setPage}
         />
+        )}
         </>
       )}
 

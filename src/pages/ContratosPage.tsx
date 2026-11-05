@@ -15,7 +15,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -30,6 +29,8 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
+import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
@@ -111,8 +112,12 @@ export default function ContratosPage() {
 
   const summaryFilters = { page: 1, pageSize: 2000 }
 
-  const { data: contratosRaw, isLoading, isError, refetch } = useContratos(condominioId, tableFilters)
-  const { data: contratosSummaryRaw } = useContratos(condominioId, summaryFilters)
+  const { data: contratosRaw, isLoading, isPlaceholderData, isError, refetch } = useContratos(condominioId, tableFilters)
+  const {
+    data: contratosSummaryRaw,
+    isLoading: resumoInicial,
+    isPlaceholderData: resumoTrocando,
+  } = useContratos(condominioId, summaryFilters)
 
   const createMutation = useCreateContrato()
   const updateMutation = useUpdateContrato()
@@ -135,6 +140,9 @@ export default function ContratosPage() {
     },
     [contratosSummaryRaw?.data],
   )
+
+  const listaCarregando = condoConfigured && (isLoading || isPlaceholderData)
+  const resumoCarregando = condoConfigured && (resumoInicial || resumoTrocando)
 
   const openCreate = () => {
     setEditingContrato(null)
@@ -162,29 +170,6 @@ export default function ContratosPage() {
     cancelMutation.mutate(pendingCancel.id, {
       onSuccess: () => setPendingCancel(null),
     })
-  }
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-44" />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-xl" />
-          ))}
-        </div>
-        <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
-          <div className="space-y-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
-        </div>
-      </div>
-    )
   }
 
   if (isError) {
@@ -235,16 +220,21 @@ export default function ContratosPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-4">
-        {SUMMARY_CARDS.map((card) => {
+      {condoConfigured && (
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {resumoCarregando ? (
+          SUMMARY_CARDS.map((card) => (
+            <KpiCardSkeleton key={card.key} />
+          ))
+        ) : SUMMARY_CARDS.map((card) => {
           const Icon = card.icon
           return (
-            <div key={card.key} className="rounded-2xl bg-card p-5 ring-1 ring-border">
+            <div key={card.key} className="rounded-2xl bg-card p-3 ring-1 ring-border sm:p-5">
               <div className="flex items-center gap-3">
-                <div className={`rounded-lg p-2 ${card.color}`}>
+                <div className={`shrink-0 rounded-lg p-2 ${card.color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs font-medium text-gray-500">{card.label}</p>
                   <p className="text-2xl font-bold text-foreground">{statusCounts[card.key]}</p>
                 </div>
@@ -253,8 +243,9 @@ export default function ContratosPage() {
           )
         })}
       </div>
+      )}
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-center">
         <ListSortMenu
           columns={SORT_COLUMNS}
           sort={sort}
@@ -264,8 +255,9 @@ export default function ContratosPage() {
             setDir(nextDir)
             setPage(1)
           }}
+          className="w-full min-w-0 md:hidden"
         />
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full min-w-0 md:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
             type="search"
@@ -286,11 +278,11 @@ export default function ContratosPage() {
           value={statusFilter}
           onValueChange={(v) => { setStatusFilter(v as "all" | ContratoStatus); setPage(1) }}
           placeholder="Buscar…"
-          className="w-full sm:w-[200px]"
+          className="w-full min-w-0 md:w-[200px]"
         />
       </div>
 
-      {contratoList.length === 0 ? (
+      {!listaCarregando && contratoList.length === 0 ? (
         <EmptyState
           icon={FileText}
           title="Nenhum contrato encontrado"
@@ -304,6 +296,9 @@ export default function ContratosPage() {
         />
       ) : (
         <div className="space-y-4">
+          {listaCarregando ? (
+            <ListSkeletonCards />
+          ) : (
           <div className="space-y-3 md:hidden">
             {contratoList.map((c) => {
               const contato =
@@ -359,22 +354,25 @@ export default function ContratosPage() {
               )
             })}
           </div>
+          )}
           <ListPanel className="hidden md:block">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortableHead label="Tipo de serviço" column="tipo" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Fornecedor" column="fornecedor" sort={sort} dir={dir} onSort={sortBy} />
-                  <TableHead>Contato</TableHead>
-                  <SortableHead label="Início" column="inicio" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Término" column="termino" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Valor mensal" column="valor" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} />
-                  <TableHead className="w-[200px] text-right">Ações</TableHead>
+                  <SortableHead label="Tipo de serviço" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
+                  <SortableHead label="Fornecedor" column="fornecedor" sort={sort} dir={dir} onSort={sortBy} className="w-[13%]" />
+                  <TableHead className="w-[12%]">Contato</TableHead>
+                  <SortableHead label="Início" column="inicio" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
+                  <SortableHead label="Término" column="termino" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
+                  <SortableHead label="Valor mensal" column="valor" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
+                  <TableHead className="w-[21%] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {contratoList.map((c) => {
+                {listaCarregando ? (
+                  <ListSkeletonRows columns={8} />
+                ) : contratoList.map((c) => {
                   const contato =
                     [c.nomeContato, c.telefoneContato].filter(Boolean).join(" · ") || "-"
                   const actionBusy =
@@ -386,11 +384,11 @@ export default function ContratosPage() {
                       key={c.id}
                       className={rowHighlight}
                     >
-                      <TableCell className="font-medium text-foreground">
+                      <TableCell className="truncate font-medium text-foreground">
                         {TIPO_SERVICO_LABEL[c.tipoServico]}
                       </TableCell>
-                      <TableCell className="text-gray-700">{c.fornecedor.nome}</TableCell>
-                      <TableCell className="max-w-[200px] truncate text-gray-600">{contato}</TableCell>
+                      <TableCell className="truncate text-gray-700">{c.fornecedor.nome}</TableCell>
+                      <TableCell className="truncate text-gray-600">{contato}</TableCell>
                       <TableCell className="text-gray-600">{formatDate(c.dataInicio)}</TableCell>
                       <TableCell className="text-gray-600">{formatDate(c.dataFim)}</TableCell>
                       <TableCell className="text-gray-700">
@@ -441,7 +439,7 @@ export default function ContratosPage() {
               </TableBody>
             </Table>
           </ListPanel>
-          {totalCount != null && (
+          {!listaCarregando && totalCount != null && (
             <ListPagination
               page={page}
               totalPages={totalPages}

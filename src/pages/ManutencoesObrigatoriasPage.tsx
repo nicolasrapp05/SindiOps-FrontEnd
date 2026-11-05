@@ -12,7 +12,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
 import { useDebounce } from "@/hooks/useDebounce"
 import {
   Table,
@@ -27,6 +26,7 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
@@ -110,7 +110,7 @@ export default function ManutencoesObrigatoriasPage() {
     setPage(1)
   }
 
-  const { data, isLoading, isError, refetch } = useManutencoesObrigatorias(
+  const { data, isLoading, isPlaceholderData, isError, refetch } = useManutencoesObrigatorias(
     condominioId,
     filters,
   )
@@ -171,19 +171,7 @@ export default function ManutencoesObrigatoriasPage() {
   }
 
   const condoConfigured = !!condominioId
-
-  if (condoConfigured && isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-10 w-44" />
-        </div>
-        <Skeleton className="h-12 w-full max-w-2xl" />
-        <Skeleton className="h-96 rounded-xl" />
-      </div>
-    )
-  }
+  const listaCarregando = condoConfigured && (isLoading || isPlaceholderData)
 
   if (condoConfigured && isError) {
     return (
@@ -237,16 +225,6 @@ export default function ManutencoesObrigatoriasPage() {
       )}
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <ListSortMenu
-          columns={SORT_COLUMNS}
-          sort={sort}
-          dir={dir}
-          onChange={(nextSortKey, nextDir) => {
-            setSort(nextSortKey)
-            setDir(nextDir)
-            setPage(1)
-          }}
-        />
         <div className="flex flex-wrap gap-2">
           {(Object.keys(TAB_LABELS) as StatusTab[]).map((tab) => (
             <Button
@@ -264,8 +242,19 @@ export default function ManutencoesObrigatoriasPage() {
             </Button>
           ))}
         </div>
-        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
-          <div className="relative w-full sm:w-64">
+        <div className="grid grid-cols-2 gap-3 xl:flex xl:w-auto xl:items-center xl:justify-end xl:gap-2">
+          <ListSortMenu
+            columns={SORT_COLUMNS}
+            sort={sort}
+            dir={dir}
+            onChange={(nextSortKey, nextDir) => {
+              setSort(nextSortKey)
+              setDir(nextDir)
+              setPage(1)
+            }}
+            className="w-full min-w-0 md:hidden"
+          />
+          <div className="relative w-full min-w-0 xl:w-64">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input
               type="search"
@@ -289,12 +278,12 @@ export default function ManutencoesObrigatoriasPage() {
             value={tipoFilter || ""}
             onValueChange={(v) => { setTipoFilter(v as ManutencaoTipo | ""); setPage(1) }}
             placeholder="Buscar…"
-            className="w-full sm:w-[220px]"
+            className="w-full min-w-0 xl:w-[220px]"
           />
         </div>
       </div>
 
-      {!condoConfigured || list.length === 0 ? (
+      {!condoConfigured || (!listaCarregando && list.length === 0) ? (
         <EmptyState
           icon={ClipboardList}
           title={!condoConfigured ? "Condomínio não configurado" : "Nenhuma manutenção"}
@@ -312,6 +301,9 @@ export default function ManutencoesObrigatoriasPage() {
         />
       ) : (
         <div className="space-y-4">
+          {listaCarregando ? (
+            <ListSkeletonCards />
+          ) : (
           <div className="space-y-3 md:hidden">
             {list.map((m) => (
               <ListRecord
@@ -359,28 +351,31 @@ export default function ManutencoesObrigatoriasPage() {
               />
             ))}
           </div>
+          )}
           <ListPanel className="hidden md:block">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Data vencimento" column="vencimento" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Última realização" column="ultimaRealizacao" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} />
-                  <TableHead className="text-right">Ações</TableHead>
+                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
+                  <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
+                  <SortableHead label="Data vencimento" column="vencimento" sort={sort} dir={dir} onSort={sortBy} className="w-[13%]" />
+                  <SortableHead label="Última realização" column="ultimaRealizacao" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
+                  <TableHead className="w-[35%] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {list.map((m) => (
+                {listaCarregando ? (
+                  <ListSkeletonRows columns={6} />
+                ) : list.map((m) => (
                   <TableRow
                     key={m.id}
                     className={cn(m.status === "overdue" && "bg-red-50/50")}
                   >
-                    <TableCell className="font-medium text-foreground">
+                    <TableCell className="truncate font-medium text-foreground">
                       {MANUTENCAO_TIPO_LABEL[m.tipo]}
                     </TableCell>
-                    <TableCell>{m.condominio.nome}</TableCell>
+                    <TableCell className="truncate">{m.condominio.nome}</TableCell>
                     <TableCell className="whitespace-nowrap">
                       {new Date(m.dataVencimento + "T00:00:00").toLocaleDateString("pt-BR")}
                     </TableCell>
@@ -429,6 +424,7 @@ export default function ManutencoesObrigatoriasPage() {
               </TableBody>
             </Table>
           </ListPanel>
+          {!listaCarregando && (
           <ListPagination
             page={page}
             totalPages={totalPages}
@@ -437,6 +433,7 @@ export default function ManutencoesObrigatoriasPage() {
             pluralLabel="resultados"
             onPage={setPage}
           />
+          )}
         </div>
       )}
 

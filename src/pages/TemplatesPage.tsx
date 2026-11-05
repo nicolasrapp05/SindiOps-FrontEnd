@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { Mail, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -22,6 +21,7 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
@@ -59,7 +59,7 @@ export default function TemplatesPage() {
   const [editing, setEditing] = useState<EmailTemplate | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<EmailTemplate | null>(null)
 
-  const { data: templates, isLoading, isError, refetch } = useTemplates({
+  const { data: templates, isLoading, isPlaceholderData, isError, refetch } = useTemplates({
     page,
     pageSize: PAGE_SIZE,
     sort,
@@ -79,6 +79,7 @@ export default function TemplatesPage() {
   const list = templates?.data ?? []
   const totalCount = templates?.totalCount
   const totalPages = totalCount != null ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : 1
+  const listaCarregando = isLoading || isPlaceholderData
 
   function openCreate() {
     setEditing(null)
@@ -106,21 +107,6 @@ export default function TemplatesPage() {
     deleteMutation.mutate(deleteTarget.id, {
       onSuccess: () => setDeleteTarget(null),
     })
-  }
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-56" />
-            <Skeleton className="h-4 w-80" />
-          </div>
-          <Skeleton className="h-10 w-44" />
-        </div>
-        <Skeleton className="h-96 rounded-xl" />
-      </div>
-    )
   }
 
   if (isError) {
@@ -165,7 +151,7 @@ export default function TemplatesPage() {
         }}
       />
 
-      {list.length === 0 ? (
+      {!listaCarregando && list.length === 0 ? (
         <EmptyState
           icon={Mail}
           title="Nenhum template cadastrado"
@@ -179,6 +165,9 @@ export default function TemplatesPage() {
         />
       ) : (
         <>
+        {listaCarregando ? (
+          <ListSkeletonCards />
+        ) : (
         <div className="space-y-3 md:hidden">
           {list.map((t) => (
             <ListRecord
@@ -210,25 +199,28 @@ export default function TemplatesPage() {
             />
           ))}
         </div>
+        )}
         <ListPanel className="hidden md:block">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Assunto" column="assunto" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Última atualização" column="atualizadoEm" sort={sort} dir={dir} onSort={sortBy} />
-                  <TableHead className="w-28 text-right">Ações</TableHead>
+                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} className="w-[20%]" />
+                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[22%]" />
+                  <SortableHead label="Assunto" column="assunto" sort={sort} dir={dir} onSort={sortBy} className="w-[26%]" />
+                  <SortableHead label="Última atualização" column="atualizadoEm" sort={sort} dir={dir} onSort={sortBy} className="w-[20%]" />
+                  <TableHead className="w-[12%] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {list.map((t) => (
+                {listaCarregando ? (
+                  <ListSkeletonRows columns={5} />
+                ) : list.map((t) => (
                   <TableRow key={t.id} className="hover:bg-muted/60">
-                    <TableCell className="font-medium text-foreground">{t.nome}</TableCell>
+                    <TableCell className="truncate font-medium text-foreground">{t.nome}</TableCell>
                     <TableCell>
                       <TemplateTipoBadge tipo={t.tipo} />
                     </TableCell>
-                    <TableCell className="max-w-xs truncate text-gray-600">
+                    <TableCell className="truncate text-gray-600">
                       {t.assunto}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
@@ -264,6 +256,7 @@ export default function TemplatesPage() {
               </TableBody>
             </Table>
         </ListPanel>
+        {!listaCarregando && (
         <ListPagination
           page={page}
           totalPages={totalPages}
@@ -272,6 +265,7 @@ export default function TemplatesPage() {
           pluralLabel="modelos"
           onPage={setPage}
         />
+        )}
         </>
       )}
 

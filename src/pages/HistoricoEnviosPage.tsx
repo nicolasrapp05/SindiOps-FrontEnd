@@ -9,7 +9,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -24,6 +23,8 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
+import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
@@ -116,7 +117,7 @@ export default function HistoricoEnviosPage() {
     setPage(1)
   }
 
-  const { data, isLoading, isError, refetch, isFetching } = useEmailLogs(filters)
+  const { data, isLoading, isPlaceholderData, isError, refetch } = useEmailLogs(filters)
 
   const logs = data?.data ?? []
   const totalCount = data?.totalCount ?? 0
@@ -148,21 +149,10 @@ export default function HistoricoEnviosPage() {
   const totalEntregues = logs.filter((l) => l.statusEntrega === "delivered").length
   const falhasCriticas = logs.filter((l) => l.statusEntrega === "failed").length
   const taxaSucesso = logs.length > 0 ? totalEntregues / logs.length : 0
+  const listaCarregando = isLoading || isPlaceholderData
+  const resumoCarregando = isLoading && !data
 
   const resetPage = () => setPage(1)
-
-  if (isLoading && !data) {
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-        <Skeleton className="h-12 w-full max-w-3xl" />
-        <Skeleton className="h-96 rounded-xl" />
-      </div>
-    )
-  }
 
   if (isError) {
     return (
@@ -189,7 +179,7 @@ export default function HistoricoEnviosPage() {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-center">
         <ListSortMenu
           columns={SORT_COLUMNS}
           sort={sort}
@@ -199,8 +189,9 @@ export default function HistoricoEnviosPage() {
             setDir(nextDir)
             setPage(1)
           }}
+          className="w-full min-w-0 md:hidden"
         />
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full min-w-0 md:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
             type="search"
@@ -224,7 +215,7 @@ export default function HistoricoEnviosPage() {
             resetPage()
           }}
           placeholder="Tipo de template…"
-          className="w-full sm:w-52"
+          className="w-full min-w-0 md:w-52"
         />
         <Combobox
           options={statusOptions}
@@ -234,7 +225,7 @@ export default function HistoricoEnviosPage() {
             resetPage()
           }}
           placeholder="Buscar status…"
-          className="w-full sm:w-44"
+          className="w-full min-w-0 md:w-44"
         />
         <Input
           type="date"
@@ -244,7 +235,7 @@ export default function HistoricoEnviosPage() {
             setDataInicio(e.target.value)
             resetPage()
           }}
-          className="w-full sm:w-40"
+          className="w-full min-w-0 md:w-40"
         />
         <Input
           type="date"
@@ -254,14 +245,11 @@ export default function HistoricoEnviosPage() {
             setDataFim(e.target.value)
             resetPage()
           }}
-          className="w-full sm:w-40"
+          className="w-full min-w-0 md:w-40"
         />
-        {isFetching && (
-          <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
-        )}
       </div>
 
-      {logs.length === 0 ? (
+      {!listaCarregando && logs.length === 0 ? (
         <EmptyState
           icon={Mail}
           title="Nenhum envio encontrado"
@@ -269,6 +257,9 @@ export default function HistoricoEnviosPage() {
         />
       ) : (
         <div className="space-y-4">
+          {listaCarregando ? (
+            <ListSkeletonCards />
+          ) : (
           <div className="space-y-3 md:hidden">
             {logs.map((log) => (
               <ListRecord
@@ -326,26 +317,29 @@ export default function HistoricoEnviosPage() {
               </ListRecord>
             ))}
           </div>
+          )}
           <ListPanel className="hidden md:block">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Destinatário</TableHead>
-                  <SortableHead label="Template" column="template" sort={sort} dir={dir} onSort={sortBy} />
-                  <TableHead>Assunto</TableHead>
-                  <TableHead>Ocorrência</TableHead>
-                  <SortableHead label="Enviado em" column="enviadoEm" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} />
-                  <TableHead className="w-24 text-right">Ações</TableHead>
+                  <TableHead className="w-[16%]">Destinatário</TableHead>
+                  <SortableHead label="Template" column="template" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
+                  <TableHead className="w-[22%]">Assunto</TableHead>
+                  <TableHead className="w-[14%]">Ocorrência</TableHead>
+                  <SortableHead label="Enviado em" column="enviadoEm" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
+                  <TableHead className="w-[10%] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {logs.map((log) => (
+                {listaCarregando ? (
+                  <ListSkeletonRows columns={7} />
+                ) : logs.map((log) => (
                   <Fragment key={log.id}>
                     <TableRow className="hover:bg-muted/60">
                       <TableCell>
-                        <div className="font-medium text-foreground">{log.morador.nome}</div>
-                        <div className="text-xs text-gray-500">{log.emailDestinatario}</div>
+                        <div className="truncate font-medium text-foreground">{log.morador.nome}</div>
+                        <div className="truncate text-xs text-gray-500">{log.emailDestinatario}</div>
                       </TableCell>
                       <TableCell>
                         {log.template ? (
@@ -354,14 +348,14 @@ export default function HistoricoEnviosPage() {
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate text-gray-700">
+                      <TableCell className="truncate text-gray-700">
                         {log.assunto}
                       </TableCell>
                       <TableCell>
                         {log.ocorrencia ? (
                           <Link
                             to={`/ocorrencias/${log.ocorrencia.id}`}
-                            className="text-sm font-medium text-emerald-700 underline-offset-2 hover:underline"
+                            className="block truncate text-sm font-medium text-emerald-700 underline-offset-2 hover:underline"
                           >
                             {log.ocorrencia.tipoOcorrencia}
                           </Link>
@@ -412,7 +406,7 @@ export default function HistoricoEnviosPage() {
               </TableBody>
             </Table>
           </ListPanel>
-          {totalPages > 1 && (
+          {!listaCarregando && totalPages > 1 && (
             <ListPagination
               page={page}
               totalPages={totalPages}
@@ -425,7 +419,13 @@ export default function HistoricoEnviosPage() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        {resumoCarregando ? (
+          Array.from({ length: 3 }, (_, i) => (
+            <KpiCardSkeleton key={i} variant="stat" />
+          ))
+        ) : (
+          <>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Total entregues</CardTitle>
@@ -450,6 +450,8 @@ export default function HistoricoEnviosPage() {
             <p className="text-3xl font-bold text-red-700">{falhasCriticas}</p>
           </CardContent>
         </Card>
+          </>
+        )}
       </div>
     </div>
   )

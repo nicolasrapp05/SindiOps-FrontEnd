@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import { Plus, RefreshCw, Search, ShoppingCart } from "lucide-react"
+import { Eye, Plus, RefreshCw, Search, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
 import { useDebounce } from "@/hooks/useDebounce"
 import { formatCargoLabel } from "@/types"
 import {
@@ -19,6 +18,7 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn } from "@/lib/list-sort"
@@ -127,7 +127,7 @@ export default function ComprasPage() {
     !!filters.situacaoCotacao ||
     !!filters.search.trim()
 
-  const { data, isLoading, isError, refetch } = useSolicitacoesCompra(condominioId, apiFilters)
+  const { data, isLoading, isPlaceholderData, isError, refetch } = useSolicitacoesCompra(condominioId, apiFilters)
   const createMutation = useCreateSolicitacaoCompra()
 
   const list = data?.data ?? []
@@ -140,19 +140,7 @@ export default function ComprasPage() {
   }
 
   const condoConfigured = !!condominioId
-
-  if (condoConfigured && isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-10 w-44" />
-        </div>
-        <Skeleton className="h-12 w-full max-w-2xl" />
-        <Skeleton className="h-96 rounded-xl" />
-      </div>
-    )
-  }
+  const listaCarregando = condoConfigured && (isLoading || isPlaceholderData)
 
   if (condoConfigured && isError) {
     return (
@@ -206,12 +194,6 @@ export default function ComprasPage() {
       )}
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <ListSortMenu
-          columns={COMPRA_SORT_COLUMNS}
-          sort={filters.sort}
-          dir={filters.dir}
-          onChange={(sort, dir) => updateList({ sort, dir, page: 1 })}
-        />
         <div className="flex flex-wrap gap-2">
           {STATUS_TABS.map((t) => (
             <Button
@@ -232,8 +214,15 @@ export default function ComprasPage() {
             </Button>
           ))}
         </div>
-        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
-          <div className="relative w-full sm:w-64">
+        <div className="grid grid-cols-2 gap-3 xl:flex xl:w-auto xl:items-center xl:justify-end xl:gap-2">
+          <ListSortMenu
+            columns={COMPRA_SORT_COLUMNS}
+            sort={filters.sort}
+            dir={filters.dir}
+            onChange={(sort, dir) => updateList({ sort, dir, page: 1 })}
+            className="w-full min-w-0 md:hidden"
+          />
+          <div className="relative w-full min-w-0 xl:w-64">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input
               type="search"
@@ -254,7 +243,7 @@ export default function ComprasPage() {
             value={filters.categoria}
             onValueChange={(v) => updateList({ categoria: v as CompraCategoria | "todas", page: 1 })}
             placeholder="Buscar…"
-            className="w-full sm:w-[220px]"
+            className="w-full min-w-0 xl:w-[220px]"
           />
           <Combobox
             options={[
@@ -274,12 +263,12 @@ export default function ComprasPage() {
               })
             }}
             placeholder="Cotações"
-            className="w-full sm:w-[220px]"
+            className="w-full min-w-0 xl:w-[220px]"
           />
         </div>
       </div>
 
-      {!condoConfigured || list.length === 0 ? (
+      {!condoConfigured || (!listaCarregando && list.length === 0) ? (
         <EmptyState
           icon={ShoppingCart}
           title={
@@ -314,6 +303,9 @@ export default function ComprasPage() {
         />
       ) : (
         <>
+          {listaCarregando ? (
+            <ListSkeletonCards />
+          ) : (
           <div className="space-y-3 md:hidden">
             {list.map((row) => {
               const readiness = getCotacaoReadinessLabel(
@@ -342,26 +334,39 @@ export default function ComprasPage() {
                       value: new Date(row.criadoEm).toLocaleDateString("pt-BR"),
                     },
                   ]}
+                  actions={
+                    <Button
+                      variant="outline"
+                      className="min-h-11"
+                      onClick={() => navigate(detalheTo(row.id))}
+                    >
+                      Abrir
+                    </Button>
+                  }
                 />
               )
             })}
           </div>
+          )}
           <ListPanel className="hidden md:block">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <SortableHead label="Status" column="status" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Item</TableHead>
-                  <SortableHead label="Itens" column="itens" sort={filters.sort} dir={filters.dir} onSort={sortBy} align="right" className="text-right" />
-                  <SortableHead label="Solicitante" column="solicitante" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
-                  <SortableHead label="Tipo aprovação" column="tipoAprovacao" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
-                  <SortableHead label="Cotações" column="cotacoes" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
-                  <SortableHead label="Data" column="data" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
+                  <SortableHead label="Status" column="status" sort={filters.sort} dir={filters.dir} onSort={sortBy} className="w-[13%]" />
+                  <TableHead className="w-[12%]">Categoria</TableHead>
+                  <TableHead className="w-[14%]">Item</TableHead>
+                  <SortableHead label="Itens" column="itens" sort={filters.sort} dir={filters.dir} onSort={sortBy} align="right" className="w-[8%] text-right" />
+                  <SortableHead label="Solicitante" column="solicitante" sort={filters.sort} dir={filters.dir} onSort={sortBy} className="w-[13%]" />
+                  <SortableHead label="Tipo aprovação" column="tipoAprovacao" sort={filters.sort} dir={filters.dir} onSort={sortBy} className="w-[14%]" />
+                  <SortableHead label="Cotações" column="cotacoes" sort={filters.sort} dir={filters.dir} onSort={sortBy} className="w-[8%]" />
+                  <SortableHead label="Data" column="data" sort={filters.sort} dir={filters.dir} onSort={sortBy} className="w-[10%]" />
+                  <TableHead className="w-[8%]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {list.map((row) => {
+                {listaCarregando ? (
+                  <ListSkeletonRows columns={9} />
+                ) : list.map((row) => {
                   const readiness = getCotacaoReadinessLabel(
                     row.status,
                     row.totalCotacoes,
@@ -381,7 +386,7 @@ export default function ComprasPage() {
                       <TableCell title={itensResumo.categoriasTitulo}>
                         {itensResumo.categoria}
                       </TableCell>
-                      <TableCell className="max-w-[240px] font-medium" title={itensResumo.titulo}>
+                      <TableCell className="overflow-hidden font-medium" title={itensResumo.titulo}>
                         <div className="flex min-w-0 items-center gap-2">
                           <Link
                             to={detalheTo(row.id)}
@@ -402,7 +407,7 @@ export default function ComprasPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-0.5">
-                          <span>{row.solicitadoPor.nome}</span>
+                          <span className="truncate">{row.solicitadoPor.nome}</span>
                           {row.solicitadoPor.cargo ? (
                             <span className="text-xs text-muted-foreground">
                               {formatCargoLabel(row.solicitadoPor.cargo)}
@@ -430,12 +435,26 @@ export default function ComprasPage() {
                       <TableCell className="whitespace-nowrap text-muted-foreground">
                         {new Date(row.criadoEm).toLocaleDateString("pt-BR")}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Abrir solicitação"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            navigate(detalheTo(row.id))
+                          }}
+                        >
+                          <Eye className="h-4 w-4" aria-hidden="true" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   )
                 })}
               </TableBody>
             </Table>
           </ListPanel>
+          {!listaCarregando && (
           <ListPagination
             page={filters.page}
             totalPages={totalPages}
@@ -444,6 +463,7 @@ export default function ComprasPage() {
             pluralLabel="resultados"
             onPage={(page) => updateList({ page })}
           />
+          )}
         </>
       )}
       <SolicitacaoCompraForm

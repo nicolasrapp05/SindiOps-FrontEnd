@@ -5,7 +5,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
@@ -14,6 +13,8 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
+import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
@@ -79,8 +80,12 @@ export default function OcorrenciasPage() {
     setPage(1)
   }
 
-  const { data: ocorrenciasPage, isLoading, isError, refetch } = useOcorrencias(condominioId, filters)
-  const { data: summaryData } = useOcorrencias(condominioId, { pageSize: 500 })
+  const { data: ocorrenciasPage, isLoading, isPlaceholderData, isError, refetch } = useOcorrencias(condominioId, filters)
+  const {
+    data: summaryData,
+    isLoading: resumoInicial,
+    isPlaceholderData: resumoTrocando,
+  } = useOcorrencias(condominioId, { pageSize: 500 })
   const createMutation = useCreateOcorrencia()
 
   const handleCreate = (data: CreateOcorrenciaRequest) => {
@@ -106,27 +111,6 @@ export default function OcorrenciasPage() {
     }
   }, [summaryData?.data])
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-44" />
-        </div>
-        <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 rounded-xl" />
-          ))}
-        </div>
-        <div className="space-y-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 w-full rounded-lg" />
-          ))}
-        </div>
-      </div>
-    )
-  }
-
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -139,7 +123,8 @@ export default function OcorrenciasPage() {
     )
   }
 
-  const isEmpty = ocList.length === 0
+  const listaCarregando = condoConfigured && (isLoading || isPlaceholderData)
+  const resumoCarregando = condoConfigured && (resumoInicial || resumoTrocando)
 
   return (
     <div className="space-y-6">
@@ -172,12 +157,17 @@ export default function OcorrenciasPage() {
       )}
 
       {/* Summary cards */}
+      {condoConfigured && (
       <div>
         <p className="mb-2 text-sm text-muted-foreground">
           Selecione um resumo para filtrar a lista.
         </p>
-        <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 lg:grid-cols-4">
-          {SUMMARY_CARDS.map((card) => {
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {resumoCarregando ? (
+            SUMMARY_CARDS.map((card) => (
+              <KpiCardSkeleton key={card.key} />
+            ))
+          ) : SUMMARY_CARDS.map((card) => {
             const Icon = card.icon
             const selected = statusFilter === card.key
             return (
@@ -190,7 +180,7 @@ export default function OcorrenciasPage() {
                   setPage(1)
                 }}
                 className={cn(
-                  "rounded-2xl bg-card p-4 text-left ring-1 ring-border shadow-[0_1px_2px_hsl(150_20%_10%/0.04)]",
+                  "rounded-2xl bg-card p-3 text-left ring-1 ring-border shadow-[0_1px_2px_hsl(150_20%_10%/0.04)] sm:p-5",
                   "transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)]",
                   "hover:-translate-y-0.5 hover:shadow-[0_10px_24px_hsl(150_20%_10%/0.06)]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -199,10 +189,10 @@ export default function OcorrenciasPage() {
                 )}
               >
                 <span className="flex items-center gap-3">
-                  <span className={cn("rounded-lg p-2", card.color)}>
+                  <span className={cn("shrink-0 rounded-lg p-2", card.color)}>
                     <Icon className="size-5" aria-hidden="true" />
                   </span>
-                  <span>
+                  <span className="min-w-0">
                     <span className="block text-xs font-medium text-muted-foreground">{card.label}</span>
                     <span className="block text-2xl font-semibold tabular-nums text-foreground">
                       {statusCounts[card.key]}
@@ -214,9 +204,10 @@ export default function OcorrenciasPage() {
           })}
         </div>
       </div>
+      )}
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-center">
         <ListSortMenu
           columns={SORT_COLUMNS}
           sort={sort}
@@ -226,8 +217,9 @@ export default function OcorrenciasPage() {
             setDir(nextDir)
             setPage(1)
           }}
+          className="w-full min-w-0 md:hidden"
         />
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full min-w-0 md:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
             type="search"
@@ -251,7 +243,7 @@ export default function OcorrenciasPage() {
           value={statusFilter || ""}
           onValueChange={(v) => { setStatusFilter(v as OcorrenciaStatus | ""); setPage(1) }}
           placeholder="Buscar…"
-          className="w-full sm:w-44"
+          className="w-full min-w-0 md:w-44"
         />
         <Combobox
           options={[
@@ -261,7 +253,7 @@ export default function OcorrenciasPage() {
           value={tipoFilter || ""}
           onValueChange={(v) => { setTipoFilter(v as OcorrenciaTipo | ""); setPage(1) }}
           placeholder="Buscar…"
-          className="w-full sm:w-44"
+          className="w-full min-w-0 md:w-44"
         />
         <Combobox
           options={[
@@ -271,12 +263,11 @@ export default function OcorrenciasPage() {
           value={origemFilter || ""}
           onValueChange={(v) => { setOrigemFilter(v as OcorrenciaOrigem | ""); setPage(1) }}
           placeholder="Buscar…"
-          className="w-full sm:w-44"
+          className="w-full min-w-0 md:w-44"
         />
       </div>
 
-      {/* Table */}
-      {isEmpty ? (
+      {!listaCarregando && ocList.length === 0 ? (
         <EmptyState
           icon={AlertTriangle}
           title="Nenhuma ocorrência encontrada"
@@ -289,56 +280,62 @@ export default function OcorrenciasPage() {
         />
       ) : (
         <div className="space-y-4">
-          <div className="space-y-3 md:hidden">
-            {ocList.map((o) => (
-              <ListRecord
-                key={o.id}
-                title={TIPO_LABEL[o.tipoOcorrencia]}
-                onClick={() => navigate(`/ocorrencias/${o.id}`)}
-                fields={[
-                  { label: "Status", value: <OcorrenciaStatusBadge status={o.status} /> },
-                  { label: "Origem", value: ORIGEM_LABEL[o.origem] },
-                  { label: "Local", value: TIPO_LOCAL_LABEL[o.tipoLocal] },
-                  { label: "Descrição", value: o.descricao.slice(0, 150) },
-                  { label: "Data", value: new Date(o.ocorreuEm).toLocaleDateString("pt-BR") },
-                ]}
-                actions={
-                  <Button
-                    variant="outline"
-                    className="min-h-11"
-                    onClick={() => navigate(`/ocorrencias/${o.id}`)}
-                  >
-                    Abrir
-                  </Button>
-                }
-              />
-            ))}
-          </div>
+          {listaCarregando ? (
+            <ListSkeletonCards />
+          ) : (
+            <div className="space-y-3 md:hidden">
+              {ocList.map((o) => (
+                <ListRecord
+                  key={o.id}
+                  title={TIPO_LABEL[o.tipoOcorrencia]}
+                  onClick={() => navigate(`/ocorrencias/${o.id}`)}
+                  fields={[
+                    { label: "Status", value: <OcorrenciaStatusBadge status={o.status} /> },
+                    { label: "Origem", value: ORIGEM_LABEL[o.origem] },
+                    { label: "Local", value: TIPO_LOCAL_LABEL[o.tipoLocal] },
+                    { label: "Descrição", value: o.descricao.slice(0, 150) },
+                    { label: "Data", value: new Date(o.ocorreuEm).toLocaleDateString("pt-BR") },
+                  ]}
+                  actions={
+                    <Button
+                      variant="outline"
+                      className="min-h-11"
+                      onClick={() => navigate(`/ocorrencias/${o.id}`)}
+                    >
+                      Abrir
+                    </Button>
+                  }
+                />
+              ))}
+            </div>
+          )}
           <ListPanel className="hidden md:block">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
-                <TableRow>
-                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-28" />
-                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Origem" column="origem" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Local" column="local" sort={sort} dir={dir} onSort={sortBy} />
-                  <TableHead className="max-w-[200px]">Descrição</TableHead>
-                  <SortableHead label="Data" column="data" sort={sort} dir={dir} onSort={sortBy} className="w-32" />
-                  <TableHead className="w-20">Ações</TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
+                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
+                  <SortableHead label="Origem" column="origem" sort={sort} dir={dir} onSort={sortBy} className="w-[15%]" />
+                  <SortableHead label="Local" column="local" sort={sort} dir={dir} onSort={sortBy} className="w-[15%]" />
+                  <TableHead className="w-[24%]">Descrição</TableHead>
+                  <SortableHead label="Data" column="data" sort={sort} dir={dir} onSort={sortBy} className="w-[13%]" />
+                  <TableHead className="w-[9%]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {ocList.map((o) => (
+                {listaCarregando ? (
+                  <ListSkeletonRows columns={7} />
+                ) : ocList.map((o) => (
                   <TableRow
                     key={o.id}
                     className="cursor-pointer transition-colors hover:bg-muted/60"
                     onClick={() => navigate(`/ocorrencias/${o.id}`)}
                   >
                     <TableCell><OcorrenciaStatusBadge status={o.status} /></TableCell>
-                    <TableCell className="font-medium">{TIPO_LABEL[o.tipoOcorrencia]}</TableCell>
-                    <TableCell>{ORIGEM_LABEL[o.origem]}</TableCell>
-                    <TableCell>{TIPO_LOCAL_LABEL[o.tipoLocal]}</TableCell>
-                    <TableCell className="max-w-[200px] truncate text-sm text-gray-600">{o.descricao.slice(0, 150)}</TableCell>
+                    <TableCell className="truncate font-medium">{TIPO_LABEL[o.tipoOcorrencia]}</TableCell>
+                    <TableCell className="truncate">{ORIGEM_LABEL[o.origem]}</TableCell>
+                    <TableCell className="truncate">{TIPO_LOCAL_LABEL[o.tipoLocal]}</TableCell>
+                    <TableCell className="truncate text-sm text-gray-600">{o.descricao.slice(0, 150)}</TableCell>
                     <TableCell className="text-sm text-gray-500">
                       {new Date(o.ocorreuEm).toLocaleDateString("pt-BR")}
                     </TableCell>
@@ -352,14 +349,16 @@ export default function OcorrenciasPage() {
               </TableBody>
             </Table>
           </ListPanel>
-          <ListPagination
-            page={page}
-            totalPages={totalPages}
-            totalCount={totalCount}
-            singular="ocorrência"
-            pluralLabel="ocorrências"
-            onPage={setPage}
-          />
+          {!listaCarregando && (
+            <ListPagination
+              page={page}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              singular="ocorrência"
+              pluralLabel="ocorrências"
+              onPage={setPage}
+            />
+          )}
         </div>
       )}
 

@@ -36,6 +36,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import ListPagination from "@/components/shared/ListPagination"
 import ListRecord from "@/components/shared/ListRecord"
+import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
+import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
@@ -118,32 +120,6 @@ function statusLabel(status: string): string {
     ok: "Em dia",
   }
   return map[status] ?? capitalizeFirst(status)
-}
-
-// ── Loading skeleton ──────────────────────────────────────────────────
-
-function DashboardSkeleton() {
-  return (
-    <div className="space-y-8">
-      <div>
-        <Skeleton className="h-8 w-72" />
-        <Skeleton className="mt-2 h-4 w-52" />
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-36 rounded-xl" />
-        ))}
-      </div>
-      <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
-        <Skeleton className="mb-6 h-6 w-48" />
-        <div className="space-y-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full" />
-          ))}
-        </div>
-      </div>
-    </div>
-  )
 }
 
 // ── Error state ───────────────────────────────────────────────────────
@@ -270,6 +246,10 @@ function FilterChips<T extends string>({
   )
 }
 
+function gradeAlertas(quantidade: number) {
+  return `grid grid-cols-2 gap-4 ${quantidade >= 4 ? "lg:grid-cols-3 xl:grid-cols-5" : "lg:grid-cols-3"}`
+}
+
 const AGENDA_PAGE_SIZE = 10
 const AGENDA_SORT_COLUMNS: SortColumn[] = [
   { key: "tipo", label: "Tipo" },
@@ -299,7 +279,7 @@ export default function DashboardPage() {
     setPage(1)
   }, [selectedCondominioId])
 
-  const { data, isLoading, isError, refetch } = useDashboard({
+  const { data, isLoading, isPlaceholderData, isError, refetch } = useDashboard({
     condominioId: selectedCondominioId ?? undefined,
     page,
     pageSize: AGENDA_PAGE_SIZE,
@@ -339,9 +319,14 @@ export default function DashboardPage() {
   const agendaPages = Math.max(1, Math.ceil(agendaCount / AGENDA_PAGE_SIZE))
 
   const tipoFilterOptions = useMemo(() => getTipoFilterOptions(cargo), [cargo])
+  const alertasDoCargo = useMemo(
+    () => ALERTA_DEFS.filter((def) => canSeeDashboardAlert(cargo, def.key)),
+    [cargo],
+  )
+  const resumoCarregando = isLoading && !data
+  const listaCarregando = isLoading || isPlaceholderData
 
-  if (isLoading) return <DashboardSkeleton />
-  if (isError || !data) return <DashboardError onRetry={() => refetch()} />
+  if (isError && !data) return <DashboardError onRetry={() => refetch()} />
 
   const handleExportar = () => {
     if (!selectedCondominioId) return
@@ -377,17 +362,26 @@ export default function DashboardPage() {
           Olá, {firstName}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {capitalizeFirst(formatFullDate())}. {resumoAtencao}
+          {capitalizeFirst(formatFullDate())}.{" "}
+          {resumoCarregando ? (
+            <Skeleton className="inline-block h-4 w-48 align-middle bg-card ring-1 ring-border" />
+          ) : (
+            resumoAtencao
+          )}
         </p>
       </div>
 
       {/* Alert cards */}
-      {visibleAlertas.length > 0 && (
-        <div
-          className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${
-            visibleAlertas.length >= 4 ? "lg:grid-cols-3 xl:grid-cols-5" : "lg:grid-cols-3"
-          }`}
-        >
+      {resumoCarregando ? (
+        alertasDoCargo.length > 0 ? (
+          <div className={gradeAlertas(alertasDoCargo.length)}>
+            {alertasDoCargo.map((alerta) => (
+              <KpiCardSkeleton key={alerta.key} variant="alerta" />
+            ))}
+          </div>
+        ) : null
+      ) : visibleAlertas.length > 0 ? (
+        <div className={gradeAlertas(visibleAlertas.length)}>
           {visibleAlertas.map((alerta) => (
             <AlertaCard
               key={alerta.key}
@@ -399,7 +393,7 @@ export default function DashboardPage() {
             />
           ))}
         </div>
-      )}
+      ) : null}
 
       {/* Agenda table */}
       <section className="rounded-2xl bg-card p-5 ring-1 ring-border shadow-[0_1px_2px_hsl(150_20%_10%/0.04)] sm:p-6">
@@ -411,7 +405,7 @@ export default function DashboardPage() {
                 Agenda de vencimentos
               </h2>
               <span className="text-sm tabular-nums text-muted-foreground">
-                {agendaCount}
+                {resumoCarregando ? <Skeleton className="inline-block h-4 w-6 align-middle" /> : agendaCount}
               </span>
             </div>
             {canExportRelatorios(cargo) && (
@@ -468,38 +462,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {agenda.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="rounded-full bg-muted p-3">
-              <Inbox className="size-6 text-muted-foreground" aria-hidden="true" />
-            </div>
-            <p className="mt-3 text-sm font-medium text-foreground">
-              {tipoFilter !== "all" || statusFilter !== "all"
-                ? "Nenhum prazo com esses filtros."
-                : "Nenhum vencimento programado"}
-            </p>
-            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              {tipoFilter !== "all" || statusFilter !== "all"
-                ? "Limpe os filtros para ver a agenda completa."
-                : "Quando houver prazos, eles aparecem aqui em ordem de vencimento."}
-            </p>
-            {(tipoFilter !== "all" || statusFilter !== "all") && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4 min-h-11"
-                onClick={() => {
-                  setTipoFilter("all")
-                  setStatusFilter("all")
-                  setPage(1)
-                }}
-              >
-                Limpar filtros
-              </Button>
-            )}
-          </div>
-        ) : (
+        {listaCarregando || agenda.length > 0 ? (
           <div className="mt-6 space-y-4">
+          {listaCarregando ? (
+            <ListSkeletonCards />
+          ) : (
           <div className="space-y-3 md:hidden">
             {agenda.map((item, idx) => (
               <ListRecord
@@ -536,19 +503,22 @@ export default function DashboardPage() {
               />
             ))}
           </div>
+          )}
           <div className="hidden md:block">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-32" />
-                  <TableHead>Descrição</TableHead>
-                  <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} />
-                  <SortableHead label="Vencimento" column="vencimento" sort={sort} dir={dir} onSort={sortBy} className="min-w-44" />
-                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-28" />
+                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
+                  <TableHead className="w-[36%]">Descrição</TableHead>
+                  <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} className="w-[20%]" />
+                  <SortableHead label="Vencimento" column="vencimento" sort={sort} dir={dir} onSort={sortBy} className="w-[18%]" />
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {agenda.map((item, idx) => (
+                {listaCarregando ? (
+                  <ListSkeletonRows columns={5} />
+                ) : agenda.map((item, idx) => (
                   <TableRow
                     key={`${item.referenciaId}-${idx}`}
                     className={cn(
@@ -564,10 +534,10 @@ export default function DashboardPage() {
                         {TIPO_LABELS[item.tipo]}
                       </span>
                     </TableCell>
-                    <TableCell className="max-w-xs truncate font-medium text-foreground">
+                    <TableCell className="truncate font-medium text-foreground">
                       {formatDescricao(item)}
                     </TableCell>
-                    <TableCell className="text-gray-500">
+                    <TableCell className="truncate text-gray-500">
                       {item.condominioNome}
                     </TableCell>
                     <TableCell className="tabular-nums text-muted-foreground">
@@ -589,6 +559,7 @@ export default function DashboardPage() {
               </TableBody>
             </Table>
           </div>
+          {!listaCarregando && (
           <ListPagination
             page={page}
             totalPages={agendaPages}
@@ -597,6 +568,37 @@ export default function DashboardPage() {
             pluralLabel="prazos"
             onPage={setPage}
           />
+          )}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="rounded-full bg-muted p-3">
+              <Inbox className="size-6 text-muted-foreground" aria-hidden="true" />
+            </div>
+            <p className="mt-3 text-sm font-medium text-foreground">
+              {tipoFilter !== "all" || statusFilter !== "all"
+                ? "Nenhum prazo com esses filtros."
+                : "Nenhum vencimento programado"}
+            </p>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              {tipoFilter !== "all" || statusFilter !== "all"
+                ? "Limpe os filtros para ver a agenda completa."
+                : "Quando houver prazos, eles aparecem aqui em ordem de vencimento."}
+            </p>
+            {(tipoFilter !== "all" || statusFilter !== "all") && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4 min-h-11"
+                onClick={() => {
+                  setTipoFilter("all")
+                  setStatusFilter("all")
+                  setPage(1)
+                }}
+              >
+                Limpar filtros
+              </Button>
+            )}
           </div>
         )}
       </section>

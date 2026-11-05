@@ -49,7 +49,7 @@ export default function AlertaCard({ titulo, valor, icone: Icon, cor, href }: Al
     <Link
       to={href}
       className={cn(
-        "group flex min-h-40 flex-col justify-between rounded-2xl border-t-4 bg-card p-5 ring-1 ring-border",
+        "group flex flex-col justify-between rounded-2xl border-t-4 bg-card p-3.5 ring-1 ring-border sm:min-h-40 sm:p-5",
         "shadow-[0_1px_2px_hsl(150_20%_10%/0.04)]",
         "transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)]",
         "hover:-translate-y-0.5 hover:shadow-[0_12px_28px_hsl(150_20%_10%/0.08)]",
@@ -68,8 +68,8 @@ export default function AlertaCard({ titulo, valor, icone: Icon, cor, href }: Al
         <Icon className="size-5" aria-hidden="true" />
       </span>
 
-      <span className="mt-4 block">
-        <span className="block text-sm font-medium text-muted-foreground">{titulo}</span>
+      <span className="mt-3 block sm:mt-4">
+        <span className="block text-sm font-medium leading-snug text-muted-foreground">{titulo}</span>
         <span
           className={cn(
             "mt-1 block text-3xl font-semibold tabular-nums tracking-tight",
