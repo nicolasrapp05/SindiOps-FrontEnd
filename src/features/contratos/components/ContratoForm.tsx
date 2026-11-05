@@ -259,7 +259,7 @@ export default function ContratoForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="dataInicio">Data de início</Label>
               <Input id="dataInicio" type="date" {...register("dataInicio")} />

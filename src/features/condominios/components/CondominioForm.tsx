@@ -168,7 +168,7 @@ export default function CondominioForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="enderecoBairro">Bairro</Label>
               <Input id="enderecoBairro" placeholder="Jardim América" {...register("enderecoBairro")} />
@@ -187,7 +187,7 @@ export default function CondominioForm({
           </div>
 
           {/* Dates */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="dataEleicao">Data da Eleição</Label>
               <Input id="dataEleicao" type="date" {...register("dataEleicao")} />

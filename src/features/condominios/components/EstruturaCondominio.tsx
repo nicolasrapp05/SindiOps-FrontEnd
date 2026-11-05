@@ -362,9 +362,9 @@ function BlocoRow({ bloco, condominioId, autoExpand }: BlocoRowProps) {
   return (
     <div className="overflow-hidden rounded-lg border border-border">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3">
         <button
-          className="flex flex-1 items-center gap-2 text-left"
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
           onClick={() => setExpanded((v) => !v)}
         >
           {expanded ? (
@@ -394,15 +394,15 @@ function BlocoRow({ bloco, condominioId, autoExpand }: BlocoRowProps) {
             />
           ) : (
             <>
-              <span className="text-sm font-medium text-gray-800">{bloco.nome}</span>
-              <span className="text-xs text-muted-foreground">
+              <span className="min-w-0 text-sm font-medium text-gray-800">{bloco.nome}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">
                 {bloco.unidades.length} unidade{bloco.unidades.length !== 1 ? "s" : ""}
               </span>
             </>
           )}
         </button>
 
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {!editandoNome && (
             <button
               type="button"
@@ -418,28 +418,7 @@ function BlocoRow({ bloco, condominioId, autoExpand }: BlocoRowProps) {
             </button>
           )}
 
-          {confirmDeleteBloco ? (
-            <div className="flex items-center gap-1.5 rounded-md bg-red-50 px-2 py-1 text-xs">
-              <span className="text-red-700">Remover bloco e todas as unidades?</span>
-              <button
-                className="font-semibold text-red-600 hover:text-red-800"
-                onClick={handleDeleteBloco}
-                disabled={deleteBloco.isPending}
-              >
-                {deleteBloco.isPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  "Confirmar"
-                )}
-              </button>
-              <button
-                className="text-gray-500 hover:text-gray-700"
-                onClick={() => setConfirmDeleteBloco(false)}
-              >
-                Cancelar
-              </button>
-            </div>
-          ) : (
+          {!confirmDeleteBloco && (
             <button
               type="button"
               className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-red-50 hover:text-red-600"
@@ -453,6 +432,29 @@ function BlocoRow({ bloco, condominioId, autoExpand }: BlocoRowProps) {
             </button>
           )}
         </div>
+
+        {confirmDeleteBloco && (
+          <div className="flex basis-full flex-wrap items-center gap-1.5 rounded-md bg-red-50 px-2 py-1 text-xs">
+            <span className="text-red-700">Remover bloco e todas as unidades?</span>
+            <button
+              className="font-semibold text-red-600 hover:text-red-800"
+              onClick={handleDeleteBloco}
+              disabled={deleteBloco.isPending}
+            >
+              {deleteBloco.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                "Confirmar"
+              )}
+            </button>
+            <button
+              className="text-gray-500 hover:text-gray-700"
+              onClick={() => setConfirmDeleteBloco(false)}
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Unidades */}
@@ -538,17 +540,17 @@ export default function EstruturaCondominio({
   }
 
   return (
-    <div id="estrutura-condominio" className="scroll-mt-6 rounded-2xl bg-card p-6 ring-1 ring-border">
+    <div id="estrutura-condominio" className="scroll-mt-6 rounded-2xl bg-card p-4 ring-1 ring-border sm:p-6">
       {/* Header */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Building2 className="h-5 w-5 text-gray-500" />
-          <h2 className="text-lg font-semibold text-foreground">
+        <div className="flex min-w-0 items-center gap-2">
+          <Building2 className="h-5 w-5 shrink-0 text-gray-500" />
+          <h2 className="min-w-0 text-lg font-semibold text-foreground">
             Estrutura - {condominioNome}
           </h2>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <Button
             size="sm"
             variant="outline"
@@ -560,9 +562,9 @@ export default function EstruturaCondominio({
           </Button>
 
           {addingBloco ? (
-            <div className="flex items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               <Input
-                className="h-9 w-40"
+                className="h-9 w-full min-w-0 sm:w-40"
                 placeholder="Nome do bloco"
                 value={newBlocoName}
                 onChange={(e) => setNewBlocoName(e.target.value)}

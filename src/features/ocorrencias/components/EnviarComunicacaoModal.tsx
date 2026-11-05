@@ -209,20 +209,20 @@ export default function EnviarComunicacaoModal({
                   <button
                     key={t.id}
                     className={cn(
-                      "flex items-start gap-3 rounded-lg border p-4 text-left transition",
+                      "flex min-w-0 items-start gap-3 rounded-lg border p-4 text-left transition",
                       selectedTemplateId === t.id
                         ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500"
                         : "hover:border-gray-300",
                     )}
                     onClick={() => handleSelectTemplate(t.id)}
                   >
-                    <div className="mt-0.5 rounded-lg bg-gray-100 p-2">
+                    <div className="mt-0.5 shrink-0 rounded-lg bg-gray-100 p-2">
                       {t.tipo === "multa" ? <AlertCircle className="h-4 w-4 text-red-500" /> :
                        t.tipo === "advertencia" ? <AlertTriangle className="h-4 w-4 text-amber-500" /> :
                        <FileText className="h-4 w-4 text-blue-500" />}
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">{t.nome}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-sm font-medium text-foreground">{t.nome}</p>
                       <Badge variant="secondary" className="mt-1 text-xs">{t.tipo}</Badge>
                     </div>
                     {selectedTemplateId === t.id && (

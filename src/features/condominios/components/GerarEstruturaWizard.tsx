@@ -292,7 +292,7 @@ export default function GerarEstruturaWizard({
                 Blocos
               </h3>
 
-              <div className="flex gap-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
                 <label className="flex cursor-pointer items-center gap-2 text-sm">
                   <input
                     type="radio"
@@ -377,7 +377,7 @@ export default function GerarEstruturaWizard({
                 Andares e Unidades
               </h3>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="space-y-1.5">
                   <Label>Andar inicial</Label>
                   <Input

@@ -238,7 +238,7 @@ export default function FornecedorForm({
 
         <form onSubmit={handleSubmit(handleFormSubmit, toastFormValidationError)} className="space-y-4 py-2">
           {/* Nome + CNPJ */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="nome">Nome<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Input id="nome" placeholder="Razão Social" {...register("nome")} />
@@ -269,7 +269,7 @@ export default function FornecedorForm({
               <Input placeholder="200" {...register("enderecoNumero")} />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label>Bairro</Label>
               <Input placeholder="Centro" {...register("enderecoBairro")} />
@@ -296,7 +296,7 @@ export default function FornecedorForm({
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label>Instagram</Label>
               <Input placeholder="@empresa" {...register("instagram")} />
@@ -333,7 +333,7 @@ export default function FornecedorForm({
             <div className="space-y-2">
               {fields.map((field, idx) => (
                 <div key={field.id} className="space-y-1">
-                  <div className="flex items-start gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
                     <Input
                       className="flex-1"
                       aria-label={`Tipo do serviço ${idx + 1}`}
@@ -350,7 +350,7 @@ export default function FornecedorForm({
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="shrink-0 text-red-500 hover:text-red-700"
+                      className="shrink-0 self-end text-red-500 hover:text-red-700 sm:self-auto"
                       onClick={() => remove(idx)}
                       aria-label={`Remover serviço ${idx + 1}`}>
                       <X className="h-4 w-4" aria-hidden="true" />

@@ -149,7 +149,7 @@ export default function OcorrenciaForm({
               {errors.tipoLocal && <p className="text-xs text-destructive">{errors.tipoLocal.message}</p>}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Tipo de Ocorrência<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
               <Controller control={control} name="tipoOcorrencia" render={({ field }) => (
