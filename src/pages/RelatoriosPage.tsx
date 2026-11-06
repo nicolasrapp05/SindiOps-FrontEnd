@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { FileSpreadsheet, FileText, Loader2 } from "lucide-react"
+import { FileSpreadsheet, FileText, FileType, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import Combobox from "@/components/shared/Combobox"
 import { useGerarRelatorio } from "@/features/relatorios/hooks/useRelatorios"
 import {
@@ -111,7 +110,7 @@ export default function RelatoriosPage() {
   const loadingWord  = gerar.isPending && gerar.variables?.formato === "word"
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Relatórios</h1>
         <p className="mt-1 text-sm text-gray-500">
@@ -119,44 +118,39 @@ export default function RelatoriosPage() {
         </p>
       </div>
 
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle>Configurar relatório</CardTitle>
-          <CardDescription>
-            Escolha o tipo, o condomínio e refine por período ou status quando fizer sentido.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Tipo */}
-          <div className="space-y-2">
-            <Label>Tipo</Label>
-            <Select value={tipo} onValueChange={(v) => handleTipoChange(v as RelatorioTipo)}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TIPOS.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {RELATORIO_TIPO_LABEL[t]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <section className="rounded-2xl bg-card p-5 ring-1 ring-border shadow-[0_1px_2px_hsl(150_20%_10%/0.04)] sm:p-6">
+        <h2 className="text-base font-semibold text-foreground">Configurar relatório</h2>
+
+        <div className="mt-5 space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Tipo</Label>
+              <Select value={tipo} onValueChange={(v) => handleTipoChange(v as RelatorioTipo)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIPOS.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {RELATORIO_TIPO_LABEL[t]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Condomínio</Label>
+              <Combobox
+                options={condominioOptions}
+                value={condominioId}
+                onValueChange={setCondominioId}
+                placeholder="Selecionar condomínio…"
+                className="w-full"
+              />
+            </div>
           </div>
 
-          {/* Condomínio */}
-          <div className="space-y-2">
-            <Label>Condomínio</Label>
-            <Combobox
-              options={condominioOptions}
-              value={condominioId}
-              onValueChange={setCondominioId}
-              placeholder="Selecionar condomínio…"
-              className="w-full"
-            />
-          </div>
-
-          {/* Período */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="rel-inicio">Data início</Label>
@@ -178,25 +172,25 @@ export default function RelatoriosPage() {
             </div>
           </div>
 
-          {/* Status - só exibe quando o tipo tem status definidos */}
           {hasStatusFilter && (
-            <div className="space-y-2">
-              <Label>Status (opcional)</Label>
-              <Combobox
-                options={[
-                  { value: "", label: "Todos os status" },
-                  ...statusOptions,
-                ]}
-                value={statusFiltro}
-                onValueChange={setStatusFiltro}
-                placeholder="Todos os status"
-                className="w-full"
-              />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Status (opcional)</Label>
+                <Combobox
+                  options={[
+                    { value: "", label: "Todos os status" },
+                    ...statusOptions,
+                  ]}
+                  value={statusFiltro}
+                  onValueChange={setStatusFiltro}
+                  placeholder="Todos os status"
+                  className="w-full"
+                />
+              </div>
             </div>
           )}
 
-          {/* Botões de exportação */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <div className="flex flex-wrap gap-2 pt-2">
             <Button
               type="button"
               variant="outline"
@@ -205,9 +199,9 @@ export default function RelatoriosPage() {
               onClick={() => handleExport("pdf")}
             >
               {loadingPdf ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-1.5 size-4 animate-spin" aria-hidden="true" />
               ) : (
-                <FileText className="mr-2 h-4 w-4" />
+                <FileText className="mr-1.5 size-4" aria-hidden="true" />
               )}
               Exportar PDF
             </Button>
@@ -219,9 +213,9 @@ export default function RelatoriosPage() {
               onClick={() => handleExport("excel")}
             >
               {loadingExcel ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-1.5 size-4 animate-spin" aria-hidden="true" />
               ) : (
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                <FileSpreadsheet className="mr-1.5 size-4" aria-hidden="true" />
               )}
               Exportar Excel
             </Button>
@@ -233,15 +227,15 @@ export default function RelatoriosPage() {
               onClick={() => handleExport("word")}
             >
               {loadingWord ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-1.5 size-4 animate-spin" aria-hidden="true" />
               ) : (
-                <FileText className="mr-2 h-4 w-4" />
+                <FileType className="mr-1.5 size-4" aria-hidden="true" />
               )}
               Exportar Word
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </div>
   )
 }
