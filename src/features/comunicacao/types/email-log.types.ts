@@ -1,3 +1,5 @@
+import type { PaginatedResponse } from "@/types"
+
 export type StatusEntrega = "sent" | "delivered" | "failed"
 
 export interface EmailLog {
@@ -27,4 +29,14 @@ export interface EmailLogFilters {
   pageSize?: number
   sort?: string
   dir?: "asc" | "desc"
+}
+
+export interface EmailLogContagem {
+  totalEntregues: number
+  falhasCriticas: number
+  total: number
+}
+
+export interface EmailLogLista extends PaginatedResponse<EmailLog> {
+  resumo: EmailLogContagem
 }

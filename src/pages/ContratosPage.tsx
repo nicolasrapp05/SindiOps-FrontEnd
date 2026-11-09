@@ -29,6 +29,7 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import ListRecordButton from "@/components/shared/ListRecordButton"
 import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
@@ -65,12 +66,12 @@ const SUMMARY_CARDS = [
 ] as const
 
 const SORT_COLUMNS: SortColumn[] = [
+  { key: "status", label: "Status" },
   { key: "tipo", label: "Tipo de serviço" },
   { key: "fornecedor", label: "Fornecedor" },
   { key: "inicio", label: "Início" },
   { key: "termino", label: "Término" },
   { key: "valor", label: "Valor mensal" },
-  { key: "status", label: "Status" },
 ]
 
 function formatDate(iso?: string): string {
@@ -312,43 +313,47 @@ export default function ContratosPage() {
                   className={contratoRowHighlightClass(c.status)}
                   title={TIPO_SERVICO_LABEL[c.tipoServico]}
                   fields={[
+                    { label: "Status", value: <ContratoStatusBadge status={c.status} /> },
                     { label: "Fornecedor", value: c.fornecedor.nome },
                     { label: "Contato", value: contato },
                     { label: "Início", value: formatDate(c.dataInicio) },
                     { label: "Término", value: formatDate(c.dataFim) },
                     { label: "Valor mensal", value: c.valorMensal != null ? formatBRL(c.valorMensal) : "-" },
-                    { label: "Status", value: <ContratoStatusBadge status={c.status} /> },
                   ]}
                   actions={
                     <>
                       {podeCancelarContrato(c.status) && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="min-h-11 text-gray-600"
+                        <ListRecordButton
+                          icon={Ban}
+                          tone="danger"
                           disabled={actionBusy}
                           onClick={() => setPendingCancel(c)}
                         >
-                          <Ban className="mr-1.5 h-3.5 w-3.5" />
                           Cancelar
-                        </Button>
+                        </ListRecordButton>
                       )}
                       {podeReativarContrato(c.status) && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="min-h-11 text-emerald-700"
-                          disabled={actionBusy}
-                          onClick={() => reativarMutation.mutate(c.id)}
-                        >
-                          <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                          Reativar
-                        </Button>
+                        <ListRecordButton icon={Pencil} onClick={() => openEdit(c)}>
+                          Editar
+                        </ListRecordButton>
                       )}
-                      <Button type="button" variant="ghost" className="min-h-11" onClick={() => openEdit(c)}>
-                        Editar
-                      </Button>
                     </>
+                  }
+                  primaryAction={
+                    podeReativarContrato(c.status) ? (
+                      <ListRecordButton
+                        icon={RotateCcw}
+                        tone="success"
+                        disabled={actionBusy}
+                        onClick={() => reativarMutation.mutate(c.id)}
+                      >
+                        Reativar
+                      </ListRecordButton>
+                    ) : (
+                      <ListRecordButton icon={Pencil} onClick={() => openEdit(c)}>
+                        Editar
+                      </ListRecordButton>
+                    )
                   }
                 />
               )
@@ -359,13 +364,13 @@ export default function ContratosPage() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
                   <SortableHead label="Tipo de serviço" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
                   <SortableHead label="Fornecedor" column="fornecedor" sort={sort} dir={dir} onSort={sortBy} className="w-[13%]" />
                   <TableHead className="w-[12%]">Contato</TableHead>
                   <SortableHead label="Início" column="inicio" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
                   <SortableHead label="Término" column="termino" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
                   <SortableHead label="Valor mensal" column="valor" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
-                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
                   <TableHead className="w-[21%] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -384,6 +389,9 @@ export default function ContratosPage() {
                       key={c.id}
                       className={rowHighlight}
                     >
+                      <TableCell>
+                        <ContratoStatusBadge status={c.status} />
+                      </TableCell>
                       <TableCell className="truncate font-medium text-foreground">
                         {TIPO_SERVICO_LABEL[c.tipoServico]}
                       </TableCell>
@@ -394,16 +402,13 @@ export default function ContratosPage() {
                       <TableCell className="text-gray-700">
                         {c.valorMensal != null ? formatBRL(c.valorMensal) : "-"}
                       </TableCell>
-                      <TableCell>
-                        <ContratoStatusBadge status={c.status} />
-                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex flex-wrap items-center justify-end gap-2">
                           {podeCancelarContrato(c.status) && (
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 text-gray-600"
+                              className="h-8 border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:text-destructive-foreground"
                               disabled={actionBusy}
                               onClick={() => setPendingCancel(c)}
                             >

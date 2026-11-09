@@ -8,6 +8,7 @@ import {
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import ListRecordButton from "@/components/shared/ListRecordButton"
 import type { Condominio } from "../types/condominio.types"
 
 type MandatoStatus = "vencido" | "expirando" | "vigente"
@@ -124,8 +125,25 @@ export default function CondominioCard({
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="mt-4 flex flex-wrap gap-1 border-t pt-3">
+      <div className="-mx-5 -mb-5 mt-4 flex flex-wrap items-center gap-2 border-t border-border px-2.5 py-3 md:hidden">
+        <div className="flex min-w-0 flex-wrap gap-2">
+          <ListRecordButton icon={Pencil} onClick={() => onEdit(condominio)}>
+            Editar
+          </ListRecordButton>
+          <ListRecordButton icon={Trash2} tone="danger" onClick={() => onDelete(condominio)}>
+            Excluir
+          </ListRecordButton>
+        </div>
+        {onOpenBlocosUnidades ? (
+          <div className="ml-auto shrink-0">
+            <ListRecordButton icon={DoorOpen} onClick={() => onOpenBlocosUnidades(condominio)}>
+              Blocos e unidades
+            </ListRecordButton>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="mt-4 hidden flex-wrap gap-1 border-t pt-3 md:flex">
         {onOpenBlocosUnidades && (
           <Button
             variant="outline"

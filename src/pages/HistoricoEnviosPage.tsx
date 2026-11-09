@@ -1,9 +1,14 @@
 import { Fragment, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import {
+  AlertCircle,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Eye,
+  EyeOff,
   Mail,
+  Percent,
   RefreshCw,
   Search,
 } from "lucide-react"
@@ -17,12 +22,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Combobox from "@/components/shared/Combobox"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import ListRecordButton from "@/components/shared/ListRecordButton"
 import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
@@ -71,9 +76,9 @@ function ExpandedLogRow({ logId, log }: { logId: string; log: EmailLog }) {
 
 const PAGE_SIZE = 20
 const SORT_COLUMNS: SortColumn[] = [
+  { key: "status", label: "Status" },
   { key: "template", label: "Template" },
   { key: "enviadoEm", label: "Enviado em" },
-  { key: "status", label: "Status" },
 ]
 
 const STATUS_OPTIONS: { value: StatusEntrega; label: string }[] = [
@@ -81,6 +86,12 @@ const STATUS_OPTIONS: { value: StatusEntrega; label: string }[] = [
   { value: "delivered", label: "Entregue" },
   { value: "failed", label: "Falhou" },
 ]
+
+const SUMMARY_CARDS = [
+  { key: "totalEntregues", label: "Total entregues", icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50" },
+  { key: "taxaSucesso", label: "Taxa de sucesso", icon: Percent, color: "text-sky-600 bg-sky-50" },
+  { key: "falhasCriticas", label: "Falhas críticas", icon: AlertCircle, color: "text-red-600 bg-red-50" },
+] as const
 
 export default function HistoricoEnviosPage() {
   const [search, setSearch] = useState("")
@@ -146,9 +157,13 @@ export default function HistoricoEnviosPage() {
     maximumFractionDigits: 1,
   })
 
-  const totalEntregues = logs.filter((l) => l.statusEntrega === "delivered").length
-  const falhasCriticas = logs.filter((l) => l.statusEntrega === "failed").length
-  const taxaSucesso = logs.length > 0 ? totalEntregues / logs.length : 0
+  const resumo = data?.resumo ?? { totalEntregues: 0, falhasCriticas: 0, total: 0 }
+  const taxaSucesso = resumo.total > 0 ? resumo.totalEntregues / resumo.total : 0
+  const cardValues = {
+    totalEntregues: String(resumo.totalEntregues),
+    taxaSucesso: pctFmt.format(taxaSucesso),
+    falhasCriticas: String(resumo.falhasCriticas),
+  }
   const listaCarregando = isLoading || isPlaceholderData
   const resumoCarregando = isLoading && !data
 
@@ -177,6 +192,29 @@ export default function HistoricoEnviosPage() {
         <p className="mt-1 text-sm text-gray-500">
           Acompanhe e-mails enviados aos moradores e o status de entrega.
         </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        {resumoCarregando
+          ? SUMMARY_CARDS.map((card) => (
+              <KpiCardSkeleton key={card.key} />
+            ))
+          : SUMMARY_CARDS.map((card) => {
+              const Icon = card.icon
+              return (
+                <div key={card.key} className="rounded-2xl bg-card p-3 ring-1 ring-border sm:p-5">
+                  <div className="flex items-center gap-3">
+                    <div className={`shrink-0 rounded-lg p-2 ${card.color}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-gray-500">{card.label}</p>
+                      <p className="text-2xl font-bold text-foreground">{cardValues[card.key]}</p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-center">
@@ -266,6 +304,7 @@ export default function HistoricoEnviosPage() {
                 key={log.id}
                 title={log.morador.nome}
                 fields={[
+                  { label: "Status", value: <StatusEntregaBadge status={log.statusEntrega} /> },
                   { label: "Email", value: log.emailDestinatario },
                   {
                     label: "Template",
@@ -299,18 +338,15 @@ export default function HistoricoEnviosPage() {
                       minute: "2-digit",
                     }),
                   },
-                  { label: "Status", value: <StatusEntregaBadge status={log.statusEntrega} /> },
                 ]}
-                actions={
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-h-11"
+                primaryAction={
+                  <ListRecordButton
+                    icon={expandedId === log.id ? EyeOff : Eye}
                     aria-expanded={expandedId === log.id}
                     onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
                   >
                     {expandedId === log.id ? "Ocultar detalhes" : "Mostrar detalhes"}
-                  </Button>
+                  </ListRecordButton>
                 }
               >
                 {expandedId === log.id ? <ExpandedLogRow logId={log.id} log={log} /> : null}
@@ -322,12 +358,12 @@ export default function HistoricoEnviosPage() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
                   <TableHead className="w-[16%]">Destinatário</TableHead>
                   <SortableHead label="Template" column="template" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
                   <TableHead className="w-[22%]">Assunto</TableHead>
                   <TableHead className="w-[14%]">Ocorrência</TableHead>
                   <SortableHead label="Enviado em" column="enviadoEm" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
-                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
                   <TableHead className="w-[10%] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -337,6 +373,9 @@ export default function HistoricoEnviosPage() {
                 ) : logs.map((log) => (
                   <Fragment key={log.id}>
                     <TableRow className="hover:bg-muted/60">
+                      <TableCell>
+                        <StatusEntregaBadge status={log.statusEntrega} />
+                      </TableCell>
                       <TableCell>
                         <div className="truncate font-medium text-foreground">{log.morador.nome}</div>
                         <div className="truncate text-xs text-gray-500">{log.emailDestinatario}</div>
@@ -371,9 +410,6 @@ export default function HistoricoEnviosPage() {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
-                      </TableCell>
-                      <TableCell>
-                        <StatusEntregaBadge status={log.statusEntrega} />
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -418,41 +454,6 @@ export default function HistoricoEnviosPage() {
           )}
         </div>
       )}
-
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        {resumoCarregando ? (
-          Array.from({ length: 3 }, (_, i) => (
-            <KpiCardSkeleton key={i} variant="stat" />
-          ))
-        ) : (
-          <>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Total entregues</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-emerald-700">{totalEntregues}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Taxa de sucesso</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-foreground">{pctFmt.format(taxaSucesso)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Falhas críticas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-red-700">{falhasCriticas}</p>
-          </CardContent>
-        </Card>
-          </>
-        )}
-      </div>
     </div>
   )
 }

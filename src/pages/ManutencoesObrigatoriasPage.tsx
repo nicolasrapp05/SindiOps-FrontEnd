@@ -26,6 +26,7 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import ListRecordButton from "@/components/shared/ListRecordButton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
@@ -54,11 +55,11 @@ import {
 
 const PAGE_SIZE = 10
 const SORT_COLUMNS: SortColumn[] = [
+  { key: "status", label: "Status" },
   { key: "tipo", label: "Tipo" },
   { key: "condominio", label: "Condomínio" },
   { key: "vencimento", label: "Data vencimento" },
   { key: "ultimaRealizacao", label: "Última realização" },
-  { key: "status", label: "Status" },
 ]
 
 const TIPOS = Object.keys(MANUTENCAO_TIPO_LABEL) as ManutencaoTipo[]
@@ -311,6 +312,7 @@ export default function ManutencoesObrigatoriasPage() {
                 className={cn(m.status === "overdue" && "bg-red-50/50")}
                 title={MANUTENCAO_TIPO_LABEL[m.tipo]}
                 fields={[
+                  { label: "Status", value: <ManutencaoStatusBadge status={m.status} /> },
                   { label: "Condomínio", value: m.condominio.nome },
                   {
                     label: "Data vencimento",
@@ -322,31 +324,26 @@ export default function ManutencoesObrigatoriasPage() {
                       ? new Date(m.ultimaRealizacao + "T00:00:00").toLocaleDateString("pt-BR")
                       : "-",
                   },
-                  { label: "Status", value: <ManutencaoStatusBadge status={m.status} /> },
                 ]}
                 actions={
                   <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="min-h-11 border-emerald-200 text-emerald-800 hover:bg-emerald-50"
-                      onClick={() => openRealizar(m.id)}
-                    >
-                      <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-                      Marcar como Realizada
-                    </Button>
-                    <Button type="button" variant="ghost" className="min-h-11" onClick={() => openEdit(m)}>
+                    <ListRecordButton icon={Pencil} onClick={() => openEdit(m)}>
                       Editar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="min-h-11 text-red-600 hover:text-red-700"
-                      onClick={() => handleDelete(m)}
-                    >
+                    </ListRecordButton>
+                    <ListRecordButton icon={Trash2} tone="danger" onClick={() => handleDelete(m)}>
                       Excluir
-                    </Button>
+                    </ListRecordButton>
                   </>
+                }
+                primaryAction={
+                  <ListRecordButton
+                    icon={CheckCircle2}
+                    tone="success"
+                    aria-label="Marcar como Realizada"
+                    onClick={() => openRealizar(m.id)}
+                  >
+                    Realizar
+                  </ListRecordButton>
                 }
               />
             ))}
@@ -356,11 +353,11 @@ export default function ManutencoesObrigatoriasPage() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
                   <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
                   <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
                   <SortableHead label="Data vencimento" column="vencimento" sort={sort} dir={dir} onSort={sortBy} className="w-[13%]" />
                   <SortableHead label="Última realização" column="ultimaRealizacao" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
-                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
                   <TableHead className="w-[35%] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -372,6 +369,9 @@ export default function ManutencoesObrigatoriasPage() {
                     key={m.id}
                     className={cn(m.status === "overdue" && "bg-red-50/50")}
                   >
+                    <TableCell>
+                      <ManutencaoStatusBadge status={m.status} />
+                    </TableCell>
                     <TableCell className="truncate font-medium text-foreground">
                       {MANUTENCAO_TIPO_LABEL[m.tipo]}
                     </TableCell>
@@ -383,9 +383,6 @@ export default function ManutencoesObrigatoriasPage() {
                       {m.ultimaRealizacao
                         ? new Date(m.ultimaRealizacao + "T00:00:00").toLocaleDateString("pt-BR")
                         : "-"}
-                    </TableCell>
-                    <TableCell>
-                      <ManutencaoStatusBadge status={m.status} />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">

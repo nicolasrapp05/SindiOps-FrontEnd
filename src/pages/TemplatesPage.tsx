@@ -21,6 +21,7 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import ListRecordButton from "@/components/shared/ListRecordButton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
@@ -182,19 +183,14 @@ export default function TemplatesPage() {
                 },
               ]}
               actions={
-                <>
-                  <Button type="button" variant="ghost" className="min-h-11" onClick={() => openEdit(t)}>
-                    Editar
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="min-h-11 text-red-500 hover:text-red-700"
-                    onClick={() => setDeleteTarget(t)}
-                  >
-                    Excluir
-                  </Button>
-                </>
+                <ListRecordButton icon={Trash2} tone="danger" onClick={() => setDeleteTarget(t)}>
+                  Excluir
+                </ListRecordButton>
+              }
+              primaryAction={
+                <ListRecordButton icon={Pencil} onClick={() => openEdit(t)}>
+                  Editar
+                </ListRecordButton>
               }
             />
           ))}

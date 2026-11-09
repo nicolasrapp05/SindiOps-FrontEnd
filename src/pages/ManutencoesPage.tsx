@@ -17,6 +17,7 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import ListRecordButton from "@/components/shared/ListRecordButton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
@@ -426,14 +427,10 @@ export default function ManutencoesPage() {
                     { label: "Propostas", value: row.totalOrcamentos ?? 0 },
                     { label: "Status", value: <SolicitacaoStatusBadge status={row.status} /> },
                   ]}
-                  actions={
-                    <Button
-                      variant="outline"
-                      className="min-h-11"
-                      onClick={() => navigate(detalheTo(row.id))}
-                    >
+                  primaryAction={
+                    <ListRecordButton icon={Eye} onClick={() => navigate(detalheTo(row.id))}>
                       Abrir
-                    </Button>
+                    </ListRecordButton>
                   }
                 />
               ))}
@@ -536,14 +533,10 @@ export default function ManutencoesPage() {
                         : "-",
                     },
                   ]}
-                  actions={
-                    <Button
-                      variant="outline"
-                      className="min-h-11"
-                      onClick={() => navigate(detalheTo(row.id))}
-                    >
+                  primaryAction={
+                    <ListRecordButton icon={Eye} onClick={() => navigate(detalheTo(row.id))}>
                       Abrir
-                    </Button>
+                    </ListRecordButton>
                   }
                 />
               ))}

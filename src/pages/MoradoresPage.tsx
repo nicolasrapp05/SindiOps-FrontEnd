@@ -9,6 +9,7 @@ import {
   Pencil,
   Trash2,
   Eye,
+  EyeOff,
   RefreshCw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,6 +28,7 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import ListRecordButton from "@/components/shared/ListRecordButton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
@@ -287,26 +289,21 @@ export default function MoradoresPage() {
                 ]}
                 actions={
                   <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="min-h-11"
-                      onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}
-                    >
-                      {expandedId === m.id ? "Ocultar" : "Ver detalhes"}
-                    </Button>
-                    <Button type="button" variant="ghost" className="min-h-11" onClick={() => openEdit(m)}>
+                    <ListRecordButton icon={Pencil} onClick={() => openEdit(m)}>
                       Editar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="min-h-11 text-red-500 hover:text-red-700"
-                      onClick={() => handleDelete(m)}
-                    >
+                    </ListRecordButton>
+                    <ListRecordButton icon={Trash2} tone="danger" onClick={() => handleDelete(m)}>
                       Excluir
-                    </Button>
+                    </ListRecordButton>
                   </>
+                }
+                primaryAction={
+                  <ListRecordButton
+                    icon={expandedId === m.id ? EyeOff : Eye}
+                    onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}
+                  >
+                    {expandedId === m.id ? "Ocultar" : "Detalhes"}
+                  </ListRecordButton>
                 }
               >
                 {expandedId === m.id ? <MoradorExpandido moradorId={m.id} /> : null}

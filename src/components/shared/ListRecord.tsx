@@ -11,6 +11,7 @@ interface ListRecordProps {
   fields?: ListRecordField[]
   onClick?: () => void
   actions?: ReactNode
+  primaryAction?: ReactNode
   children?: ReactNode
   className?: string
 }
@@ -20,6 +21,7 @@ export default function ListRecord({
   fields,
   onClick,
   actions,
+  primaryAction,
   children,
   className,
 }: ListRecordProps) {
@@ -53,8 +55,11 @@ export default function ListRecord({
         ) : null}
       </div>
       {children ? <div className="border-t border-border">{children}</div> : null}
-      {actions ? (
-        <div className="flex flex-wrap gap-2 border-t border-border p-4">{actions}</div>
+      {actions || primaryAction ? (
+        <div className="flex flex-wrap items-center gap-2 border-t border-border px-2.5 py-3">
+          {actions ? <div className="flex min-w-0 flex-wrap gap-2">{actions}</div> : null}
+          {primaryAction ? <div className="ml-auto shrink-0">{primaryAction}</div> : null}
+        </div>
       ) : null}
     </article>
   )

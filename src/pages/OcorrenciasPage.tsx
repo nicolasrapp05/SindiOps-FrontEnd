@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import {
-  Plus, Search, AlertTriangle, RefreshCw, Eye, Bell, Clock, CheckCircle2, XCircle,
+  Plus, Search, AlertTriangle, RefreshCw, Eye, Pencil, Bell, Clock, CheckCircle2, XCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,16 +13,17 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import ListRecordButton from "@/components/shared/ListRecordButton"
 import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
-import { useOcorrencias, useCreateOcorrencia } from "@/features/ocorrencias/hooks/useOcorrencias"
+import { useOcorrencias, useCreateOcorrencia, useUpdateOcorrencia } from "@/features/ocorrencias/hooks/useOcorrencias"
 import OcorrenciaStatusBadge from "@/features/ocorrencias/components/OcorrenciaStatusBadge"
 import OcorrenciaForm from "@/features/ocorrencias/components/OcorrenciaForm"
 import type {
-  OcorrenciaStatus, OcorrenciaTipo, OcorrenciaOrigem, CreateOcorrenciaRequest,
+  OcorrenciaStatus, OcorrenciaTipo, OcorrenciaOrigem, CreateOcorrenciaRequest, Ocorrencia,
 } from "@/features/ocorrencias/types/ocorrencia.types"
 import {
   TIPO_LABEL, ORIGEM_LABEL, TIPO_LOCAL_LABEL,
@@ -53,6 +54,7 @@ export default function OcorrenciasPage() {
   const [origemFilter, setOrigemFilter] = useState<OcorrenciaOrigem | "">("")
   const [search, setSearch] = useState("")
   const [formOpen, setFormOpen] = useState(false)
+  const [editingOcorrencia, setEditingOcorrencia] = useState<Ocorrencia | null>(null)
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<string>()
   const [dir, setDir] = useState<SortDir>()
@@ -87,8 +89,27 @@ export default function OcorrenciasPage() {
     isPlaceholderData: resumoTrocando,
   } = useOcorrencias(condominioId, { pageSize: 500 })
   const createMutation = useCreateOcorrencia()
+  const updateMutation = useUpdateOcorrencia()
 
-  const handleCreate = (data: CreateOcorrenciaRequest) => {
+  const openCreate = () => {
+    setEditingOcorrencia(null)
+    setFormOpen(true)
+  }
+
+  const openEdit = (ocorrencia: Ocorrencia) => {
+    setEditingOcorrencia(ocorrencia)
+    setFormOpen(true)
+  }
+
+  const handleFormSubmit = (data: CreateOcorrenciaRequest) => {
+    if (editingOcorrencia) {
+      updateMutation.mutate(
+        { id: editingOcorrencia.id, data },
+        { onSuccess: () => setFormOpen(false) },
+      )
+      return
+    }
+
     createMutation.mutate(data, {
       onSuccess: (created) => {
         setFormOpen(false)
@@ -137,7 +158,7 @@ export default function OcorrenciasPage() {
         <Button
           
           disabled={!condoConfigured}
-          onClick={() => setFormOpen(true)}
+          onClick={openCreate}
         >
           <Plus className="mr-1.5 h-4 w-4" /> Nova Ocorrência
         </Button>
@@ -273,7 +294,7 @@ export default function OcorrenciasPage() {
           title="Nenhuma ocorrência encontrada"
           description="Registre a primeira ocorrência do condomínio."
           action={
-            <Button onClick={() => setFormOpen(true)}>
+            <Button onClick={openCreate}>
               <Plus className="mr-1.5 h-4 w-4" /> Nova Ocorrência
             </Button>
           }
@@ -297,13 +318,14 @@ export default function OcorrenciasPage() {
                     { label: "Data", value: new Date(o.ocorreuEm).toLocaleDateString("pt-BR") },
                   ]}
                   actions={
-                    <Button
-                      variant="outline"
-                      className="min-h-11"
-                      onClick={() => navigate(`/ocorrencias/${o.id}`)}
-                    >
+                    <ListRecordButton icon={Pencil} onClick={() => openEdit(o)}>
+                      Editar
+                    </ListRecordButton>
+                  }
+                  primaryAction={
+                    <ListRecordButton icon={Eye} onClick={() => navigate(`/ocorrencias/${o.id}`)}>
                       Abrir
-                    </Button>
+                    </ListRecordButton>
                   }
                 />
               ))}
@@ -317,9 +339,9 @@ export default function OcorrenciasPage() {
                   <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
                   <SortableHead label="Origem" column="origem" sort={sort} dir={dir} onSort={sortBy} className="w-[15%]" />
                   <SortableHead label="Local" column="local" sort={sort} dir={dir} onSort={sortBy} className="w-[15%]" />
-                  <TableHead className="w-[24%]">Descrição</TableHead>
+                  <TableHead className="w-[21%]">Descrição</TableHead>
                   <SortableHead label="Data" column="data" sort={sort} dir={dir} onSort={sortBy} className="w-[13%]" />
-                  <TableHead className="w-[9%]">Ações</TableHead>
+                  <TableHead className="w-[12%]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -340,9 +362,14 @@ export default function OcorrenciasPage() {
                       {new Date(o.ocorreuEm).toLocaleDateString("pt-BR")}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" aria-label="Abrir ocorrência" onClick={(e) => { e.stopPropagation(); navigate(`/ocorrencias/${o.id}`) }}>
-                        <Eye className="h-4 w-4" aria-hidden="true" />
-                      </Button>
+                      <div className="flex items-center">
+                        <Button variant="ghost" size="icon" aria-label="Abrir ocorrência" onClick={(e) => { e.stopPropagation(); navigate(`/ocorrencias/${o.id}`) }}>
+                          <Eye className="h-4 w-4" aria-hidden="true" />
+                        </Button>
+                        <Button variant="ghost" size="icon" aria-label="Editar ocorrência" onClick={(e) => { e.stopPropagation(); openEdit(o) }}>
+                          <Pencil className="h-4 w-4" aria-hidden="true" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -367,8 +394,9 @@ export default function OcorrenciasPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         condominioId={condominioId}
-        onSubmit={handleCreate}
-        isSubmitting={createMutation.isPending}
+        ocorrencia={editingOcorrencia}
+        onSubmit={handleFormSubmit}
+        isSubmitting={createMutation.isPending || updateMutation.isPending}
       />
     </div>
   )

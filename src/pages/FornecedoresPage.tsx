@@ -8,6 +8,7 @@ import {
   Pencil,
   Trash2,
   Eye,
+  EyeOff,
   RefreshCw,
   Package,
   Wrench,
@@ -43,6 +44,7 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import ListRecordButton from "@/components/shared/ListRecordButton"
 import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
@@ -276,26 +278,21 @@ export default function FornecedoresPage() {
                   ]}
                   actions={
                     <>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="min-h-11"
-                        onClick={() => setExpandedId(expandedId === f.id ? null : f.id)}
-                      >
-                        {expandedId === f.id ? "Ocultar" : "Ver detalhes"}
-                      </Button>
-                      <Button type="button" variant="ghost" className="min-h-11" onClick={() => openEdit(f)}>
+                      <ListRecordButton icon={Pencil} onClick={() => openEdit(f)}>
                         Editar
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="min-h-11 text-red-500 hover:text-red-700"
-                        onClick={() => handleDelete(f)}
-                      >
+                      </ListRecordButton>
+                      <ListRecordButton icon={Trash2} tone="danger" onClick={() => handleDelete(f)}>
                         Excluir
-                      </Button>
+                      </ListRecordButton>
                     </>
+                  }
+                  primaryAction={
+                    <ListRecordButton
+                      icon={expandedId === f.id ? EyeOff : Eye}
+                      onClick={() => setExpandedId(expandedId === f.id ? null : f.id)}
+                    >
+                      {expandedId === f.id ? "Ocultar" : "Detalhes"}
+                    </ListRecordButton>
                   }
                 >
                   {expandedId === f.id ? <FornecedorExpandido fornecedorId={f.id} /> : null}

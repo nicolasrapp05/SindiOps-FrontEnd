@@ -15,6 +15,7 @@ import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
+import ListRecordButton from "@/components/shared/ListRecordButton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
@@ -236,68 +237,70 @@ export default function EquipePage() {
               className={cn(!f.ativo && "opacity-60")}
               title={f.nome}
               fields={[
+                {
+                  label: "Status",
+                  value: <FuncionarioStatusBadge ativo={f.ativo} convitePendente={f.convitePendente} />,
+                },
                 { label: "Cargo", value: CARGO_LABEL[f.cargo] },
                 { label: "Email", value: f.email },
                 {
                   label: "Condomínios",
                   value: f.condominios?.length ? f.condominios.map((c) => c.nome).join(", ") : "Todos",
                 },
-                {
-                  label: "Status",
-                  value: <FuncionarioStatusBadge ativo={f.ativo} convitePendente={f.convitePendente} />,
-                },
                 { label: "Data de cadastro", value: new Date(f.criadoEm).toLocaleDateString("pt-BR") },
               ]}
               actions={
                 <>
                   {f.ativo && f.convitePendente && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="min-h-11"
+                    <ListRecordButton
+                      icon={Mail}
                       disabled={reenviarConvite.isPending}
                       onClick={() => reenviarConvite.mutate(f.id)}
                     >
                       Reenviar convite
-                    </Button>
+                    </ListRecordButton>
                   )}
-                  {f.ativo ? (
-                    f.id !== currentUserId && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="min-h-11 text-amber-600 hover:text-amber-800"
-                        disabled={desativar.isPending}
-                        onClick={() => setPendingDeactivate(f)}
-                      >
-                        Desativar
-                      </Button>
-                    )
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="min-h-11 text-emerald-700"
-                      disabled={ativar.isPending}
-                      onClick={() => ativar.mutate(f.id)}
+                  {f.ativo && f.id !== currentUserId && (
+                    <ListRecordButton
+                      icon={UserX}
+                      tone="warning"
+                      disabled={desativar.isPending}
+                      onClick={() => setPendingDeactivate(f)}
                     >
-                      Ativar
-                    </Button>
+                      Desativar
+                    </ListRecordButton>
                   )}
-                  <Button type="button" variant="ghost" className="min-h-11" onClick={() => openEditModal(f)}>
-                    Editar
-                  </Button>
+                  {!f.ativo && (
+                    <ListRecordButton icon={Pencil} onClick={() => openEditModal(f)}>
+                      Editar
+                    </ListRecordButton>
+                  )}
                   {f.id !== currentUserId && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="min-h-11 text-red-500 hover:text-red-700"
+                    <ListRecordButton
+                      icon={Trash2}
+                      tone="danger"
                       onClick={() => setPendingDelete(f)}
                     >
                       Remover
-                    </Button>
+                    </ListRecordButton>
                   )}
                 </>
+              }
+              primaryAction={
+                f.ativo ? (
+                  <ListRecordButton icon={Pencil} onClick={() => openEditModal(f)}>
+                    Editar
+                  </ListRecordButton>
+                ) : (
+                  <ListRecordButton
+                    icon={UserCheck}
+                    tone="success"
+                    disabled={ativar.isPending}
+                    onClick={() => ativar.mutate(f.id)}
+                  >
+                    Ativar
+                  </ListRecordButton>
+                )
               }
             />
           ))}
@@ -307,11 +310,11 @@ export default function EquipePage() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[9%]">Status</TableHead>
                   <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} className="w-[18%]" />
                   <SortableHead label="Cargo" column="cargo" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
                   <SortableHead label="Email" column="email" sort={sort} dir={dir} onSort={sortBy} className="w-[18%]" />
                   <TableHead className="w-[14%]">Condomínios</TableHead>
-                  <TableHead className="w-[9%]">Status</TableHead>
                   <SortableHead label="Data de cadastro" column="criadoEm" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
                   <TableHead className="w-[15%] text-right">Ações</TableHead>
                 </TableRow>
@@ -321,6 +324,9 @@ export default function EquipePage() {
                   <ListSkeletonRows columns={7} />
                 ) : list.map((f) => (
                   <TableRow key={f.id} className="transition-colors hover:bg-muted/60">
+                    <TableCell className={cn(!f.ativo && "opacity-60")}>
+                      <FuncionarioStatusBadge ativo={f.ativo} convitePendente={f.convitePendente} />
+                    </TableCell>
                     <TableCell className={cn(!f.ativo && "opacity-60")}>
                       <div className="flex min-w-0 items-center gap-3">
                         <Avatar size="sm">
@@ -345,9 +351,6 @@ export default function EquipePage() {
                       ) : (
                         <span className="text-sm text-muted-foreground">Todos</span>
                       )}
-                    </TableCell>
-                    <TableCell className={cn(!f.ativo && "opacity-60")}>
-                      <FuncionarioStatusBadge ativo={f.ativo} convitePendente={f.convitePendente} />
                     </TableCell>
                     <TableCell className={cn("whitespace-nowrap text-gray-500", !f.ativo && "opacity-60")}>
                       {new Date(f.criadoEm).toLocaleDateString("pt-BR")}
