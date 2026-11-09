@@ -5,12 +5,17 @@ export interface EnviarComunicacaoRequest {
   corpoEditado: string
   valorMulta?: number
   prazoResposta?: string
+  enviarCopiaProprietario?: boolean
 }
 
-export interface ComunicacaoResponse {
+export interface ComunicacaoEnvio {
   id: string
   emailDestinatario: string
   assunto: string
   statusEntrega: "sent" | "delivered" | "failed"
   enviadoEm: string
+}
+
+export interface ComunicacaoResponse extends ComunicacaoEnvio {
+  copiaProprietario?: ComunicacaoEnvio | null
 }

@@ -29,6 +29,7 @@ import {
 import { get } from "@/lib/api"
 import { VARIAVEIS_DISPONIVEIS } from "@/features/comunicacao/types/template.types"
 import { useEnviarComunicacao } from "../hooks/useOcorrencias"
+import { useMoradores } from "@/features/moradores/hooks/useMoradores"
 
 // List endpoint - no corpo
 interface EmailTemplate {
@@ -58,12 +59,14 @@ interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   ocorrenciaId: string
+  condominioId?: string
+  unidadeId?: string
   moradorPadrao?: MoradorInfo
   templateTipoPadrao?: string
 }
 
 export default function EnviarComunicacaoModal({
-  open, onOpenChange, ocorrenciaId, moradorPadrao, templateTipoPadrao,
+  open, onOpenChange, ocorrenciaId, condominioId, unidadeId, moradorPadrao, templateTipoPadrao,
 }: Props) {
   const [step, setStep] = useState(1)
   const [selectedTemplateId, setSelectedTemplateId] = useState("")
@@ -71,6 +74,7 @@ export default function EnviarComunicacaoModal({
   const [corpo, setCorpo] = useState("")
   const [valorMulta, setValorMulta] = useState<number | undefined>()
   const [prazoResposta, setPrazoResposta] = useState("")
+  const [enviarCopiaProprietario, setEnviarCopiaProprietario] = useState(false)
 
   const tokenTextareaRef = useRef<TokenTextareaHandle>(null)
 
@@ -95,6 +99,14 @@ export default function EnviarComunicacaoModal({
   })
 
   const enviarMutation = useEnviarComunicacao()
+  const { data: moradoresUnidade } = useMoradores(
+    open && condominioId && unidadeId ? condominioId : "",
+    unidadeId ? { unidadeId, pageSize: 100 } : undefined,
+  )
+  const proprietario = (moradoresUnidade?.data ?? []).find(
+    (morador) => morador.papel === "proprietario" && morador.id !== moradorPadrao?.id,
+  )
+  const mostrarCopia = !!moradorPadrao && !!proprietario
 
   const resetFormState = () => {
     setStep(1)
@@ -103,6 +115,7 @@ export default function EnviarComunicacaoModal({
     setCorpo("")
     setValorMulta(undefined)
     setPrazoResposta("")
+    setEnviarCopiaProprietario(false)
   }
 
   const resetBodyFields = () => {
@@ -166,6 +179,7 @@ export default function EnviarComunicacaoModal({
           corpoEditado: corpo,
           ...(valorMulta != null && valorMulta > 0 ? { valorMulta } : {}),
           ...(prazoResposta ? { prazoResposta } : {}),
+          ...(mostrarCopia && enviarCopiaProprietario ? { enviarCopiaProprietario: true } : {}),
         },
       },
       { onSuccess: () => handleOpenChange(false) },
@@ -265,6 +279,19 @@ export default function EnviarComunicacaoModal({
               <p className="py-4 text-center text-sm text-muted-foreground">
                 Nenhum morador vinculado a esta ocorrência.
               </p>
+            )}
+            {mostrarCopia && proprietario && (
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border bg-muted/40 p-3">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4 rounded border"
+                  checked={enviarCopiaProprietario}
+                  onChange={(e) => setEnviarCopiaProprietario(e.target.checked)}
+                />
+                <span className="text-sm leading-snug">
+                  Enviar também para o proprietário ({proprietario.nome})
+                </span>
+              </label>
             )}
             <div className="flex justify-between pt-2">
               <Button variant="outline" onClick={() => setStep(1)}>
