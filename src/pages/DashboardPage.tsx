@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react"
+import { useState, useMemo } from "react"
 import {
   AlertTriangle,
   Clock,
@@ -246,9 +246,8 @@ function FilterChips<T extends string>({
   )
 }
 
-function gradeAlertas(quantidade: number) {
-  return `grid grid-cols-2 gap-4 ${quantidade >= 4 ? "lg:grid-cols-3 xl:grid-cols-5" : "lg:grid-cols-3"}`
-}
+const GRADE_ALERTAS =
+  "grid grid-cols-[repeat(auto-fit,minmax(min(100%,11rem),1fr))] gap-3"
 
 const AGENDA_PAGE_SIZE = 10
 const AGENDA_SORT_COLUMNS: SortColumn[] = [
@@ -272,12 +271,13 @@ export default function DashboardPage() {
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("all")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [page, setPage] = useState(1)
+  const [pageScope, setPageScope] = useState(selectedCondominioId)
+  if (pageScope !== selectedCondominioId) {
+    setPageScope(selectedCondominioId)
+    setPage(1)
+  }
   const [sort, setSort] = useState<string>()
   const [dir, setDir] = useState<SortDir>()
-
-  useEffect(() => {
-    setPage(1)
-  }, [selectedCondominioId])
 
   const { data, isLoading, isPlaceholderData, isError, refetch } = useDashboard({
     condominioId: selectedCondominioId ?? undefined,
@@ -374,14 +374,14 @@ export default function DashboardPage() {
       {/* Alert cards */}
       {resumoCarregando ? (
         alertasDoCargo.length > 0 ? (
-          <div className={gradeAlertas(alertasDoCargo.length)}>
+          <div className={GRADE_ALERTAS}>
             {alertasDoCargo.map((alerta) => (
-              <KpiCardSkeleton key={alerta.key} variant="alerta" />
+              <KpiCardSkeleton key={alerta.key} />
             ))}
           </div>
         ) : null
       ) : visibleAlertas.length > 0 ? (
-        <div className={gradeAlertas(visibleAlertas.length)}>
+        <div className={GRADE_ALERTAS}>
           {visibleAlertas.map((alerta) => (
             <AlertaCard
               key={alerta.key}

@@ -4,31 +4,11 @@ import type { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const colorMap = {
-  red: {
-    well: "bg-red-50 text-red-700",
-    value: "text-red-700",
-    edge: "border-t-red-500",
-  },
-  orange: {
-    well: "bg-orange-50 text-orange-700",
-    value: "text-orange-700",
-    edge: "border-t-orange-500",
-  },
-  blue: {
-    well: "bg-sky-50 text-sky-700",
-    value: "text-sky-800",
-    edge: "border-t-sky-500",
-  },
-  yellow: {
-    well: "bg-amber-50 text-amber-800",
-    value: "text-amber-800",
-    edge: "border-t-amber-500",
-  },
-  purple: {
-    well: "bg-violet-50 text-violet-700",
-    value: "text-violet-800",
-    edge: "border-t-violet-500",
-  },
+  red: "text-red-600 bg-red-50",
+  orange: "text-orange-600 bg-orange-50",
+  blue: "text-sky-600 bg-sky-50",
+  yellow: "text-amber-600 bg-amber-50",
+  purple: "text-purple-600 bg-purple-50",
 } as const
 
 export type AlertaColor = keyof typeof colorMap
@@ -42,51 +22,35 @@ interface AlertaCardProps {
 }
 
 export default function AlertaCard({ titulo, valor, icone: Icon, cor, href }: AlertaCardProps) {
-  const colors = colorMap[cor]
   const needsAction = valor > 0
 
   return (
     <Link
       to={href}
       className={cn(
-        "group flex flex-col justify-between rounded-2xl border-t-4 bg-card p-3.5 ring-1 ring-border sm:min-h-40 sm:p-5",
-        "shadow-[0_1px_2px_hsl(150_20%_10%/0.04)]",
+        "group flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-border shadow-[0_1px_2px_hsl(150_20%_10%/0.04)] sm:p-5",
         "transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.2,0,0,1)]",
-        "hover:-translate-y-0.5 hover:shadow-[0_12px_28px_hsl(150_20%_10%/0.08)]",
+        "hover:-translate-y-0.5 hover:shadow-[0_10px_24px_hsl(150_20%_10%/0.06)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        "active:translate-y-0",
-        "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
-        needsAction ? colors.edge : "border-t-transparent",
+        "active:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0",
       )}
     >
       <span
         className={cn(
-          "inline-flex size-10 items-center justify-center rounded-xl",
-          needsAction ? colors.well : "bg-muted text-muted-foreground",
+          "shrink-0 rounded-lg p-2",
+          needsAction ? colorMap[cor] : "bg-muted text-muted-foreground",
         )}
       >
         <Icon className="size-5" aria-hidden="true" />
       </span>
-
-      <span className="mt-3 block sm:mt-4">
-        <span className="block text-sm font-medium leading-snug text-muted-foreground">{titulo}</span>
-        <span
-          className={cn(
-            "mt-1 block text-3xl font-semibold tabular-nums tracking-tight",
-            needsAction ? colors.value : "text-foreground",
-          )}
-        >
-          {valor}
-        </span>
+      <span className="min-w-0">
+        <span className="block text-xs font-medium text-gray-500">{titulo}</span>
+        <span className="block text-2xl font-bold tabular-nums text-foreground">{valor}</span>
       </span>
-
-      <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors duration-200 group-hover:text-foreground">
-        {needsAction ? "Resolver" : "Abrir lista"}
-        <ChevronRight
-          className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
-          aria-hidden="true"
-        />
-      </span>
+      <ChevronRight
+        className="ml-auto size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+        aria-hidden="true"
+      />
     </Link>
   )
 }
