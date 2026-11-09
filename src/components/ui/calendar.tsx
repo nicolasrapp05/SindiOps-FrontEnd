@@ -75,6 +75,8 @@ function CalendarDropdown({
           ref={listRef}
           role="listbox"
           aria-label={ariaLabel}
+          // O diálogo trava o scroll da página e cancelaria a roda nesta lista.
+          onWheel={(event) => event.stopPropagation()}
           className={cn(
             "absolute top-[calc(100%+4px)] left-1/2 z-30 -translate-x-1/2 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10",
             isMonthList
