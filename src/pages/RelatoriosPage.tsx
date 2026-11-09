@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { FileSpreadsheet, FileText, FileType, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -11,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import Combobox from "@/components/shared/Combobox"
+import DatePicker from "@/components/shared/DatePicker"
 import { useGerarRelatorio } from "@/features/relatorios/hooks/useRelatorios"
 import {
   RELATORIO_TIPO_LABEL,
@@ -154,21 +154,11 @@ export default function RelatoriosPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="rel-inicio">Data início</Label>
-              <Input
-                id="rel-inicio"
-                type="date"
-                value={dataInicio}
-                onChange={(e) => setDataInicio(e.target.value)}
-              />
+              <DatePicker id="rel-inicio" value={dataInicio} onValueChange={setDataInicio} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="rel-fim">Data fim</Label>
-              <Input
-                id="rel-fim"
-                type="date"
-                value={dataFim}
-                onChange={(e) => setDataFim(e.target.value)}
-              />
+              <DatePicker id="rel-fim" value={dataFim} onValueChange={setDataFim} />
             </div>
           </div>
 

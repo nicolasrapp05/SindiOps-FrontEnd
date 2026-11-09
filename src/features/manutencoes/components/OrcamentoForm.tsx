@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import Combobox from "@/components/shared/Combobox"
+import DatePicker from "@/components/shared/DatePicker"
 import CurrencyInput from "@/components/shared/CurrencyInput"
 import { useFornecedores } from "@/features/fornecedores/hooks/useFornecedores"
 import { toastFormValidationError } from "@/lib/form-utils"
@@ -250,7 +251,17 @@ export default function OrcamentoForm({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="validadeOrcamento">Validade da proposta</Label>
-                <Input id="validadeOrcamento" type="date" {...register("validadeProposta")} />
+                <Controller
+                  name="validadeProposta"
+                  control={control}
+                  render={({ field }) => (
+                    <DatePicker
+                      id="validadeOrcamento"
+                      value={field.value ?? ""}
+                      onValueChange={field.onChange}
+                    />
+                  )}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="pagamentoOrcamento">Forma de pagamento</Label>

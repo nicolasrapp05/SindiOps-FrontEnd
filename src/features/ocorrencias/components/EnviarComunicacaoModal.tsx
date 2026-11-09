@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import CurrencyInput from "@/components/shared/CurrencyInput"
+import DatePicker from "@/components/shared/DatePicker"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import TokenTextarea, { type TokenDef, type TokenTextareaHandle } from "@/components/shared/TokenTextarea"
@@ -350,11 +351,7 @@ export default function EnviarComunicacaoModal({
                         {" "}no corpo
                       </span>
                     </Label>
-                    <Input
-                      type="date"
-                      value={prazoResposta}
-                      onChange={(e) => setPrazoResposta(e.target.value)}
-                    />
+                    <DatePicker value={prazoResposta} onValueChange={setPrazoResposta} />
                     {prazoResposta && (
                       <p className="text-xs text-muted-foreground">
                         Será enviado como:{" "}

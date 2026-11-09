@@ -1,10 +1,9 @@
-﻿import { useEffect } from "react"
+import { useEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -16,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import Combobox from "@/components/shared/Combobox"
+import DatePicker from "@/components/shared/DatePicker"
 import { toastFormValidationError } from "@/lib/form-utils"
 import {
   MANUTENCAO_TIPO_LABEL,
@@ -147,7 +147,12 @@ export default function ManutencaoObrigatoriaForm({
               name="dataVencimento"
               control={control}
               render={({ field }) => (
-                <Input {...field} id="mo-venc" type="date" aria-invalid={!!errors.dataVencimento} />
+                <DatePicker
+                  id="mo-venc"
+                  value={field.value ?? ""}
+                  onValueChange={field.onChange}
+                  aria-invalid={!!errors.dataVencimento}
+                />
               )}
             />
             {errors.dataVencimento && (
@@ -160,10 +165,10 @@ export default function ManutencaoObrigatoriaForm({
               name="ultimaRealizacao"
               control={control}
               render={({ field }) => (
-                <Input
-                  {...field}
+                <DatePicker
                   id="mo-ultima"
-                  type="date"
+                  value={field.value ?? ""}
+                  onValueChange={field.onChange}
                   max={new Date().toISOString().slice(0, 10)}
                   aria-invalid={!!errors.ultimaRealizacao}
                 />

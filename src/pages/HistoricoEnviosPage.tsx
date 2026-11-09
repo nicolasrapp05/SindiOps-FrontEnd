@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import Combobox from "@/components/shared/Combobox"
+import DatePicker from "@/components/shared/DatePicker"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import ListPanel from "@/components/shared/ListPanel"
@@ -265,22 +266,20 @@ export default function HistoricoEnviosPage() {
           placeholder="Buscar status…"
           className="w-full min-w-0 md:w-44"
         />
-        <Input
-          type="date"
+        <DatePicker
           aria-label="Data inicial"
           value={dataInicio}
-          onChange={(e) => {
-            setDataInicio(e.target.value)
+          onValueChange={(value) => {
+            setDataInicio(value)
             resetPage()
           }}
           className="w-full min-w-0 md:w-40"
         />
-        <Input
-          type="date"
+        <DatePicker
           aria-label="Data final"
           value={dataFim}
-          onChange={(e) => {
-            setDataFim(e.target.value)
+          onValueChange={(value) => {
+            setDataFim(value)
             resetPage()
           }}
           className="w-full min-w-0 md:w-40"

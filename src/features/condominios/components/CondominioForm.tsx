@@ -1,5 +1,5 @@
-﻿import { useEffect } from "react"
-import { useForm } from "react-hook-form"
+import { useEffect } from "react"
+import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Loader2 } from "lucide-react"
@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { toastFormValidationError } from "@/lib/form-utils"
+import DatePicker from "@/components/shared/DatePicker"
 import type { Condominio, CreateCondominioRequest } from "../types/condominio.types"
 
 const optionalDate = z
@@ -74,6 +75,7 @@ export default function CondominioForm({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(condominioSchema),
@@ -190,14 +192,36 @@ export default function CondominioForm({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="dataEleicao">Data da Eleição</Label>
-              <Input id="dataEleicao" type="date" {...register("dataEleicao")} />
+              <Controller
+                name="dataEleicao"
+                control={control}
+                render={({ field }) => (
+                  <DatePicker
+                    id="dataEleicao"
+                    value={field.value ?? ""}
+                    onValueChange={field.onChange}
+                    aria-invalid={!!errors.dataEleicao}
+                  />
+                )}
+              />
               {errors.dataEleicao && (
                 <p className="text-xs text-destructive">{errors.dataEleicao.message}</p>
               )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="vencimentoMandato">Vencimento do Mandato</Label>
-              <Input id="vencimentoMandato" type="date" {...register("vencimentoMandato")} />
+              <Controller
+                name="vencimentoMandato"
+                control={control}
+                render={({ field }) => (
+                  <DatePicker
+                    id="vencimentoMandato"
+                    value={field.value ?? ""}
+                    onValueChange={field.onChange}
+                    aria-invalid={!!errors.vencimentoMandato}
+                  />
+                )}
+              />
               {errors.vencimentoMandato && (
                 <p className="text-xs text-destructive">{errors.vencimentoMandato.message}</p>
               )}

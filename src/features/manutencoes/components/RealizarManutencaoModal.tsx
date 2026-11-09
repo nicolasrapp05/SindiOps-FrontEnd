@@ -1,11 +1,11 @@
-﻿import { useEffect } from "react"
+import { useEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { CheckCircle2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import DatePicker from "@/components/shared/DatePicker"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
@@ -95,10 +95,10 @@ export default function RealizarManutencaoModal({
               name="dataRealizacao"
               control={control}
               render={({ field }) => (
-                <Input
-                  {...field}
+                <DatePicker
                   id={`data-realizacao-${manutencaoId}`}
-                  type="date"
+                  value={field.value ?? ""}
+                  onValueChange={field.onChange}
                   max={today}
                   aria-invalid={!!errors.dataRealizacao}
                 />

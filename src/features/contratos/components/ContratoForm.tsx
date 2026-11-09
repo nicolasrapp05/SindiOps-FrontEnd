@@ -1,4 +1,4 @@
-﻿import { useEffect } from "react"
+import { useEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -24,6 +24,7 @@ import {
 import { useFornecedores } from "@/features/fornecedores/hooks/useFornecedores"
 import { useContrato } from "../hooks/useContratos"
 import Combobox from "@/components/shared/Combobox"
+import DatePicker from "@/components/shared/DatePicker"
 import CurrencyInput from "@/components/shared/CurrencyInput"
 import { optionalNumber, toastFormValidationError } from "@/lib/form-utils"
 
@@ -262,11 +263,31 @@ export default function ContratoForm({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="dataInicio">Data de início</Label>
-              <Input id="dataInicio" type="date" {...register("dataInicio")} />
+              <Controller
+                name="dataInicio"
+                control={control}
+                render={({ field }) => (
+                  <DatePicker
+                    id="dataInicio"
+                    value={field.value ?? ""}
+                    onValueChange={field.onChange}
+                  />
+                )}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="dataFim">Data de término</Label>
-              <Input id="dataFim" type="date" {...register("dataFim")} />
+              <Controller
+                name="dataFim"
+                control={control}
+                render={({ field }) => (
+                  <DatePicker
+                    id="dataFim"
+                    value={field.value ?? ""}
+                    onValueChange={field.onChange}
+                  />
+                )}
+              />
             </div>
           </div>
 
