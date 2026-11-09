@@ -3,6 +3,7 @@ import {
   DayPicker,
   getDefaultClassNames,
   type DayButton,
+  type DropdownProps,
   type Locale,
 } from "react-day-picker"
 
@@ -10,6 +11,102 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "lucide-react"
+
+function CalendarDropdown({
+  options,
+  value,
+  onChange,
+  disabled,
+  "aria-label": ariaLabel,
+}: DropdownProps) {
+  const [open, setOpen] = React.useState(false)
+  const rootRef = React.useRef<HTMLDivElement>(null)
+  const listRef = React.useRef<HTMLDivElement>(null)
+  const selected = options?.find((option) => String(option.value) === String(value))
+  const isMonthList = Boolean(
+    options?.length && options.every((option) => option.value >= 0 && option.value <= 11),
+  )
+
+  React.useEffect(() => {
+    if (!open) return
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false)
+    }
+    document.addEventListener("pointerdown", onPointerDown)
+    document.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown)
+      document.removeEventListener("keydown", onKeyDown)
+    }
+  }, [open])
+
+  React.useEffect(() => {
+    if (!open || !listRef.current) return
+    const current = listRef.current.querySelector<HTMLElement>("[data-selected='true']")
+    if (!current) return
+    listRef.current.scrollTop =
+      current.offsetTop - listRef.current.clientHeight / 2 + current.clientHeight / 2
+  }, [open])
+
+  const choose = (next: number) => {
+    onChange?.({ target: { value: String(next) } } as React.ChangeEvent<HTMLSelectElement>)
+    setOpen(false)
+  }
+
+  return (
+    <div ref={rootRef} className={cn("relative", open && "z-30")}>
+      <button
+        type="button"
+        disabled={disabled}
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className="flex h-7 items-center gap-1 rounded-md px-1.5 text-sm font-medium capitalize hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+      >
+        {selected?.label}
+        <ChevronDownIcon className="size-3.5 text-muted-foreground" />
+      </button>
+      {open && (
+        <div
+          ref={listRef}
+          role="listbox"
+          aria-label={ariaLabel}
+          className={cn(
+            "absolute top-[calc(100%+4px)] left-1/2 z-30 -translate-x-1/2 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10",
+            isMonthList
+              ? "grid w-[11.25rem] grid-cols-3 gap-0.5"
+              : "max-h-36 w-[4.5rem] overflow-y-auto overscroll-contain",
+          )}
+        >
+          {options?.map((option) => {
+            const isSelected = String(option.value) === String(value)
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                data-selected={isSelected || undefined}
+                disabled={option.disabled}
+                onClick={() => choose(option.value)}
+                className={cn(
+                  "rounded-md px-1.5 py-1 text-center text-sm capitalize hover:bg-muted disabled:pointer-events-none disabled:opacity-40",
+                  isSelected && "bg-primary text-primary-foreground hover:bg-primary",
+                )}
+              >
+                {option.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function Calendar({
   className,
@@ -172,6 +269,7 @@ function Calendar({
             </td>
           )
         },
+        Dropdown: CalendarDropdown,
         ...components,
       }}
       {...props}
