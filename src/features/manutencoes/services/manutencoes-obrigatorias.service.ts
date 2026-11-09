@@ -7,11 +7,11 @@ import type {
 } from "../types/manutencao-obrigatoria.types"
 
 export function getManutencoesObrigatorias(
-  condominioId: string,
+  condominioId: string | undefined,
   filters?: ManutencaoFilters,
 ) {
   return getPaginated<ManutencaoObrigatoria>("/manutencoes-obrigatorias", {
-    condominioId,
+    ...(condominioId ? { condominioId } : {}),
     ...filters,
   })
 }

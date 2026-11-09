@@ -8,9 +8,9 @@ import type {
   CompraStatus,
 } from "../types/compra.types"
 
-export function getSolicitacoesCompra(condominioId: string, filters?: ComprasFilters) {
+export function getSolicitacoesCompra(condominioId: string | undefined, filters?: ComprasFilters) {
   return getPaginated<SolicitacaoCompra>("/solicitacoes-compra", {
-    condominioId,
+    ...(condominioId ? { condominioId } : {}),
     ...filters,
   })
 }

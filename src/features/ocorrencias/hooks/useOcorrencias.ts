@@ -18,12 +18,13 @@ import {
 import type { CreateOcorrenciaRequest, OcorrenciasFilters, Ocorrencia, OcorrenciaStatus, MidiaOcorrencia } from "../types/ocorrencia.types"
 import type { EnviarComunicacaoRequest } from "../types/comunicacao.types"
 import type { ApiResponse } from "@/types"
+import { condominioIdDaConsulta, escopoCondominioAtivo } from "@/lib/condominio-scope"
 
-export function useOcorrencias(condominioId: string, filters?: OcorrenciasFilters) {
+export function useOcorrencias(escopoId: string | null, filters?: OcorrenciasFilters) {
   return useQuery({
-    queryKey: ["ocorrencias", condominioId, filters],
-    queryFn: () => getOcorrencias(condominioId, filters),
-    enabled: !!condominioId,
+    queryKey: ["ocorrencias", escopoId, filters],
+    queryFn: () => getOcorrencias(condominioIdDaConsulta(escopoId), filters),
+    enabled: escopoCondominioAtivo(escopoId),
     placeholderData: keepPreviousData,
   })
 }

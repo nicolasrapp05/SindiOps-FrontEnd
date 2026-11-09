@@ -29,7 +29,14 @@ import type {
 import {
   TIPO_LABEL, ORIGEM_LABEL, TIPO_LOCAL_LABEL,
 } from "@/features/ocorrencias/types/ocorrencia.types"
+import { useCondominios } from "@/features/condominios/hooks/useCondominios"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
+import {
+  colunasComCondominio,
+  condominioIdDaConsulta,
+  escopoCondominioAtivo,
+  isTodosCondominios,
+} from "@/lib/condominio-scope"
 import { useDebounce } from "@/hooks/useDebounce"
 import { cn } from "@/lib/utils"
 
@@ -61,8 +68,12 @@ export default function OcorrenciasPage() {
   const [sort, setSort] = useState<string>()
   const [dir, setDir] = useState<SortDir>()
 
-  const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
-  const condoConfigured = !!condominioId
+  const escopoId = useCondominioScopeStore((s) => s.selectedCondominioId)
+  const todos = isTodosCondominios(escopoId)
+  const condominioId = condominioIdDaConsulta(escopoId) ?? ""
+  const condoConfigured = escopoCondominioAtivo(escopoId)
+  const { data: condominiosAcessiveis } = useCondominios()
+  const sortColumns = colunasComCondominio(todos, SORT_COLUMNS)
 
   const debouncedSearch = useDebounce(search)
 
@@ -84,12 +95,12 @@ export default function OcorrenciasPage() {
     setPage(1)
   }
 
-  const { data: ocorrenciasPage, isLoading, isError, refetch } = useOcorrencias(condominioId, filters)
+  const { data: ocorrenciasPage, isLoading, isError, refetch } = useOcorrencias(escopoId, filters)
   const {
     data: summaryData,
     isLoading: resumoInicial,
     isPlaceholderData: resumoTrocando,
-  } = useOcorrencias(condominioId, { pageSize: 500 })
+  } = useOcorrencias(escopoId, { pageSize: 500 })
   const createMutation = useCreateOcorrencia()
   const updateMutation = useUpdateOcorrencia()
 
@@ -232,7 +243,7 @@ export default function OcorrenciasPage() {
       {/* Filters */}
       <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-center">
         <ListSortMenu
-          columns={SORT_COLUMNS}
+          columns={sortColumns}
           sort={sort}
           dir={dir}
           onChange={(nextSortKey, nextDir) => {
@@ -313,6 +324,7 @@ export default function OcorrenciasPage() {
                   title={TIPO_LABEL[o.tipoOcorrencia]}
                   onClick={() => navigate(`/ocorrencias/${o.id}`)}
                   fields={[
+                    ...(todos ? [{ label: "Condomínio", value: o.condominio?.nome || "—" }] : []),
                     { label: "Status", value: <OcorrenciaStatusBadge status={o.status} /> },
                     { label: "Origem", value: ORIGEM_LABEL[o.origem] },
                     { label: "Local", value: TIPO_LOCAL_LABEL[o.tipoLocal] },
@@ -337,6 +349,9 @@ export default function OcorrenciasPage() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
+                  {todos && (
+                    <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} className="w-[16%]" />
+                  )}
                   <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
                   <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
                   <SortableHead label="Origem" column="origem" sort={sort} dir={dir} onSort={sortBy} className="w-[15%]" />
@@ -348,13 +363,14 @@ export default function OcorrenciasPage() {
               </TableHeader>
               <TableBody>
                 {listaCarregando ? (
-                  <ListSkeletonRows columns={7} />
+                  <ListSkeletonRows columns={todos ? 8 : 7} />
                 ) : ocList.map((o) => (
                   <TableRow
                     key={o.id}
                     className="cursor-pointer transition-colors hover:bg-muted/60"
                     onClick={() => navigate(`/ocorrencias/${o.id}`)}
                   >
+                    {todos && <TableCell className="truncate">{o.condominio?.nome || "—"}</TableCell>}
                     <TableCell><OcorrenciaStatusBadge status={o.status} /></TableCell>
                     <TableCell className="truncate font-medium">{TIPO_LABEL[o.tipoOcorrencia]}</TableCell>
                     <TableCell className="truncate">{ORIGEM_LABEL[o.origem]}</TableCell>
@@ -401,6 +417,7 @@ export default function OcorrenciasPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         condominioId={condominioId}
+        condominios={todos && !editingOcorrencia ? (condominiosAcessiveis ?? []) : undefined}
         ocorrencia={editingOcorrencia}
         onSubmit={handleFormSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}

@@ -18,6 +18,11 @@ import {
   type RelatorioTipo,
 } from "@/features/relatorios/types/relatorio.types"
 import { useCondominios } from "@/features/condominios/hooks/useCondominios"
+import {
+  ALL_CONDOMINIOS_ID,
+  ALL_CONDOMINIOS_NOME,
+  condominioIdDaConsulta,
+} from "@/lib/condominio-scope"
 import { toast } from "sonner"
 
 const TIPOS: RelatorioTipo[] = [
@@ -69,8 +74,12 @@ export default function RelatoriosPage() {
   const statusOptions = STATUS_OPTIONS[tipo]
   const hasStatusFilter = !!statusOptions
 
+  const variosCondominios = (condominios?.length ?? 0) >= 2
   const condominioOptions = [
     { value: "", label: "Selecionar condomínio…" },
+    ...(variosCondominios
+      ? [{ value: ALL_CONDOMINIOS_ID, label: ALL_CONDOMINIOS_NOME }]
+      : []),
     ...(condominios ?? []).map((c) => ({ value: c.id, label: c.nome })),
   ]
 
@@ -88,9 +97,10 @@ export default function RelatoriosPage() {
       toast.error("A data inicial deve ser igual ou anterior à data final")
       return null
     }
+    const condominioConsulta = condominioIdDaConsulta(condominioId)
     return {
       tipo,
-      condominioId,
+      ...(condominioConsulta ? { condominioId: condominioConsulta } : {}),
       formato,
       filtros: {
         ...(dataInicio && { dataInicio }),

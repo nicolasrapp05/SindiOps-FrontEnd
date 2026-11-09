@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import Combobox from "@/components/shared/Combobox"
+import { useCondominioCadastro, type CondominioOpcao } from "@/components/shared/CondominioCadastroField"
 import DatePicker from "@/components/shared/DatePicker"
 import { toastFormValidationError } from "@/lib/form-utils"
 import {
@@ -49,6 +50,7 @@ interface ManutencaoObrigatoriaFormProps {
   onOpenChange: (open: boolean) => void
   condominioId: string
   condominioNome?: string | null
+  condominios?: CondominioOpcao[]
   manutencao?: ManutencaoObrigatoria | null
   onSubmit: (data: CreateManutencaoObrigatoriaRequest) => void
   isSubmitting: boolean
@@ -59,11 +61,15 @@ export default function ManutencaoObrigatoriaForm({
   onOpenChange,
   condominioId,
   condominioNome,
+  condominios,
   manutencao,
   onSubmit,
   isSubmitting,
 }: ManutencaoObrigatoriaFormProps) {
   const isEdit = !!manutencao
+  const cadastro = useCondominioCadastro(condominioId, isEdit ? undefined : condominios, open)
+  const condominioEfetivo = isEdit ? (manutencao?.condominio.id || condominioId) : cadastro.condominioId
+  const nomeExibido = isEdit ? manutencao?.condominio.nome : condominioNome
 
   const {
     control,
@@ -100,8 +106,9 @@ export default function ManutencaoObrigatoriaForm({
   }, [open, manutencao, reset])
 
   const submit = (values: FormData) => {
+    if (!condominioEfetivo) return
     onSubmit({
-      condominioId,
+      condominioId: condominioEfetivo,
       tipo: values.tipo,
       dataVencimento: values.dataVencimento,
       ultimaRealizacao: values.ultimaRealizacao?.trim() || undefined,
@@ -119,12 +126,14 @@ export default function ManutencaoObrigatoriaForm({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(submit, toastFormValidationError)} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Condomínio</Label>
-            <div className="flex h-10 items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground">
-              {condominioNome || "-"}
+          {cadastro.campo ?? (
+            <div className="space-y-1.5">
+              <Label>Condomínio</Label>
+              <div className="flex h-10 items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground">
+                {nomeExibido || "-"}
+              </div>
             </div>
-          </div>
+          )}
           <div className="space-y-2">
             <Label>Tipo</Label>
             <Controller
@@ -192,7 +201,7 @@ export default function ManutencaoObrigatoriaForm({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !condominioEfetivo}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -10,7 +10,7 @@ import {
 const STATUS: CompraStatus[] = ["nova", "em_andamento", "finalizada", "cancelada"]
 const CATEGORIAS = Object.keys(COMPRA_CATEGORIA_LABEL) as CompraCategoria[]
 const SITUACOES = Object.keys(SITUACAO_COTACAO_LABEL) as SituacaoCotacao[]
-const SORTS = ["status", "itens", "solicitante", "tipoAprovacao", "cotacoes", "data"]
+const SORTS = ["condominio", "status", "itens", "solicitante", "tipoAprovacao", "cotacoes", "data"]
 
 export interface CompraListParams {
   status: CompraStatus | "todas"

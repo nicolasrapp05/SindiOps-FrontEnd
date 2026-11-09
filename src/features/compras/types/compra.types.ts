@@ -40,6 +40,7 @@ export interface Cotacao {
 export interface SolicitacaoCompra {
   id: string
   condominioId?: string
+  condominio?: { id: string; nome: string }
   itens: SolicitacaoCompraItem[]
   justificativa?: string
   tipoAprovacao: TipoAprovacao

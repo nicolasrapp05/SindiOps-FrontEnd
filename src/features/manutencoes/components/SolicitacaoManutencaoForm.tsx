@@ -23,6 +23,7 @@ import {
 } from "../types/solicitacao-manutencao.types"
 import { useFornecedores } from "@/features/fornecedores/hooks/useFornecedores"
 import Combobox from "@/components/shared/Combobox"
+import { useCondominioCadastro, type CondominioOpcao } from "@/components/shared/CondominioCadastroField"
 import { toastFormValidationError } from "@/lib/form-utils"
 
 const TIPOS = Object.keys(SOLICITACAO_TIPO_LABEL) as SolicitacaoTipoServico[]
@@ -57,6 +58,7 @@ interface SolicitacaoManutencaoFormProps {
   onSubmit: (data: CreateSolicitacaoManutencaoRequest) => void
   isSubmitting: boolean
   condominioId: string
+  condominios?: CondominioOpcao[]
 }
 
 export default function SolicitacaoManutencaoForm({
@@ -65,6 +67,7 @@ export default function SolicitacaoManutencaoForm({
   onSubmit,
   isSubmitting,
   condominioId,
+  condominios,
 }: SolicitacaoManutencaoFormProps) {
   const {
     control,
@@ -100,9 +103,12 @@ export default function SolicitacaoManutencaoForm({
     }
   }, [open, reset])
 
+  const cadastro = useCondominioCadastro(condominioId, condominios, open)
+
   const submit = (values: FormData) => {
+    if (!cadastro.condominioId) return
     onSubmit({
-      condominioId,
+      condominioId: cadastro.condominioId,
       tipoServico: values.tipoServico,
       local: values.local.trim(),
       responsavel: values.responsavel,
@@ -120,6 +126,7 @@ export default function SolicitacaoManutencaoForm({
           <DialogDescription>Descreva o serviço e quem deve executá-lo.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(submit, toastFormValidationError)} className="space-y-4">
+          {cadastro.campo}
           <div className="space-y-2">
             <Label>Tipo de serviço<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
             <Controller
@@ -215,7 +222,7 @@ export default function SolicitacaoManutencaoForm({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting || !condominioId}>
+            <Button type="submit" disabled={isSubmitting || !cadastro.condominioId}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

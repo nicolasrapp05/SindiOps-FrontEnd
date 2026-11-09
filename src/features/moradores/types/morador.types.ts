@@ -9,6 +9,7 @@ export const MORADOR_PAPEL_LABEL: Record<MoradorPapel, string> = {
 export interface Morador {
   id: string
   condominioId: string
+  condominio?: { id: string; nome: string }
   unidadeId: string
   nome: string
   email: string

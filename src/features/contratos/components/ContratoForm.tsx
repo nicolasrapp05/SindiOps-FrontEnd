@@ -24,6 +24,7 @@ import {
 import { useFornecedores } from "@/features/fornecedores/hooks/useFornecedores"
 import { useContrato } from "../hooks/useContratos"
 import Combobox from "@/components/shared/Combobox"
+import { useCondominioCadastro, type CondominioOpcao } from "@/components/shared/CondominioCadastroField"
 import DatePicker from "@/components/shared/DatePicker"
 import CurrencyInput from "@/components/shared/CurrencyInput"
 import { optionalNumber, toastFormValidationError } from "@/lib/form-utils"
@@ -73,6 +74,7 @@ interface ContratoFormProps {
   onOpenChange: (open: boolean) => void
   condominioId: string
   condominioNome?: string
+  condominios?: CondominioOpcao[]
   contrato?: Contrato | null
   onSubmit: (data: CreateContratoRequest) => void
   isSubmitting: boolean
@@ -83,11 +85,13 @@ export default function ContratoForm({
   onOpenChange,
   condominioId,
   condominioNome,
+  condominios,
   contrato,
   onSubmit,
   isSubmitting,
 }: ContratoFormProps) {
   const isEdit = !!contrato
+  const cadastro = useCondominioCadastro(condominioId, isEdit ? undefined : condominios, open)
 
   const { data: fornecedoresData } = useFornecedores({ pageSize: 500 })
   const fornecedoresList = fornecedoresData?.data ?? []
@@ -95,6 +99,10 @@ export default function ContratoForm({
   // Busca o detalhe do contrato para obter os campos ausentes na listagem
   // (nomeContato, telefoneContato, indiceReajuste, condicoesRenovacao, condicoesRescisao)
   const { data: contratoDetalhe } = useContrato(contrato?.id ?? "")
+  const condominioEfetivo = isEdit
+    ? (contrato?.condominio?.id || contratoDetalhe?.condominioId || contrato?.condominioId || "")
+    : cadastro.condominioId
+  const nomeExibido = isEdit ? (contrato?.condominio?.nome || condominioNome) : condominioNome
 
   const {
     register,
@@ -170,8 +178,9 @@ export default function ContratoForm({
   }
 
   const handleFormSubmit = (data: FormData) => {
+    if (!condominioEfetivo) return
     onSubmit({
-      condominioId,
+      condominioId: condominioEfetivo,
       fornecedorId: data.fornecedorId,
       tipoServico: data.tipoServico,
       nomeContato: data.nomeContato || undefined,
@@ -199,13 +208,14 @@ export default function ContratoForm({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(handleFormSubmit, toastFormValidationError)} className="space-y-4 py-2">
-          {/* Condomínio (read-only context) */}
-          <div className="space-y-1.5">
-            <Label>Condomínio</Label>
-            <div className="flex h-10 items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground">
-              {condominioNome || "-"}
+          {cadastro.campo ?? (
+            <div className="space-y-1.5">
+              <Label>Condomínio</Label>
+              <div className="flex h-10 items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground">
+                {nomeExibido || "-"}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Fornecedor */}
           <div className="space-y-1.5">
@@ -334,7 +344,7 @@ export default function ContratoForm({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !condominioEfetivo}
               
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

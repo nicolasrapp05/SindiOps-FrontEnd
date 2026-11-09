@@ -53,7 +53,14 @@ import {
   podeCancelarContrato,
   podeReativarContrato,
 } from "@/features/contratos/lib/contrato-status"
+import { useCondominios } from "@/features/condominios/hooks/useCondominios"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
+import {
+  colunasComCondominio,
+  condominioIdDaConsulta,
+  escopoCondominioAtivo,
+  isTodosCondominios,
+} from "@/lib/condominio-scope"
 import { useDebounce } from "@/hooks/useDebounce"
 import { formatBRL } from "@/lib/currency"
 
@@ -90,9 +97,13 @@ export default function ContratosPage() {
   const [editingContrato, setEditingContrato] = useState<Contrato | null>(null)
   const [pendingCancel, setPendingCancel] = useState<Contrato | null>(null)
 
-  const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
+  const escopoId = useCondominioScopeStore((s) => s.selectedCondominioId)
+  const todos = isTodosCondominios(escopoId)
+  const condominioId = condominioIdDaConsulta(escopoId) ?? ""
   const condominioNome = useCondominioScopeStore((s) => s.selectedCondominioNome) ?? ""
-  const condoConfigured = !!condominioId
+  const condoConfigured = escopoCondominioAtivo(escopoId)
+  const { data: condominiosAcessiveis } = useCondominios()
+  const sortColumns = colunasComCondominio(todos, SORT_COLUMNS)
 
   const debouncedSearch = useDebounce(search)
 
@@ -114,12 +125,12 @@ export default function ContratosPage() {
 
   const summaryFilters = { page: 1, pageSize: 2000 }
 
-  const { data: contratosRaw, isLoading, isError, refetch } = useContratos(condominioId, tableFilters)
+  const { data: contratosRaw, isLoading, isError, refetch } = useContratos(escopoId, tableFilters)
   const {
     data: contratosSummaryRaw,
     isLoading: resumoInicial,
     isPlaceholderData: resumoTrocando,
-  } = useContratos(condominioId, summaryFilters)
+  } = useContratos(escopoId, summaryFilters)
 
   const createMutation = useCreateContrato()
   const updateMutation = useUpdateContrato()
@@ -249,7 +260,7 @@ export default function ContratosPage() {
 
       <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-center">
         <ListSortMenu
-          columns={SORT_COLUMNS}
+          columns={sortColumns}
           sort={sort}
           dir={dir}
           onChange={(nextSortKey, nextDir) => {
@@ -314,6 +325,7 @@ export default function ContratosPage() {
                   className={contratoRowHighlightClass(c.status)}
                   title={TIPO_SERVICO_LABEL[c.tipoServico]}
                   fields={[
+                    ...(todos ? [{ label: "Condomínio", value: c.condominio?.nome || "—" }] : []),
                     { label: "Status", value: <ContratoStatusBadge status={c.status} /> },
                     { label: "Fornecedor", value: c.fornecedor.nome },
                     { label: "Contato", value: contato },
@@ -365,6 +377,9 @@ export default function ContratosPage() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
+                  {todos && (
+                    <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
+                  )}
                   <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
                   <SortableHead label="Tipo de serviço" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
                   <SortableHead label="Fornecedor" column="fornecedor" sort={sort} dir={dir} onSort={sortBy} className="w-[13%]" />
@@ -377,7 +392,7 @@ export default function ContratosPage() {
               </TableHeader>
               <TableBody>
                 {listaCarregando ? (
-                  <ListSkeletonRows columns={8} />
+                  <ListSkeletonRows columns={todos ? 9 : 8} />
                 ) : contratoList.map((c) => {
                   const contato =
                     [c.nomeContato, c.telefoneContato].filter(Boolean).join(" · ") || "-"
@@ -390,6 +405,7 @@ export default function ContratosPage() {
                       key={c.id}
                       className={rowHighlight}
                     >
+                      {todos && <TableCell className="truncate">{c.condominio?.nome || "—"}</TableCell>}
                       <TableCell>
                         <ContratoStatusBadge status={c.status} />
                       </TableCell>
@@ -467,7 +483,8 @@ export default function ContratosPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         condominioId={condominioId}
-        condominioNome={condominioNome}
+        condominioNome={todos ? undefined : condominioNome}
+        condominios={todos && !editingContrato ? (condominiosAcessiveis ?? []) : undefined}
         contrato={editingContrato}
         onSubmit={handleFormSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}

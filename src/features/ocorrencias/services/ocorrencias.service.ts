@@ -11,8 +11,11 @@ import type {
   ComunicacaoResponse,
 } from "../types/comunicacao.types"
 
-export function getOcorrencias(condominioId: string, filters?: OcorrenciasFilters) {
-  return getPaginated<Ocorrencia>("/ocorrencias", { condominioId, ...filters })
+export function getOcorrencias(condominioId: string | undefined, filters?: OcorrenciasFilters) {
+  return getPaginated<Ocorrencia>("/ocorrencias", {
+    ...(condominioId ? { condominioId } : {}),
+    ...filters,
+  })
 }
 
 export function getOcorrencia(id: string) {

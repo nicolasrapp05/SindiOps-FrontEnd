@@ -30,6 +30,7 @@ export const TIPO_SERVICO_LABEL: Record<TipoServico, string> = {
 export interface Contrato {
   id: string
   condominioId: string
+  condominio?: { id: string; nome: string }
   fornecedor: { id: string; nome: string }
   tipoServico: TipoServico
   nomeContato?: string

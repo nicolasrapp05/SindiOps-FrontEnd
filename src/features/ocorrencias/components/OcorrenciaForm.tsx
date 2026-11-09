@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useForm, Controller, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -22,6 +22,7 @@ import type { Bloco } from "@/features/condominios/types/condominio.types"
 import { useMoradores } from "@/features/moradores/hooks/useMoradores"
 import type { Morador } from "@/features/moradores/types/morador.types"
 import Combobox from "@/components/shared/Combobox"
+import { useCondominioCadastro, type CondominioOpcao } from "@/components/shared/CondominioCadastroField"
 import { toastFormValidationError } from "@/lib/form-utils"
 import { useOcorrencia } from "../hooks/useOcorrencias"
 
@@ -60,18 +61,20 @@ interface OcorrenciaFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   condominioId: string
+  condominios?: CondominioOpcao[]
   ocorrencia?: { id: string } | null
   onSubmit: (data: CreateOcorrenciaRequest) => void
   isSubmitting: boolean
 }
 
 export default function OcorrenciaForm({
-  open, onOpenChange, condominioId, ocorrencia, onSubmit, isSubmitting,
+  open, onOpenChange, condominioId, condominios, ocorrencia, onSubmit, isSubmitting,
 }: OcorrenciaFormProps) {
   const isEdit = !!ocorrencia
   const { data: detalhe, isFetching: detalheCarregando } = useOcorrencia(ocorrencia?.id ?? "")
   const detalhePronto = !isEdit || (!!detalhe && detalhe.id === ocorrencia.id && !detalheCarregando)
-  const condominioEfetivo = detalhe?.condominioId || condominioId
+  const cadastro = useCondominioCadastro(condominioId, isEdit ? undefined : condominios, open)
+  const condominioEfetivo = (isEdit && detalhe?.condominioId) ? detalhe.condominioId : cadastro.condominioId
 
   const { data: blocosData } = useQuery({
     queryKey: ["condominios", condominioEfetivo, "blocos"],
@@ -105,6 +108,16 @@ export default function OcorrenciaForm({
         blocoId: detalhe.bloco?.id ?? "",
         unidadeId: detalhe.unidade?.id ?? "",
       } satisfies FormData)
+
+  const condoAnterior = useRef(condominioEfetivo)
+  useEffect(() => {
+    if (condoAnterior.current === condominioEfetivo) return
+    condoAnterior.current = condominioEfetivo
+    if (!open || isEdit) return
+    setValue("blocoId", "")
+    setValue("unidadeId", "")
+    setValue("moradorId", "")
+  }, [condominioEfetivo, open, isEdit, setValue])
 
   useEffect(() => {
     if (!open) return
@@ -142,8 +155,9 @@ export default function OcorrenciaForm({
   }
 
   const onFormSubmit = (data: FormData) => {
+    if (!condominioEfetivo) return
     onSubmit({
-      condominioId: (isEdit && detalhe?.condominioId) ? detalhe.condominioId : condominioId,
+      condominioId: condominioEfetivo,
       origem: data.origem as OcorrenciaOrigem,
       tipoLocal: data.tipoLocal as TipoLocal,
       tipoOcorrencia: data.tipoOcorrencia as OcorrenciaTipo,
@@ -167,6 +181,7 @@ export default function OcorrenciaForm({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onFormSubmit, toastFormValidationError)} className="space-y-4 py-2">
+          {cadastro.campo}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Origem<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
@@ -283,7 +298,7 @@ export default function OcorrenciaForm({
 
           <DialogFooter className="pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isSubmitting || !detalhePronto}>
+            <Button type="submit" disabled={isSubmitting || !detalhePronto || !condominioEfetivo}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEdit ? "Salvar alterações" : "Registrar Ocorrência"}
             </Button>

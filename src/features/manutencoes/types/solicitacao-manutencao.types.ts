@@ -30,6 +30,7 @@ export const SOLICITACAO_TIPO_LABEL: Record<SolicitacaoTipoServico, string> = {
 export interface SolicitacaoManutencao {
   id: string
   condominioId?: string
+  condominio?: { id: string; nome: string }
   tipoServico: SolicitacaoTipoServico
   local: string
   responsavel: "fornecedor" | "zelador"

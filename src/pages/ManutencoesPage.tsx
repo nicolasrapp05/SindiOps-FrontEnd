@@ -26,7 +26,14 @@ import { useDebounce } from "@/hooks/useDebounce"
 import { canAccessAdmin } from "@/lib/cargo-permissions"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth-store"
+import { useCondominios } from "@/features/condominios/hooks/useCondominios"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
+import {
+  colunasComCondominio,
+  condominioIdDaConsulta,
+  escopoCondominioAtivo,
+  isTodosCondominios,
+} from "@/lib/condominio-scope"
 import { SolicitacaoStatusBadge } from "@/features/manutencoes/components/SolicitacaoStatusBadge"
 import { SituacaoOrcamentoBadge } from "@/features/manutencoes/components/SituacaoOrcamentoBadge"
 import SolicitacaoManutencaoForm from "@/features/manutencoes/components/SolicitacaoManutencaoForm"
@@ -94,7 +101,10 @@ const FILTRO_FILA_LABEL: Record<FiltroFila, string> = {
 
 
 export default function ManutencoesPage() {
-  const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
+  const escopoId = useCondominioScopeStore((s) => s.selectedCondominioId)
+  const todos = isTodosCondominios(escopoId)
+  const condominioId = condominioIdDaConsulta(escopoId) ?? ""
+  const { data: condominiosAcessiveis } = useCondominios()
   const cargo = useAuthStore((s) => s.user?.cargo)
   const admin = canAccessAdmin(cargo)
   const navigate = useNavigate()
@@ -102,7 +112,10 @@ export default function ManutencoesPage() {
   const query = searchParams.toString()
   const parsed = useMemo(() => readManutencaoListParams(new URLSearchParams(query)), [query])
   const visaoOrcamentos = admin && parsed.visao === "orcamentos"
-  const sortColumns = visaoOrcamentos ? FILA_SORT_COLUMNS : CHAMADO_SORT_COLUMNS
+  const sortColumns = useMemo(
+    () => colunasComCondominio(todos, visaoOrcamentos ? FILA_SORT_COLUMNS : CHAMADO_SORT_COLUMNS),
+    [todos, visaoOrcamentos],
+  )
   const parsedLimpo = useMemo<ManutencaoListParams>(
     () =>
       sortColumns.some((column) => column.key === parsed.sort)
@@ -185,7 +198,7 @@ export default function ManutencoesPage() {
   const detalheTo = (id: string) => manutencaoDetalheTo(id, viewState)
 
   const { data, isLoading, isError, refetch } = useSolicitacoesManutencao(
-    condominioId,
+    escopoId,
     filters,
   )
 
@@ -200,7 +213,7 @@ export default function ManutencoesPage() {
     createMutation.mutate(payload, { onSuccess: () => setFormOpen(false) })
   }
 
-  const condoConfigured = !!condominioId
+  const condoConfigured = escopoCondominioAtivo(escopoId)
   const listaCarregando = condoConfigured && isLoading
   const visaoPainel = visaoOrcamentos ? "orcamentos" : "chamados"
 
@@ -421,6 +434,7 @@ export default function ManutencoesPage() {
                   title={SOLICITACAO_TIPO_LABEL[row.tipoServico]}
                   onClick={() => navigate(detalheTo(row.id))}
                   fields={[
+                    ...(todos ? [{ label: "Condomínio", value: row.condominio?.nome || "—" }] : []),
                     { label: "Situação", value: <SituacaoOrcamentoBadge situacao={row.situacaoOrcamento} /> },
                     { label: "Local", value: row.local },
                     { label: "Propostas", value: row.totalOrcamentos ?? 0 },
@@ -439,6 +453,9 @@ export default function ManutencoesPage() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
+                  {todos && (
+                    <SortableHead label="Condomínio" column="condominio" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[16%]" />
+                  )}
                   <SortableHead label="Situação" column="situacao" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[16%]" />
                   <SortableHead label="Chamado" column="tipo" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[28%]" />
                   <SortableHead label="Local" column="local" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[20%]" />
@@ -449,13 +466,14 @@ export default function ManutencoesPage() {
               </TableHeader>
               <TableBody>
                 {listaCarregando ? (
-                  <ListSkeletonRows columns={6} />
+                  <ListSkeletonRows columns={todos ? 7 : 6} />
                 ) : list.map((row) => (
                   <TableRow
                     key={row.id}
                     className="cursor-pointer"
                     onClick={() => navigate(detalheTo(row.id))}
                   >
+                    {todos && <TableCell className="truncate">{row.condominio?.nome || "—"}</TableCell>}
                     <TableCell>
                       <SituacaoOrcamentoBadge situacao={row.situacaoOrcamento} />
                     </TableCell>
@@ -512,6 +530,7 @@ export default function ManutencoesPage() {
                   title={SOLICITACAO_TIPO_LABEL[row.tipoServico]}
                   onClick={() => navigate(detalheTo(row.id))}
                   fields={[
+                    ...(todos ? [{ label: "Condomínio", value: row.condominio?.nome || "—" }] : []),
                     { label: "Status", value: <SolicitacaoStatusBadge status={row.status} /> },
                     {
                       label: "Orçamento",
@@ -547,6 +566,9 @@ export default function ManutencoesPage() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
+                  {todos && (
+                    <SortableHead label="Condomínio" column="condominio" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[14%]" />
+                  )}
                   <SortableHead label="Status" column="status" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[12%]" />
                   <SortableHead label="Tipo de serviço" column="tipo" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[15%]" />
                   <SortableHead label="Orçamento" column="orcamento" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[18%]" />
@@ -559,13 +581,14 @@ export default function ManutencoesPage() {
               </TableHeader>
               <TableBody>
                 {listaCarregando ? (
-                  <ListSkeletonRows columns={8} />
+                  <ListSkeletonRows columns={todos ? 9 : 8} />
                 ) : list.map((row) => (
                   <TableRow
                     key={row.id}
                     className="cursor-pointer"
                     onClick={() => navigate(detalheTo(row.id))}
                   >
+                    {todos && <TableCell className="truncate">{row.condominio?.nome || "—"}</TableCell>}
                     <TableCell>
                       <SolicitacaoStatusBadge status={row.status} />
                     </TableCell>
@@ -641,6 +664,7 @@ export default function ManutencoesPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         condominioId={condominioId}
+        condominios={todos ? (condominiosAcessiveis ?? []) : undefined}
         onSubmit={handleCreate}
         isSubmitting={createMutation.isPending}
       />

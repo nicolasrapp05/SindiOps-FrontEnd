@@ -1,4 +1,4 @@
-import { useLayoutEffect } from "react"
+import { useEffect, useLayoutEffect, useRef } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -24,6 +24,7 @@ import {
   type CreateMoradorRequest,
 } from "../types/morador.types"
 import Combobox from "@/components/shared/Combobox"
+import { useCondominioCadastro, type CondominioOpcao } from "@/components/shared/CondominioCadastroField"
 import { toastFormValidationError } from "@/lib/form-utils"
 
 function phoneMask(value: string): string {
@@ -50,6 +51,7 @@ interface MoradorFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   condominioId: string
+  condominios?: CondominioOpcao[]
   morador?: Morador | null
   onSubmit: (data: CreateMoradorRequest) => void
   isSubmitting: boolean
@@ -59,16 +61,21 @@ export default function MoradorForm({
   open,
   onOpenChange,
   condominioId,
+  condominios,
   morador,
   onSubmit,
   isSubmitting,
 }: MoradorFormProps) {
   const isEdit = !!morador
+  const cadastro = useCondominioCadastro(condominioId, isEdit ? undefined : condominios, open)
+  const condominioEfetivo = isEdit
+    ? (morador?.condominioId || morador?.condominio?.id || "")
+    : cadastro.condominioId
 
   const { data: blocos } = useQuery({
-    queryKey: ["condominios", condominioId, "blocos"],
-    queryFn: () => getBlocos(condominioId),
-    enabled: open && !!condominioId,
+    queryKey: ["condominios", condominioEfetivo, "blocos"],
+    queryFn: () => getBlocos(condominioEfetivo),
+    enabled: open && !!condominioEfetivo,
   })
 
   const {
@@ -90,6 +97,15 @@ export default function MoradorForm({
       telefone: "",
     },
   })
+
+  const condoAnterior = useRef(condominioEfetivo)
+  useEffect(() => {
+    if (condoAnterior.current === condominioEfetivo) return
+    condoAnterior.current = condominioEfetivo
+    if (!open || isEdit) return
+    setValue("blocoId", "")
+    setValue("unidadeId", "")
+  }, [condominioEfetivo, open, isEdit, setValue])
 
   const selectedBlocoId = watch("blocoId")
   const selectedBloco = blocos?.find((b: Bloco) => b.id === selectedBlocoId)
@@ -119,8 +135,9 @@ export default function MoradorForm({
   }, [open, morador, reset])
 
   const handleFormSubmit = (data: FormData) => {
+    if (!condominioEfetivo) return
     onSubmit({
-      condominioId,
+      condominioId: condominioEfetivo,
       unidadeId: data.unidadeId,
       nome: data.nome,
       email: data.email,
@@ -145,6 +162,7 @@ export default function MoradorForm({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(handleFormSubmit, toastFormValidationError)} className="space-y-4 py-2">
+          {cadastro.campo}
           {/* Nome */}
           <div className="space-y-1.5">
             <Label htmlFor="nome">Nome Completo<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
@@ -243,7 +261,7 @@ export default function MoradorForm({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !condominioEfetivo}
               
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

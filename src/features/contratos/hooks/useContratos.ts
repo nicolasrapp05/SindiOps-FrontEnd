@@ -15,17 +15,18 @@ import {
 } from "../services/contratos.service"
 import type { Contrato, ContratosFilters, CreateContratoRequest } from "../types/contrato.types"
 import { CONTRATO_STATUS_LABEL } from "../lib/contrato-status"
+import { condominioIdDaConsulta, escopoCondominioAtivo } from "@/lib/condominio-scope"
 
-export function useContratos(condominioId: string, filters?: ContratosFilters) {
+export function useContratos(escopoId: string | null, filters?: ContratosFilters) {
   return useQuery({
-    queryKey: ["contratos", condominioId, filters],
-    queryFn: () => getContratos(condominioId, filters),
-    enabled: !!condominioId,
+    queryKey: ["contratos", escopoId, filters],
+    queryFn: () => getContratos(condominioIdDaConsulta(escopoId), filters),
+    enabled: escopoCondominioAtivo(escopoId),
     placeholderData: keepPreviousData,
   })
 }
 
-/** Busca contratos sem escopo de condomínio — retorna todos os contratos do síndico. */
+/** Contratos da carteira acessível, sem recorte de um condomínio. */
 export function useContratosGlobais(filters?: ContratosFilters) {
   return useQuery({
     queryKey: ["contratos", "globais", filters],

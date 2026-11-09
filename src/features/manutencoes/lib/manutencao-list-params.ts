@@ -11,6 +11,7 @@ const STATUS: SolicitacaoStatus[] = ["nova", "em_andamento", "finalizada", "canc
 const TIPOS = Object.keys(SOLICITACAO_TIPO_LABEL) as SolicitacaoTipoServico[]
 const SITUACOES = Object.keys(SITUACAO_ORCAMENTO_LABEL) as SituacaoOrcamento[]
 const SORTS = [
+  "condominio",
   "situacao",
   "orcamento",
   "tipo",

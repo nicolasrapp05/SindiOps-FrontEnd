@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import Combobox from "@/components/shared/Combobox"
+import { useCondominioCadastro, type CondominioOpcao } from "@/components/shared/CondominioCadastroField"
 import { toastFormValidationError } from "@/lib/form-utils"
 import {
   COMPRA_CATEGORIA_LABEL,
@@ -69,6 +70,7 @@ interface SolicitacaoCompraFormProps {
   onSubmit: (data: CreateSolicitacaoCompraRequest) => void
   isSubmitting: boolean
   condominioId: string
+  condominios?: CondominioOpcao[]
 }
 
 export default function SolicitacaoCompraForm({
@@ -77,6 +79,7 @@ export default function SolicitacaoCompraForm({
   onSubmit,
   isSubmitting,
   condominioId,
+  condominios,
 }: SolicitacaoCompraFormProps) {
   const {
     register,
@@ -93,6 +96,7 @@ export default function SolicitacaoCompraForm({
     },
   })
 
+  const cadastro = useCondominioCadastro(condominioId, condominios, open)
   const { fields, append, remove } = useFieldArray({ control, name: "itens" })
 
   useEffect(() => {
@@ -106,8 +110,9 @@ export default function SolicitacaoCompraForm({
   }, [open, reset])
 
   const submit = (data: FormData) => {
+    if (!cadastro.condominioId) return
     onSubmit({
-      condominioId,
+      condominioId: cadastro.condominioId,
       itens: data.itens.map((item) => ({
         categoria: item.categoria,
         descricao: item.descricao.trim(),
@@ -131,6 +136,7 @@ export default function SolicitacaoCompraForm({
         </DialogHeader>
         <form onSubmit={handleSubmit(submit, toastFormValidationError)} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-1">
+          {cadastro.campo}
           <div className="space-y-3">
             {fields.map((field, index) => (
               <div key={field.id} className="space-y-3 rounded-lg border p-3">
@@ -264,7 +270,7 @@ export default function SolicitacaoCompraForm({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !cadastro.condominioId}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar solicitação
             </Button>

@@ -14,12 +14,13 @@ import type {
   SolicitacaoManutencao,
   SolicitacaoStatus,
 } from "../types/solicitacao-manutencao.types"
+import { condominioIdDaConsulta, escopoCondominioAtivo } from "@/lib/condominio-scope"
 
-export function useSolicitacoesManutencao(condominioId: string, filters?: SolicitacaoFilters) {
+export function useSolicitacoesManutencao(escopoId: string | null, filters?: SolicitacaoFilters) {
   return useQuery({
-    queryKey: ["solicitacoes-manutencao", condominioId, filters],
-    queryFn: () => getSolicitacoesManutencao(condominioId, filters),
-    enabled: !!condominioId,
+    queryKey: ["solicitacoes-manutencao", escopoId, filters],
+    queryFn: () => getSolicitacoesManutencao(condominioIdDaConsulta(escopoId), filters),
+    enabled: escopoCondominioAtivo(escopoId),
     placeholderData: keepPreviousData,
   })
 }

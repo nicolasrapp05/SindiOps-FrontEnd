@@ -18,12 +18,13 @@ import type {
   MoradoresFilters,
   Morador,
 } from "../types/morador.types"
+import { condominioIdDaConsulta, escopoCondominioAtivo } from "@/lib/condominio-scope"
 
-export function useMoradores(condominioId: string, filters?: MoradoresFilters) {
+export function useMoradores(escopoId: string | null, filters?: MoradoresFilters) {
   return useQuery({
-    queryKey: ["moradores", condominioId, filters],
-    queryFn: () => getMoradores(condominioId, filters),
-    enabled: !!condominioId,
+    queryKey: ["moradores", escopoId, filters],
+    queryFn: () => getMoradores(condominioIdDaConsulta(escopoId), filters),
+    enabled: escopoCondominioAtivo(escopoId),
     placeholderData: keepPreviousData,
   })
 }

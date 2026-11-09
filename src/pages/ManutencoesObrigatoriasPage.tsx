@@ -34,7 +34,13 @@ import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import { Link } from "react-router-dom"
 import { cn } from "@/lib/utils"
+import { useCondominios } from "@/features/condominios/hooks/useCondominios"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
+import {
+  condominioIdDaConsulta,
+  escopoCondominioAtivo,
+  isTodosCondominios,
+} from "@/lib/condominio-scope"
 import { ManutencaoStatusBadge } from "@/features/manutencoes/components/ManutencaoStatusBadge"
 import ManutencaoObrigatoriaForm from "@/features/manutencoes/components/ManutencaoObrigatoriaForm"
 import RealizarManutencaoModal from "@/features/manutencoes/components/RealizarManutencaoModal"
@@ -74,8 +80,11 @@ const TAB_LABELS: Record<StatusTab, string> = {
 }
 
 export default function ManutencoesObrigatoriasPage() {
-  const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
+  const escopoId = useCondominioScopeStore((s) => s.selectedCondominioId)
+  const todos = isTodosCondominios(escopoId)
+  const condominioId = condominioIdDaConsulta(escopoId) ?? ""
   const condominioNome = useCondominioScopeStore((s) => s.selectedCondominioNome)
+  const { data: condominiosAcessiveis } = useCondominios()
 
   const [statusTab, setStatusTab] = useState<StatusTab>("todas")
   const [tipoFilter, setTipoFilter] = useState<ManutencaoTipo | "">("")
@@ -113,7 +122,7 @@ export default function ManutencoesObrigatoriasPage() {
   }
 
   const { data, isLoading, isError, refetch } = useManutencoesObrigatorias(
-    condominioId,
+    escopoId,
     filters,
   )
 
@@ -172,7 +181,7 @@ export default function ManutencoesObrigatoriasPage() {
     setRealizarOpen(true)
   }
 
-  const condoConfigured = !!condominioId
+  const condoConfigured = escopoCondominioAtivo(escopoId)
   const listaCarregando = condoConfigured && isLoading
 
   if (condoConfigured && isError) {
@@ -444,7 +453,8 @@ export default function ManutencoesObrigatoriasPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         condominioId={condominioId}
-        condominioNome={condominioNome}
+        condominioNome={todos ? undefined : condominioNome}
+        condominios={todos && !editing ? (condominiosAcessiveis ?? []) : undefined}
         manutencao={editing}
         onSubmit={handleFormSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}

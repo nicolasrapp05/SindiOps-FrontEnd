@@ -18,7 +18,7 @@ export const RELATORIO_TIPO_LABEL: Record<RelatorioTipo, string> = {
 
 export interface GerarRelatorioRequest {
   tipo: RelatorioTipo
-  condominioId: string
+  condominioId?: string
   formato: RelatorioFormato
   filtros?: Record<string, string>
 }

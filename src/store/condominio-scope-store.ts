@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { ALL_CONDOMINIOS_ID, ALL_CONDOMINIOS_NOME } from "@/lib/condominio-scope"
 
 export interface CondominioScopePick {
   id: string
@@ -49,7 +50,14 @@ export const useCondominioScopeStore = create<CondominioScopeState>()(
         let nextId = get().selectedCondominioId
         let nextNome = get().selectedCondominioNome
 
-        if (nextId !== null && !idSet.has(nextId)) {
+        if (nextId === ALL_CONDOMINIOS_ID) {
+          if (condos.length === 1) {
+            nextId = condos[0].id
+            nextNome = condos[0].nome
+          } else {
+            nextNome = ALL_CONDOMINIOS_NOME
+          }
+        } else if (nextId !== null && !idSet.has(nextId)) {
           nextId = null
           nextNome = null
         }
@@ -59,7 +67,7 @@ export const useCondominioScopeStore = create<CondominioScopeState>()(
           nextNome = condos[0].nome
         }
 
-        if (nextId !== null) {
+        if (nextId !== null && nextId !== ALL_CONDOMINIOS_ID) {
           const row = condos.find((c) => c.id === nextId)
           if (row) nextNome = row.nome
         }

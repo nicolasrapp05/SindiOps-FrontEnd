@@ -3,6 +3,7 @@ import { Link, NavLink } from "react-router-dom"
 import { ChevronDown, LogOut, Building, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth-store"
+import { ALL_CONDOMINIOS_ID, ALL_CONDOMINIOS_NOME } from "@/lib/condominio-scope"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { useAuth } from "@/hooks/useAuth"
 import { useCondominios } from "@/features/condominios/hooks/useCondominios"
@@ -171,6 +172,17 @@ export default function Sidebar({ onNavigate, onClose }: SidebarProps) {
               align="start"
               className="min-w-[var(--radix-dropdown-menu-trigger-width)] border border-white/10 bg-[#1a2e22] text-white shadow-lg"
             >
+              {(condominios?.length ?? 0) >= 2 && (
+                <DropdownMenuItem
+                  className={cn(
+                    "min-h-9 cursor-pointer focus:bg-white/10 focus:text-white",
+                    selectedCondominioId === ALL_CONDOMINIOS_ID && "bg-white/10",
+                  )}
+                  onSelect={() => setSelectedCondominio(ALL_CONDOMINIOS_ID, ALL_CONDOMINIOS_NOME)}
+                >
+                  <span className="truncate">{ALL_CONDOMINIOS_NOME}</span>
+                </DropdownMenuItem>
+              )}
               {condominios?.map((c) => (
                 <DropdownMenuItem
                   key={c.id}

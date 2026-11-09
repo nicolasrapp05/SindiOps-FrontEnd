@@ -43,7 +43,14 @@ import {
   type CompraListParams,
 } from "@/features/compras/lib/compra-list-params"
 import { cn } from "@/lib/utils"
+import { useCondominios } from "@/features/condominios/hooks/useCondominios"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
+import {
+  colunasComCondominio,
+  condominioIdDaConsulta,
+  escopoCondominioAtivo,
+  isTodosCondominios,
+} from "@/lib/condominio-scope"
 
 const TIPO_APROVACAO_LABEL: Record<TipoAprovacao, string> = {
   sindico: "Síndico",
@@ -80,7 +87,12 @@ const COMPRA_SORT_COLUMNS: SortColumn[] = [
 ]
 
 export default function ComprasPage() {
-  const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
+  const escopoId = useCondominioScopeStore((s) => s.selectedCondominioId)
+  const todos = isTodosCondominios(escopoId)
+  const condominioId = condominioIdDaConsulta(escopoId) ?? ""
+  const condoConfigured = escopoCondominioAtivo(escopoId)
+  const { data: condominiosAcessiveis } = useCondominios()
+  const sortColumns = colunasComCondominio(todos, COMPRA_SORT_COLUMNS)
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.toString()
@@ -126,7 +138,7 @@ export default function ComprasPage() {
     !!filters.situacaoCotacao ||
     !!filters.search.trim()
 
-  const { data, isLoading, isError, refetch } = useSolicitacoesCompra(condominioId, apiFilters)
+  const { data, isLoading, isError, refetch } = useSolicitacoesCompra(escopoId, apiFilters)
   const createMutation = useCreateSolicitacaoCompra()
 
   const list = data?.data ?? []
@@ -138,7 +150,6 @@ export default function ComprasPage() {
     createMutation.mutate(payload, { onSuccess: () => setFormOpen(false) })
   }
 
-  const condoConfigured = !!condominioId
   const listaCarregando = condoConfigured && isLoading
 
   if (condoConfigured && isError) {
@@ -215,7 +226,7 @@ export default function ComprasPage() {
         </div>
         <div className="grid grid-cols-2 gap-3 xl:flex xl:w-auto xl:items-center xl:justify-end xl:gap-2">
           <ListSortMenu
-            columns={COMPRA_SORT_COLUMNS}
+            columns={sortColumns}
             sort={filters.sort}
             dir={filters.dir}
             onChange={(sort, dir) => updateList({ sort, dir, page: 1 })}
@@ -319,6 +330,7 @@ export default function ComprasPage() {
                   title={itensResumo.descricao}
                   onClick={() => navigate(detalheTo(row.id))}
                   fields={[
+                    ...(todos ? [{ label: "Condomínio", value: row.condominio?.nome || "—" }] : []),
                     { label: "Status", value: <CompraStatusBadge status={row.status} /> },
                     { label: "Categoria", value: itensResumo.categoria },
                     { label: "Itens", value: itensResumo.quantidade },
@@ -347,6 +359,9 @@ export default function ComprasPage() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
+                  {todos && (
+                    <SortableHead label="Condomínio" column="condominio" sort={filters.sort} dir={filters.dir} onSort={sortBy} className="w-[14%]" />
+                  )}
                   <SortableHead label="Status" column="status" sort={filters.sort} dir={filters.dir} onSort={sortBy} className="w-[13%]" />
                   <TableHead className="w-[12%]">Categoria</TableHead>
                   <TableHead className="w-[14%]">Item</TableHead>
@@ -360,7 +375,7 @@ export default function ComprasPage() {
               </TableHeader>
               <TableBody>
                 {listaCarregando ? (
-                  <ListSkeletonRows columns={9} />
+                  <ListSkeletonRows columns={todos ? 10 : 9} />
                 ) : list.map((row) => {
                   const readiness = getCotacaoReadinessLabel(
                     row.status,
@@ -375,6 +390,7 @@ export default function ComprasPage() {
                       className="cursor-pointer"
                       onClick={() => navigate(detalheTo(row.id))}
                     >
+                      {todos && <TableCell className="truncate">{row.condominio?.nome || "—"}</TableCell>}
                       <TableCell>
                         <CompraStatusBadge status={row.status} />
                       </TableCell>
@@ -467,6 +483,7 @@ export default function ComprasPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         condominioId={condominioId}
+        condominios={todos ? (condominiosAcessiveis ?? []) : undefined}
         isSubmitting={createMutation.isPending}
         onSubmit={handleCreate}
       />

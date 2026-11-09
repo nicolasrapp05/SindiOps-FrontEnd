@@ -18,15 +18,16 @@ import type {
   ManutencaoObrigatoria,
   RealizarManutencaoRequest,
 } from "../types/manutencao-obrigatoria.types"
+import { condominioIdDaConsulta, escopoCondominioAtivo } from "@/lib/condominio-scope"
 
 export function useManutencoesObrigatorias(
-  condominioId: string,
+  escopoId: string | null,
   filters?: ManutencaoFilters,
 ) {
   return useQuery({
-    queryKey: ["manutencoes-obrigatorias", condominioId, filters],
-    queryFn: () => getManutencoesObrigatorias(condominioId, filters),
-    enabled: !!condominioId,
+    queryKey: ["manutencoes-obrigatorias", escopoId, filters],
+    queryFn: () => getManutencoesObrigatorias(condominioIdDaConsulta(escopoId), filters),
+    enabled: escopoCondominioAtivo(escopoId),
     placeholderData: keepPreviousData,
   })
 }

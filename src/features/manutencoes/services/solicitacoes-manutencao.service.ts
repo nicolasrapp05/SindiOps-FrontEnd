@@ -6,9 +6,12 @@ import type {
   SolicitacaoStatus,
 } from "../types/solicitacao-manutencao.types"
 
-export function getSolicitacoesManutencao(condominioId: string, filters?: SolicitacaoFilters) {
+export function getSolicitacoesManutencao(
+  condominioId: string | undefined,
+  filters?: SolicitacaoFilters,
+) {
   return getPaginated<SolicitacaoManutencao>("/solicitacoes-manutencao", {
-    condominioId,
+    ...(condominioId ? { condominioId } : {}),
     ...filters,
   })
 }

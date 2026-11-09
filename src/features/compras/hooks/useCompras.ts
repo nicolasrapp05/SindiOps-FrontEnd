@@ -18,6 +18,7 @@ import {
   updateCotacao,
   deleteCotacao,
 } from "../services/compras.service"
+import { condominioIdDaConsulta, escopoCondominioAtivo } from "@/lib/condominio-scope"
 import type {
   ComprasFilters,
   CompraStatus,
@@ -61,11 +62,11 @@ function patchSolicitacaoDetail(
   )
 }
 
-export function useSolicitacoesCompra(condominioId: string, filters?: ComprasFilters) {
+export function useSolicitacoesCompra(escopoId: string | null, filters?: ComprasFilters) {
   return useQuery({
-    queryKey: ["solicitacoes-compra", condominioId, filters],
-    queryFn: () => getSolicitacoesCompra(condominioId, filters),
-    enabled: !!condominioId,
+    queryKey: ["solicitacoes-compra", escopoId, filters],
+    queryFn: () => getSolicitacoesCompra(condominioIdDaConsulta(escopoId), filters),
+    enabled: escopoCondominioAtivo(escopoId),
     placeholderData: keepPreviousData,
   })
 }

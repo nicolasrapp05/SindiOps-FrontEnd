@@ -14,6 +14,11 @@ import {
 import type { LucideIcon } from "lucide-react"
 import { useAuthStore } from "@/store/auth-store"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
+import {
+  condominioIdDaConsulta,
+  escopoCondominioAtivo,
+  isTodosCondominios,
+} from "@/lib/condominio-scope"
 import { useDashboard } from "@/features/dashboard/hooks/useDashboard"
 import { useGerarRelatorio } from "@/features/relatorios/hooks/useRelatorios"
 import type { AgendaItem } from "@/features/dashboard/types/dashboard.types"
@@ -267,6 +272,9 @@ export default function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const cargo = user?.cargo
   const selectedCondominioId = useCondominioScopeStore((s) => s.selectedCondominioId)
+  const todos = isTodosCondominios(selectedCondominioId)
+  const condominioConsulta = condominioIdDaConsulta(selectedCondominioId)
+  const escopoAtivo = escopoCondominioAtivo(selectedCondominioId)
 
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("all")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
@@ -281,7 +289,7 @@ export default function DashboardPage() {
   const [dir, setDir] = useState<SortDir>()
 
   const { data, isLoading, isError, refetch } = useDashboard({
-    condominioId: selectedCondominioId ?? undefined,
+    ...(condominioConsulta ? { condominioId: condominioConsulta } : {}),
     page,
     pageSize,
     sort,
@@ -330,10 +338,10 @@ export default function DashboardPage() {
   if (isError && !data) return <DashboardError onRetry={() => refetch()} />
 
   const handleExportar = () => {
-    if (!selectedCondominioId) return
+    if (!escopoAtivo) return
     exportar.mutate({
       tipo: "agenda_prazos",
-      condominioId: selectedCondominioId,
+      ...(condominioConsulta ? { condominioId: condominioConsulta } : {}),
       formato: "excel",
       filtros: {
         ...(tipoFilter !== "all" ? { tipo: tipoFilter } : {}),
@@ -347,7 +355,9 @@ export default function DashboardPage() {
   const prazosAgenda = agendaTotal
   const resumoAtencao =
     pendencias === 0 && prazosAgenda === 0
-      ? "Nada urgente neste condomínio."
+      ? todos
+        ? "Nada urgente nos condomínios."
+        : "Nada urgente neste condomínio."
       : pendencias === 0 && prazosAgenda === 1
         ? "1 prazo na agenda."
         : pendencias === 0
@@ -415,7 +425,7 @@ export default function DashboardPage() {
                 variant="outline"
                 size="sm"
                 className="min-h-11"
-                disabled={!selectedCondominioId || exportar.isPending}
+                disabled={!escopoAtivo || exportar.isPending}
                 onClick={handleExportar}
               >
                 {exportar.isPending ? (
@@ -425,7 +435,7 @@ export default function DashboardPage() {
                 )}
                 {exportar.isPending ? "Exportando…" : "Exportar"}
               </Button>
-              {!selectedCondominioId ? (
+              {!escopoAtivo ? (
                 <p className="text-sm text-muted-foreground">Selecione um condomínio</p>
               ) : null}
               </div>

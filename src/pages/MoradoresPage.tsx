@@ -53,7 +53,14 @@ import { cn } from "@/lib/utils"
 import MoradorForm from "@/features/moradores/components/MoradorForm"
 import MoradorExpandido from "@/features/moradores/components/MoradorExpandido"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import { useCondominios } from "@/features/condominios/hooks/useCondominios"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
+import {
+  colunasComCondominio,
+  condominioIdDaConsulta,
+  escopoCondominioAtivo,
+  isTodosCondominios,
+} from "@/lib/condominio-scope"
 import { useDebounce } from "@/hooks/useDebounce"
 
 const SORT_COLUMNS: SortColumn[] = [
@@ -81,14 +88,18 @@ export default function MoradoresPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Morador | null>(null)
 
-  const condominioId = useCondominioScopeStore((s) => s.selectedCondominioId) ?? ""
-  const condoConfigured = !!condominioId
+  const escopoId = useCondominioScopeStore((s) => s.selectedCondominioId)
+  const todos = isTodosCondominios(escopoId)
+  const condominioId = condominioIdDaConsulta(escopoId) ?? ""
+  const condoConfigured = escopoCondominioAtivo(escopoId)
+  const { data: condominiosAcessiveis } = useCondominios()
+  const sortColumns = colunasComCondominio(todos, SORT_COLUMNS)
 
   const debouncedSearch = useDebounce(search)
 
   const filters = {
     search: debouncedSearch || undefined,
-    blocoId: blocoFilter !== "all" ? blocoFilter : undefined,
+    blocoId: !todos && blocoFilter !== "all" ? blocoFilter : undefined,
     page,
     pageSize,
     sort,
@@ -102,11 +113,11 @@ export default function MoradoresPage() {
     setPage(1)
   }
 
-  const { data: moradores, isLoading, isError, refetch } = useMoradores(condominioId, filters)
+  const { data: moradores, isLoading, isError, refetch } = useMoradores(escopoId, filters)
   const { data: blocos } = useQuery({
     queryKey: ["condominios", condominioId, "blocos"],
     queryFn: () => getBlocos(condominioId),
-    enabled: !!condominioId,
+    enabled: !!condominioId && !todos,
   })
 
   const createMutation = useCreateMorador()
@@ -213,7 +224,7 @@ export default function MoradoresPage() {
       {/* Filters */}
       <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-center">
         <ListSortMenu
-          columns={SORT_COLUMNS}
+          columns={sortColumns}
           sort={sort}
           dir={dir}
           onChange={(nextSortKey, nextDir) => {
@@ -239,16 +250,18 @@ export default function MoradoresPage() {
             }}
           />
         </div>
-        <Combobox
-          options={[
-            { value: "all", label: "Todos os Blocos" },
-            ...(blocos?.map((b: Bloco) => ({ value: b.id, label: b.nome })) ?? []),
-          ]}
-          value={blocoFilter}
-          onValueChange={(v) => { setBlocoFilter(v); setPage(1) }}
-          placeholder="Buscar…"
-          className="w-full min-w-0 md:w-44"
-        />
+        {!todos && (
+          <Combobox
+            options={[
+              { value: "all", label: "Todos os Blocos" },
+              ...(blocos?.map((b: Bloco) => ({ value: b.id, label: b.nome })) ?? []),
+            ]}
+            value={blocoFilter}
+            onValueChange={(v) => { setBlocoFilter(v); setPage(1) }}
+            placeholder="Buscar…"
+            className="w-full min-w-0 md:w-44"
+          />
+        )}
       </div>
 
       {/* Table */}
@@ -276,6 +289,7 @@ export default function MoradoresPage() {
                 title={m.nome}
                 onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}
                 fields={[
+                  ...(todos ? [{ label: "Condomínio", value: m.condominio?.nome || "—" }] : []),
                   {
                     label: "Papel",
                     value: (
@@ -317,6 +331,9 @@ export default function MoradoresPage() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
+                  {todos && (
+                    <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} className="w-[16%]" />
+                  )}
                   <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} className="w-[22%]" />
                   <SortableHead label="Papel" column="papel" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
                   <SortableHead label="Bloco" column="bloco" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
@@ -328,13 +345,14 @@ export default function MoradoresPage() {
               </TableHeader>
               <TableBody>
                 {listaCarregando ? (
-                  <ListSkeletonRows columns={7} />
+                  <ListSkeletonRows columns={todos ? 8 : 7} />
                 ) : moradorList.map((m) => (
                   <Fragment key={m.id}>
                     <TableRow
                       className="cursor-pointer transition-colors hover:bg-muted/60"
                       onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}
                     >
+                      {todos && <TableCell className="truncate">{m.condominio?.nome || "—"}</TableCell>}
                       <TableCell className="truncate font-medium text-foreground">{m.nome}</TableCell>
                       <TableCell>
                         <Badge variant="secondary" className={cn("font-medium", PAPEL_CLASS[m.papel])}>
@@ -418,6 +436,7 @@ export default function MoradoresPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         condominioId={condominioId}
+        condominios={todos && !editingMorador ? (condominiosAcessiveis ?? []) : undefined}
         morador={editingMorador}
         onSubmit={handleFormSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}

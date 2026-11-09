@@ -5,8 +5,11 @@ import type {
   MoradoresFilters,
 } from "../types/morador.types"
 
-export function getMoradores(condominioId: string, filters?: MoradoresFilters) {
-  return getPaginated<Morador>("/moradores", { condominioId, ...filters })
+export function getMoradores(condominioId: string | undefined, filters?: MoradoresFilters) {
+  return getPaginated<Morador>("/moradores", {
+    ...(condominioId ? { condominioId } : {}),
+    ...filters,
+  })
 }
 
 export function getMorador(id: string) {

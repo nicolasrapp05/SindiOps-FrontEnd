@@ -79,6 +79,7 @@ export interface EmailLogResumo {
 export interface Ocorrencia {
   id: string
   condominioId: string
+  condominio?: { id: string; nome: string }
   origem: OcorrenciaOrigem
   tipoLocal: TipoLocal
   tipoOcorrencia: OcorrenciaTipo
