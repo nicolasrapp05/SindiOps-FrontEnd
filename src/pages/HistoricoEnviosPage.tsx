@@ -26,6 +26,7 @@ import Combobox from "@/components/shared/Combobox"
 import DatePicker from "@/components/shared/DatePicker"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
+import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
@@ -75,7 +76,6 @@ function ExpandedLogRow({ logId, log }: { logId: string; log: EmailLog }) {
   )
 }
 
-const PAGE_SIZE = 20
 const SORT_COLUMNS: SortColumn[] = [
   { key: "status", label: "Status" },
   { key: "template", label: "Template" },
@@ -101,6 +101,7 @@ export default function HistoricoEnviosPage() {
   const [dataInicio, setDataInicio] = useState("")
   const [dataFim, setDataFim] = useState("")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<PageSizeOption>(DEFAULT_PAGE_SIZE)
   const [sort, setSort] = useState<string>()
   const [dir, setDir] = useState<SortDir>()
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -115,11 +116,11 @@ export default function HistoricoEnviosPage() {
       ...(dataInicio ? { dataInicio } : {}),
       ...(dataFim ? { dataFim } : {}),
       page,
-      pageSize: PAGE_SIZE,
+      pageSize,
       sort,
       dir,
     }),
-    [debouncedSearch, templateTipo, statusFilter, dataInicio, dataFim, page, sort, dir],
+    [debouncedSearch, templateTipo, statusFilter, dataInicio, dataFim, page, pageSize, sort, dir],
   )
 
   const sortBy = (column: string) => {
@@ -129,11 +130,11 @@ export default function HistoricoEnviosPage() {
     setPage(1)
   }
 
-  const { data, isLoading, isPlaceholderData, isError, refetch } = useEmailLogs(filters)
+  const { data, isLoading, isError, refetch } = useEmailLogs(filters)
 
   const logs = data?.data ?? []
   const totalCount = data?.totalCount ?? 0
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
 
   const templateTipoOptions = useMemo(
     () => [
@@ -165,7 +166,7 @@ export default function HistoricoEnviosPage() {
     taxaSucesso: pctFmt.format(taxaSucesso),
     falhasCriticas: String(resumo.falhasCriticas),
   }
-  const listaCarregando = isLoading || isPlaceholderData
+  const listaCarregando = isLoading
   const resumoCarregando = isLoading && !data
 
   const resetPage = () => setPage(1)
@@ -441,14 +442,19 @@ export default function HistoricoEnviosPage() {
               </TableBody>
             </Table>
           </ListPanel>
-          {!listaCarregando && totalPages > 1 && (
+          {!listaCarregando && (
             <ListPagination
               page={page}
               totalPages={totalPages}
               totalCount={totalCount > 0 ? totalCount : null}
               singular="registro"
               pluralLabel="registros"
+              pageSize={pageSize}
               onPage={setPage}
+              onPageSize={(size) => {
+                setPageSize(size)
+                setPage(1)
+              }}
             />
           )}
         </div>

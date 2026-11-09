@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_SIZE, readPageSize, type PageSizeOption } from "@/lib/pagination"
 import {
   SOLICITACAO_TIPO_LABEL,
   SITUACAO_ORCAMENTO_LABEL,
@@ -32,6 +33,7 @@ export interface ManutencaoListParams {
   fila: FiltroFila
   search: string
   page: number
+  pageSize: PageSizeOption
   sort?: string
   dir?: "asc" | "desc"
 }
@@ -62,6 +64,7 @@ export function readManutencaoListParams(params: URLSearchParams): ManutencaoLis
     fila: isFiltroFila(filaRaw) ? filaRaw : "pendentes",
     search: params.get("search") ?? "",
     page: readPage(params.get("page")),
+    pageSize: readPageSize(params.get("pageSize")),
     ...readSort(params.get("sort"), params.get("dir")),
   }
 }
@@ -88,6 +91,7 @@ export function writeManutencaoListParams(state: ManutencaoListParams): URLSearc
     next.set("dir", state.dir)
   }
   if (state.page > 1) next.set("page", String(state.page))
+  if (state.pageSize !== DEFAULT_PAGE_SIZE) next.set("pageSize", String(state.pageSize))
   return next
 }
 

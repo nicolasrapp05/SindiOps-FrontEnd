@@ -42,6 +42,7 @@ import FornecedorExpandido from "@/features/fornecedores/components/FornecedorEx
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
+import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
@@ -67,6 +68,7 @@ const SUMMARY_CARDS = [
 export default function FornecedoresPage() {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<PageSizeOption>(DEFAULT_PAGE_SIZE)
   const [sort, setSort] = useState<string>()
   const [dir, setDir] = useState<SortDir>()
   const [formOpen, setFormOpen] = useState(false)
@@ -76,7 +78,7 @@ export default function FornecedoresPage() {
 
   const debouncedSearch = useDebounce(search)
 
-  const filters = { search: debouncedSearch || undefined, page, pageSize: 20, sort, dir }
+  const filters = { search: debouncedSearch || undefined, page, pageSize, sort, dir }
 
   const sortBy = (column: string) => {
     const next = nextSort(sort, dir, column)
@@ -84,7 +86,7 @@ export default function FornecedoresPage() {
     setDir(next.dir)
     setPage(1)
   }
-  const { data: fornecedores, isLoading, isPlaceholderData, isError, refetch } = useFornecedores(filters)
+  const { data: fornecedores, isLoading, isError, refetch } = useFornecedores(filters)
   const { data: summaryData, isLoading: resumoListaCarregando } = useFornecedores({ page: 1, pageSize: 2000 })
   const { data: contratosGlobais, isLoading: contratosResumoCarregando } = useContratosGlobais({ pageSize: 2000 })
   const createMutation = useCreateFornecedor()
@@ -93,7 +95,7 @@ export default function FornecedoresPage() {
 
   const fornecedorList = fornecedores?.data ?? []
   const totalCount = fornecedores?.totalCount
-  const totalPages = totalCount ? Math.ceil(totalCount / 20) : 1
+  const totalPages = totalCount ? Math.ceil(totalCount / pageSize) : 1
 
   const summaryValues = useMemo(() => {
     const all = summaryData?.data ?? []
@@ -112,7 +114,7 @@ export default function FornecedoresPage() {
     }
   }, [summaryData, contratosGlobais])
 
-  const listaCarregando = isLoading || isPlaceholderData
+  const listaCarregando = isLoading
   const resumoCarregando = (resumoListaCarregando && !summaryData) || (contratosResumoCarregando && !contratosGlobais)
 
   const openCreate = () => {
@@ -407,7 +409,12 @@ export default function FornecedoresPage() {
               totalCount={totalCount}
               singular="fornecedor"
               pluralLabel="fornecedores"
+              pageSize={pageSize}
               onPage={setPage}
+              onPageSize={(size) => {
+                setPageSize(size)
+                setPage(1)
+              }}
             />
           )}
         </div>

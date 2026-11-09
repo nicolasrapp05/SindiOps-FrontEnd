@@ -13,6 +13,7 @@ import Combobox from "@/components/shared/Combobox"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
+import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
@@ -43,7 +44,6 @@ import EditarFuncionarioModal from "@/features/configuracoes/components/EditarFu
 import { cn, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth-store"
 
-const PAGE_SIZE = 20
 const SORT_COLUMNS: SortColumn[] = [
   { key: "nome", label: "Nome" },
   { key: "cargo", label: "Cargo" },
@@ -58,6 +58,7 @@ export default function EquipePage() {
   const [cargoFilter, setCargoFilter] = useState<CargoFilter>("todas")
   const [ativoFilter, setAtivoFilter] = useState<AtivoFilter>("todos")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<PageSizeOption>(DEFAULT_PAGE_SIZE)
   const [sort, setSort] = useState<string>()
   const [dir, setDir] = useState<SortDir>()
   const [modalOpen, setModalOpen] = useState(false)
@@ -77,11 +78,11 @@ export default function EquipePage() {
             ? true
             : false,
       page,
-      pageSize: PAGE_SIZE,
+      pageSize,
       sort,
       dir,
     }
-  }, [cargoFilter, ativoFilter, page, sort, dir])
+  }, [cargoFilter, ativoFilter, page, pageSize, sort, dir])
 
   const sortBy = (column: string) => {
     const next = nextSort(sort, dir, column)
@@ -90,7 +91,7 @@ export default function EquipePage() {
     setPage(1)
   }
 
-  const { data, isLoading, isPlaceholderData, isError, refetch } = useFuncionarios(apiFilters)
+  const { data, isLoading, isError, refetch } = useFuncionarios(apiFilters)
   const convidar = useConvidarFuncionario()
   const atualizar = useUpdateFuncionario()
   const reenviarConvite = useReenviarConviteFuncionario()
@@ -100,8 +101,8 @@ export default function EquipePage() {
 
   const list = data?.data ?? []
   const totalCount = data?.totalCount
-  const totalPages = totalCount != null ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : 1
-  const listaCarregando = isLoading || isPlaceholderData
+  const totalPages = totalCount != null ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1
+  const listaCarregando = isLoading
   const CARGOS: CargoFilter[] = ["todas", "zelador", "secretario", "porteiro", "outro"]
 
   const handleConvidar = (payload: ConvidarFuncionarioRequest) => {
@@ -433,7 +434,12 @@ export default function EquipePage() {
           totalCount={totalCount}
           singular="funcionário"
           pluralLabel="funcionários"
+          pageSize={pageSize}
           onPage={setPage}
+          onPageSize={(size) => {
+            setPageSize(size)
+            setPage(1)
+          }}
         />
         )}
         </>

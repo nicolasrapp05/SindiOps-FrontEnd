@@ -51,7 +51,6 @@ import {
   type SolicitacaoTipoServico,
 } from "@/features/manutencoes/types/solicitacao-manutencao.types"
 
-const PAGE_SIZE = 10
 const FILA_SORT_COLUMNS: SortColumn[] = [
   { key: "situacao", label: "Situação" },
   { key: "tipo", label: "Chamado" },
@@ -151,7 +150,7 @@ export default function ManutencoesPage() {
             : undefined,
         pendenteOrcamento: viewState.fila === "pendentes" ? true : undefined,
         page: viewState.page,
-        pageSize: PAGE_SIZE,
+        pageSize: viewState.pageSize,
         sort: sortAtivo?.sort,
         dir: sortAtivo?.dir,
       }
@@ -163,7 +162,7 @@ export default function ManutencoesPage() {
       tipoServico: viewState.tipoServico || undefined,
       situacaoOrcamento: viewState.situacaoOrcamento || undefined,
       page: viewState.page,
-      pageSize: PAGE_SIZE,
+      pageSize: viewState.pageSize,
       sort: sortAtivo?.sort,
       dir: sortAtivo?.dir,
     }
@@ -185,7 +184,7 @@ export default function ManutencoesPage() {
 
   const detalheTo = (id: string) => manutencaoDetalheTo(id, viewState)
 
-  const { data, isLoading, isError, isPlaceholderData, refetch } = useSolicitacoesManutencao(
+  const { data, isLoading, isError, refetch } = useSolicitacoesManutencao(
     condominioId,
     filters,
   )
@@ -195,14 +194,14 @@ export default function ManutencoesPage() {
   const list = data?.data ?? []
   const totalCount = data?.totalCount
   const totalPages =
-    totalCount != null ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : 1
+    totalCount != null ? Math.max(1, Math.ceil(totalCount / viewState.pageSize)) : 1
 
   const handleCreate = (payload: CreateSolicitacaoManutencaoRequest) => {
     createMutation.mutate(payload, { onSuccess: () => setFormOpen(false) })
   }
 
   const condoConfigured = !!condominioId
-  const listaCarregando = condoConfigured && (isLoading || isPlaceholderData)
+  const listaCarregando = condoConfigured && isLoading
   const visaoPainel = visaoOrcamentos ? "orcamentos" : "chamados"
 
   useEffect(() => {
@@ -495,7 +494,9 @@ export default function ManutencoesPage() {
             totalCount={totalCount}
             singular="resultado"
             pluralLabel="resultados"
+            pageSize={viewState.pageSize}
             onPage={(page) => updateList({ page })}
+            onPageSize={(pageSize) => updateList({ pageSize, page: 1 })}
           />
           )}
         </div>
@@ -627,7 +628,9 @@ export default function ManutencoesPage() {
             totalCount={totalCount}
             singular="resultado"
             pluralLabel="resultados"
+            pageSize={viewState.pageSize}
             onPage={(page) => updateList({ page })}
+            onPageSize={(pageSize) => updateList({ pageSize, page: 1 })}
           />
           )}
         </div>

@@ -8,6 +8,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { useCondominioScopeStore } from "@/store/condominio-scope-store"
+import { cancelScrollConteudo } from "@/lib/scroll-conteudo"
 import Sidebar from "./Sidebar"
 
 export default function AppLayout() {
@@ -16,6 +17,7 @@ export default function AppLayout() {
   const condoNome = useCondominioScopeStore((s) => s.selectedCondominioNome)
 
   useEffect(() => {
+    cancelScrollConteudo()
     document.getElementById("conteudo")?.scrollTo({ top: 0 })
   }, [pathname])
 
@@ -70,7 +72,7 @@ export default function AppLayout() {
         <main
           id="conteudo"
           tabIndex={-1}
-          className="flex-1 overflow-y-auto bg-canvas px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] outline-none [scrollbar-gutter:stable] md:px-8 md:py-8"
+          className="flex-1 overflow-y-auto bg-canvas px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] outline-none [overflow-anchor:none] [scrollbar-gutter:stable] md:px-8 md:py-8"
         >
           <div key={pathname} className="rise-in">
             <Outlet />

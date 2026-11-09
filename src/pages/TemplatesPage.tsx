@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
+import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
@@ -39,7 +40,6 @@ import type {
 import { TemplateTipoBadge } from "@/features/comunicacao/components/TemplateTipoBadge"
 import { TemplateEditor } from "@/features/comunicacao/components/TemplateEditor"
 
-const PAGE_SIZE = 20
 const SORT_COLUMNS: SortColumn[] = [
   { key: "nome", label: "Nome" },
   { key: "tipo", label: "Tipo" },
@@ -54,15 +54,16 @@ function formatDate(iso: string | null | undefined): string {
 
 export default function TemplatesPage() {
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<PageSizeOption>(DEFAULT_PAGE_SIZE)
   const [sort, setSort] = useState<string>()
   const [dir, setDir] = useState<SortDir>()
   const [editorOpen, setEditorOpen] = useState(false)
   const [editing, setEditing] = useState<EmailTemplate | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<EmailTemplate | null>(null)
 
-  const { data: templates, isLoading, isPlaceholderData, isError, refetch } = useTemplates({
+  const { data: templates, isLoading, isError, refetch } = useTemplates({
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
     sort,
     dir,
   })
@@ -79,8 +80,8 @@ export default function TemplatesPage() {
 
   const list = templates?.data ?? []
   const totalCount = templates?.totalCount
-  const totalPages = totalCount != null ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : 1
-  const listaCarregando = isLoading || isPlaceholderData
+  const totalPages = totalCount != null ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1
+  const listaCarregando = isLoading
 
   function openCreate() {
     setEditing(null)
@@ -259,7 +260,12 @@ export default function TemplatesPage() {
           totalCount={totalCount}
           singular="modelo"
           pluralLabel="modelos"
+          pageSize={pageSize}
           onPage={setPage}
+          onPageSize={(size) => {
+            setPageSize(size)
+            setPage(1)
+          }}
         />
         )}
         </>

@@ -24,6 +24,7 @@ import {
 import Combobox from "@/components/shared/Combobox"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
+import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
@@ -53,7 +54,6 @@ import {
   type ManutencaoTipo,
 } from "@/features/manutencoes/types/manutencao-obrigatoria.types"
 
-const PAGE_SIZE = 10
 const SORT_COLUMNS: SortColumn[] = [
   { key: "status", label: "Status" },
   { key: "tipo", label: "Tipo" },
@@ -81,6 +81,7 @@ export default function ManutencoesObrigatoriasPage() {
   const [tipoFilter, setTipoFilter] = useState<ManutencaoTipo | "">("")
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<PageSizeOption>(DEFAULT_PAGE_SIZE)
   const [sort, setSort] = useState<string>()
   const [dir, setDir] = useState<SortDir>()
   const [formOpen, setFormOpen] = useState(false)
@@ -97,11 +98,11 @@ export default function ManutencoesObrigatoriasPage() {
       status: statusTab === "todas" ? undefined : statusTab,
       tipo: tipoFilter || undefined,
       page,
-      pageSize: PAGE_SIZE,
+      pageSize,
       sort,
       dir,
     }),
-    [debouncedSearch, statusTab, tipoFilter, page, sort, dir],
+    [debouncedSearch, statusTab, tipoFilter, page, pageSize, sort, dir],
   )
 
   const sortBy = (column: string) => {
@@ -111,7 +112,7 @@ export default function ManutencoesObrigatoriasPage() {
     setPage(1)
   }
 
-  const { data, isLoading, isPlaceholderData, isError, refetch } = useManutencoesObrigatorias(
+  const { data, isLoading, isError, refetch } = useManutencoesObrigatorias(
     condominioId,
     filters,
   )
@@ -125,7 +126,7 @@ export default function ManutencoesObrigatoriasPage() {
 
   const totalCount = data?.totalCount
   const totalPages =
-    totalCount != null ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : 1
+    totalCount != null ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1
 
   const openCreate = () => {
     setEditing(null)
@@ -172,7 +173,7 @@ export default function ManutencoesObrigatoriasPage() {
   }
 
   const condoConfigured = !!condominioId
-  const listaCarregando = condoConfigured && (isLoading || isPlaceholderData)
+  const listaCarregando = condoConfigured && isLoading
 
   if (condoConfigured && isError) {
     return (
@@ -428,7 +429,12 @@ export default function ManutencoesObrigatoriasPage() {
             totalCount={totalCount}
             singular="resultado"
             pluralLabel="resultados"
+            pageSize={pageSize}
             onPage={setPage}
+            onPageSize={(size) => {
+              setPageSize(size)
+              setPage(1)
+            }}
           />
           )}
         </div>

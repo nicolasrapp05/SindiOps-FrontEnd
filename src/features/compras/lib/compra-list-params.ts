@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_SIZE, readPageSize, type PageSizeOption } from "@/lib/pagination"
 import {
   COMPRA_CATEGORIA_LABEL,
   SITUACAO_COTACAO_LABEL,
@@ -17,6 +18,7 @@ export interface CompraListParams {
   situacaoCotacao: SituacaoCotacao | ""
   search: string
   page: number
+  pageSize: PageSizeOption
   sort?: string
   dir?: "asc" | "desc"
 }
@@ -47,6 +49,7 @@ export function readCompraListParams(params: URLSearchParams): CompraListParams 
     situacaoCotacao,
     search: params.get("search") ?? "",
     page: readPage(params.get("page")),
+    pageSize: readPageSize(params.get("pageSize")),
     ...readSort(params.get("sort"), params.get("dir")),
   }
 }
@@ -72,6 +75,7 @@ export function writeCompraListParams(state: CompraListParams): URLSearchParams 
     next.set("dir", state.dir)
   }
   if (state.page > 1) next.set("page", String(state.page))
+  if (state.pageSize !== DEFAULT_PAGE_SIZE) next.set("pageSize", String(state.pageSize))
   return next
 }
 

@@ -27,6 +27,7 @@ import Combobox from "@/components/shared/Combobox"
 import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
+import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
@@ -56,7 +57,6 @@ import { useCondominioScopeStore } from "@/store/condominio-scope-store"
 import { useDebounce } from "@/hooks/useDebounce"
 import { formatBRL } from "@/lib/currency"
 
-const PAGE_SIZE = 20
 
 const SUMMARY_CARDS = [
   { key: "active",    label: "Vigentes",   icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50" },
@@ -83,6 +83,7 @@ export default function ContratosPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | ContratoStatus>("all")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<PageSizeOption>(DEFAULT_PAGE_SIZE)
   const [sort, setSort] = useState<string>()
   const [dir, setDir] = useState<SortDir>()
   const [formOpen, setFormOpen] = useState(false)
@@ -99,7 +100,7 @@ export default function ContratosPage() {
     search: debouncedSearch.trim() || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
     sort,
     dir,
   }
@@ -113,7 +114,7 @@ export default function ContratosPage() {
 
   const summaryFilters = { page: 1, pageSize: 2000 }
 
-  const { data: contratosRaw, isLoading, isPlaceholderData, isError, refetch } = useContratos(condominioId, tableFilters)
+  const { data: contratosRaw, isLoading, isError, refetch } = useContratos(condominioId, tableFilters)
   const {
     data: contratosSummaryRaw,
     isLoading: resumoInicial,
@@ -127,7 +128,7 @@ export default function ContratosPage() {
 
   const contratoList = contratosRaw?.data ?? []
   const totalCount = contratosRaw?.totalCount
-  const totalPages = totalCount ? Math.ceil(totalCount / PAGE_SIZE) : 1
+  const totalPages = totalCount ? Math.ceil(totalCount / pageSize) : 1
 
   const statusCounts = useMemo(
     () => {
@@ -142,7 +143,7 @@ export default function ContratosPage() {
     [contratosSummaryRaw?.data],
   )
 
-  const listaCarregando = condoConfigured && (isLoading || isPlaceholderData)
+  const listaCarregando = condoConfigured && isLoading
   const resumoCarregando = condoConfigured && (resumoInicial || resumoTrocando)
 
   const openCreate = () => {
@@ -451,7 +452,12 @@ export default function ContratosPage() {
               totalCount={totalCount}
               singular="contrato"
               pluralLabel="contratos"
+              pageSize={pageSize}
               onPage={setPage}
+              onPageSize={(size) => {
+                setPageSize(size)
+                setPage(1)
+              }}
             />
           )}
         </div>

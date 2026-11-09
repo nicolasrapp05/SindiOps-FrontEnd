@@ -69,8 +69,6 @@ const CATEGORIAS: (CompraCategoria | "todas")[] = [
   "mat_especifico",
 ]
 
-const PAGE_SIZE = 10
-
 const SITUACOES_COTACAO = Object.keys(SITUACAO_COTACAO_LABEL) as SituacaoCotacao[]
 const COMPRA_SORT_COLUMNS: SortColumn[] = [
   { key: "status", label: "Status" },
@@ -115,7 +113,7 @@ export default function ComprasPage() {
       categoria: filters.categoria === "todas" ? undefined : filters.categoria,
       situacaoCotacao: filters.situacaoCotacao || undefined,
       page: filters.page,
-      pageSize: PAGE_SIZE,
+      pageSize: filters.pageSize,
       sort: filters.sort,
       dir: filters.dir,
     }),
@@ -128,12 +126,12 @@ export default function ComprasPage() {
     !!filters.situacaoCotacao ||
     !!filters.search.trim()
 
-  const { data, isLoading, isPlaceholderData, isError, refetch } = useSolicitacoesCompra(condominioId, apiFilters)
+  const { data, isLoading, isError, refetch } = useSolicitacoesCompra(condominioId, apiFilters)
   const createMutation = useCreateSolicitacaoCompra()
 
   const list = data?.data ?? []
   const totalCount = data?.totalCount
-  const totalPages = totalCount != null ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : 1
+  const totalPages = totalCount != null ? Math.max(1, Math.ceil(totalCount / filters.pageSize)) : 1
   const detalheTo = (id: string) => compraDetalheTo(id, new URLSearchParams(query))
 
   const handleCreate = (payload: CreateSolicitacaoCompraRequest) => {
@@ -141,7 +139,7 @@ export default function ComprasPage() {
   }
 
   const condoConfigured = !!condominioId
-  const listaCarregando = condoConfigured && (isLoading || isPlaceholderData)
+  const listaCarregando = condoConfigured && isLoading
 
   if (condoConfigured && isError) {
     return (
@@ -458,7 +456,9 @@ export default function ComprasPage() {
             totalCount={totalCount}
             singular="resultado"
             pluralLabel="resultados"
+            pageSize={filters.pageSize}
             onPage={(page) => updateList({ page })}
+            onPageSize={(pageSize) => updateList({ pageSize, page: 1 })}
           />
           )}
         </>

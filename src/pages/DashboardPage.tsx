@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import ListPagination from "@/components/shared/ListPagination"
+import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
 import ListRecord from "@/components/shared/ListRecord"
 import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
@@ -249,7 +250,6 @@ function FilterChips<T extends string>({
 const GRADE_ALERTAS =
   "grid grid-cols-[repeat(auto-fit,minmax(min(100%,11rem),1fr))] gap-3"
 
-const AGENDA_PAGE_SIZE = 10
 const AGENDA_SORT_COLUMNS: SortColumn[] = [
   { key: "tipo", label: "Tipo" },
   { key: "condominio", label: "Condomínio" },
@@ -271,6 +271,7 @@ export default function DashboardPage() {
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("all")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<PageSizeOption>(DEFAULT_PAGE_SIZE)
   const [pageScope, setPageScope] = useState(selectedCondominioId)
   if (pageScope !== selectedCondominioId) {
     setPageScope(selectedCondominioId)
@@ -279,10 +280,10 @@ export default function DashboardPage() {
   const [sort, setSort] = useState<string>()
   const [dir, setDir] = useState<SortDir>()
 
-  const { data, isLoading, isPlaceholderData, isError, refetch } = useDashboard({
+  const { data, isLoading, isError, refetch } = useDashboard({
     condominioId: selectedCondominioId ?? undefined,
     page,
-    pageSize: AGENDA_PAGE_SIZE,
+    pageSize,
     sort,
     dir,
     tipo: tipoFilter === "all" ? undefined : tipoFilter,
@@ -316,7 +317,7 @@ export default function DashboardPage() {
   const agenda = data?.agenda ?? []
   const agendaTotal = data?.agendaTotal ?? 0
   const agendaCount = data?.agendaCount ?? 0
-  const agendaPages = Math.max(1, Math.ceil(agendaCount / AGENDA_PAGE_SIZE))
+  const agendaPages = Math.max(1, Math.ceil(agendaCount / pageSize))
 
   const tipoFilterOptions = useMemo(() => getTipoFilterOptions(cargo), [cargo])
   const alertasDoCargo = useMemo(
@@ -324,7 +325,7 @@ export default function DashboardPage() {
     [cargo],
   )
   const resumoCarregando = isLoading && !data
-  const listaCarregando = isLoading || isPlaceholderData
+  const listaCarregando = isLoading
 
   if (isError && !data) return <DashboardError onRetry={() => refetch()} />
 
@@ -566,7 +567,12 @@ export default function DashboardPage() {
             totalCount={agendaCount}
             singular="prazo"
             pluralLabel="prazos"
+            pageSize={pageSize}
             onPage={setPage}
+            onPageSize={(size) => {
+              setPageSize(size)
+              setPage(1)
+            }}
           />
           )}
           </div>

@@ -26,6 +26,7 @@ import {
 import Combobox from "@/components/shared/Combobox"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
+import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
@@ -72,6 +73,7 @@ export default function MoradoresPage() {
   const [search, setSearch] = useState("")
   const [blocoFilter, setBlocoFilter] = useState<string>("all")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<PageSizeOption>(DEFAULT_PAGE_SIZE)
   const [sort, setSort] = useState<string>()
   const [dir, setDir] = useState<SortDir>()
   const [formOpen, setFormOpen] = useState(false)
@@ -88,7 +90,7 @@ export default function MoradoresPage() {
     search: debouncedSearch || undefined,
     blocoId: blocoFilter !== "all" ? blocoFilter : undefined,
     page,
-    pageSize: 20,
+    pageSize,
     sort,
     dir,
   }
@@ -100,7 +102,7 @@ export default function MoradoresPage() {
     setPage(1)
   }
 
-  const { data: moradores, isLoading, isPlaceholderData, isError, refetch } = useMoradores(condominioId, filters)
+  const { data: moradores, isLoading, isError, refetch } = useMoradores(condominioId, filters)
   const { data: blocos } = useQuery({
     queryKey: ["condominios", condominioId, "blocos"],
     queryFn: () => getBlocos(condominioId),
@@ -154,8 +156,8 @@ export default function MoradoresPage() {
 
   const moradorList = moradores?.data ?? []
   const totalCount = moradores?.totalCount
-  const totalPages = totalCount ? Math.ceil(totalCount / 20) : 1
-  const listaCarregando = condoConfigured && (isLoading || isPlaceholderData)
+  const totalPages = totalCount ? Math.ceil(totalCount / pageSize) : 1
+  const listaCarregando = condoConfigured && isLoading
 
   // ── Error ───────────────────────────────────────────
   if (isError) {
@@ -400,7 +402,12 @@ export default function MoradoresPage() {
               totalCount={totalCount}
               singular="morador"
               pluralLabel="moradores"
+              pageSize={pageSize}
               onPage={setPage}
+              onPageSize={(size) => {
+                setPageSize(size)
+                setPage(1)
+              }}
             />
           )}
         </div>

@@ -11,6 +11,7 @@ import {
 import Combobox from "@/components/shared/Combobox"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
+import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
@@ -56,6 +57,7 @@ export default function OcorrenciasPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingOcorrencia, setEditingOcorrencia] = useState<Ocorrencia | null>(null)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<PageSizeOption>(DEFAULT_PAGE_SIZE)
   const [sort, setSort] = useState<string>()
   const [dir, setDir] = useState<SortDir>()
 
@@ -70,10 +72,10 @@ export default function OcorrenciasPage() {
     ...(tipoFilter ? { tipoOcorrencia: tipoFilter as OcorrenciaTipo } : {}),
     ...(origemFilter ? { origem: origemFilter as OcorrenciaOrigem } : {}),
     page,
-    pageSize: 20,
+    pageSize,
     sort,
     dir,
-  }), [debouncedSearch, statusFilter, tipoFilter, origemFilter, page, sort, dir])
+  }), [debouncedSearch, statusFilter, tipoFilter, origemFilter, page, pageSize, sort, dir])
 
   const sortBy = (column: string) => {
     const next = nextSort(sort, dir, column)
@@ -82,7 +84,7 @@ export default function OcorrenciasPage() {
     setPage(1)
   }
 
-  const { data: ocorrenciasPage, isLoading, isPlaceholderData, isError, refetch } = useOcorrencias(condominioId, filters)
+  const { data: ocorrenciasPage, isLoading, isError, refetch } = useOcorrencias(condominioId, filters)
   const {
     data: summaryData,
     isLoading: resumoInicial,
@@ -120,7 +122,7 @@ export default function OcorrenciasPage() {
 
   const ocList = ocorrenciasPage?.data ?? []
   const totalCount = ocorrenciasPage?.totalCount ?? 0
-  const totalPages = Math.max(1, Math.ceil(totalCount / 20))
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
 
   const statusCounts = useMemo(() => {
     const summaryList = summaryData?.data ?? []
@@ -144,7 +146,7 @@ export default function OcorrenciasPage() {
     )
   }
 
-  const listaCarregando = condoConfigured && (isLoading || isPlaceholderData)
+  const listaCarregando = condoConfigured && isLoading
   const resumoCarregando = condoConfigured && (resumoInicial || resumoTrocando)
 
   return (
@@ -383,7 +385,12 @@ export default function OcorrenciasPage() {
               totalCount={totalCount}
               singular="ocorrência"
               pluralLabel="ocorrências"
+              pageSize={pageSize}
               onPage={setPage}
+              onPageSize={(size) => {
+                setPageSize(size)
+                setPage(1)
+              }}
             />
           )}
         </div>
