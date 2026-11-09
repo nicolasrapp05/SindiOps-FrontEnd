@@ -10,6 +10,7 @@ import {
   getOcorrencias,
   getOcorrencia,
   createOcorrencia,
+  updateOcorrencia,
   updateOcorrenciaStatus,
   uploadMidia,
   enviarComunicacao,
@@ -50,6 +51,21 @@ export function useCreateOcorrencia() {
     },
     onError: (err) =>
       toast.error(getApiErrorMessage(err, "Erro ao registrar ocorrência")),
+  })
+}
+
+export function useUpdateOcorrencia() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CreateOcorrenciaRequest }) =>
+      updateOcorrencia(id, data),
+    onSuccess: (ocorrencia) => {
+      upsertPaginatedItem<Ocorrencia>(qc, ["ocorrencias"], ocorrencia)
+      qc.invalidateQueries({ queryKey: ["ocorrencias", "detail", ocorrencia.id] })
+      toast.success("Ocorrência atualizada com sucesso")
+    },
+    onError: (err) =>
+      toast.error(getApiErrorMessage(err, "Erro ao atualizar ocorrência")),
   })
 }
 
@@ -97,10 +113,17 @@ export function useEnviarComunicacao() {
   return useMutation({
     mutationFn: ({ ocorrenciaId, data }: { ocorrenciaId: string; data: EnviarComunicacaoRequest }) =>
       enviarComunicacao(ocorrenciaId, data),
-    onSuccess: (_data, { ocorrenciaId }) => {
+    onSuccess: (data, { ocorrenciaId }) => {
       qc.invalidateQueries({ queryKey: ["email-logs"] })
       qc.invalidateQueries({ queryKey: ["ocorrencias", "detail", ocorrenciaId] })
-      toast.success("Email enviado com sucesso")
+      const copia = data.copiaProprietario
+      if (!copia) {
+        toast.success("Email enviado com sucesso")
+      } else if (copia.statusEntrega === "failed") {
+        toast.warning("E-mail enviado ao morador, mas a cópia ao proprietário falhou")
+      } else {
+        toast.success("E-mail enviado ao morador e ao proprietário")
+      }
     },
     onError: (err) =>
       toast.error(getApiErrorMessage(err, "Erro ao enviar comunicação")),

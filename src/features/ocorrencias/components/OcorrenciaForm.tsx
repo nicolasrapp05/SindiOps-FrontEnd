@@ -1,4 +1,5 @@
-import { useForm, Controller } from "react-hook-form"
+import { useEffect } from "react"
+import { useForm, Controller, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Loader2 } from "lucide-react"
@@ -22,6 +23,7 @@ import { useMoradores } from "@/features/moradores/hooks/useMoradores"
 import type { Morador } from "@/features/moradores/types/morador.types"
 import Combobox from "@/components/shared/Combobox"
 import { toastFormValidationError } from "@/lib/form-utils"
+import { useOcorrencia } from "../hooks/useOcorrencias"
 
 const formSchema = z.object({
   origem: z.string().min(1, "Obrigatório"),
@@ -36,45 +38,83 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
+const EMPTY_VALUES: FormData = {
+  origem: "",
+  tipoLocal: "",
+  tipoOcorrencia: "",
+  ocorreuEm: "",
+  descricao: "",
+  moradorId: "",
+  blocoId: "",
+  unidadeId: "",
+}
+
+function toDatetimeLocalValue(iso: string) {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ""
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 interface OcorrenciaFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   condominioId: string
+  ocorrencia?: { id: string } | null
   onSubmit: (data: CreateOcorrenciaRequest) => void
   isSubmitting: boolean
 }
 
 export default function OcorrenciaForm({
-  open, onOpenChange, condominioId, onSubmit, isSubmitting,
+  open, onOpenChange, condominioId, ocorrencia, onSubmit, isSubmitting,
 }: OcorrenciaFormProps) {
+  const isEdit = !!ocorrencia
+  const { data: detalhe, isFetching: detalheCarregando } = useOcorrencia(ocorrencia?.id ?? "")
+  const detalhePronto = !isEdit || (!!detalhe && detalhe.id === ocorrencia.id && !detalheCarregando)
+  const condominioEfetivo = detalhe?.condominioId || condominioId
+
   const { data: blocosData } = useQuery({
-    queryKey: ["condominios", condominioId, "blocos"],
-    queryFn: () => getBlocos(condominioId),
-    enabled: open && !!condominioId,
+    queryKey: ["condominios", condominioEfetivo, "blocos"],
+    queryFn: () => getBlocos(condominioEfetivo),
+    enabled: open && !!condominioEfetivo,
   })
   const blocos: Bloco[] = Array.isArray(blocosData) ? blocosData : []
 
-  const { data: moradoresData } = useMoradores(condominioId, { pageSize: 500 })
+  const { data: moradoresData } = useMoradores(condominioEfetivo, { pageSize: 500 })
   const moradores: Morador[] = moradoresData?.data ?? []
 
-  const { register, handleSubmit, reset, control, setValue, watch, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, control, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      origem: "", tipoLocal: "", tipoOcorrencia: "", ocorreuEm: "",
-      descricao: "", moradorId: "", blocoId: "", unidadeId: "",
-    },
+    defaultValues: EMPTY_VALUES,
   })
 
-  const selectedBlocoId = watch("blocoId")
+  const selectedBlocoId = useWatch({ control, name: "blocoId" })
   const selectedBloco = blocos.find((b) => b.id === selectedBlocoId)
   const unidades = selectedBloco?.unidades ?? []
+  const editId = ocorrencia?.id
 
-  const handleOpenChange = (next: boolean) => {
-    if (next) {
-      reset()
+  const edicaoKey = !open || !editId || !detalhe || detalhe.id !== editId
+    ? ""
+    : JSON.stringify({
+        origem: detalhe.origem,
+        tipoLocal: detalhe.tipoLocal,
+        tipoOcorrencia: detalhe.tipoOcorrencia,
+        ocorreuEm: toDatetimeLocalValue(detalhe.ocorreuEm),
+        descricao: detalhe.descricao,
+        moradorId: detalhe.morador?.id ?? "",
+        blocoId: detalhe.bloco?.id ?? "",
+        unidadeId: detalhe.unidade?.id ?? "",
+      } satisfies FormData)
+
+  useEffect(() => {
+    if (!open) return
+    if (!editId) {
+      reset(EMPTY_VALUES)
+      return
     }
-    onOpenChange(next)
-  }
+    if (!edicaoKey) return
+    reset(JSON.parse(edicaoKey) as FormData)
+  }, [open, editId, edicaoKey, reset])
 
   const handleMoradorChange = (moradorId: string) => {
     setValue("moradorId", moradorId)
@@ -103,7 +143,7 @@ export default function OcorrenciaForm({
 
   const onFormSubmit = (data: FormData) => {
     onSubmit({
-      condominioId,
+      condominioId: (isEdit && detalhe?.condominioId) ? detalhe.condominioId : condominioId,
       origem: data.origem as OcorrenciaOrigem,
       tipoLocal: data.tipoLocal as TipoLocal,
       tipoOcorrencia: data.tipoOcorrencia as OcorrenciaTipo,
@@ -116,11 +156,15 @@ export default function OcorrenciaForm({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Nova Ocorrência</DialogTitle>
-          <DialogDescription>Registre uma nova ocorrência no condomínio.</DialogDescription>
+          <DialogTitle>{isEdit ? "Editar Ocorrência" : "Nova Ocorrência"}</DialogTitle>
+          <DialogDescription>
+            {isEdit
+              ? "Atualize os dados da ocorrência."
+              : "Registre uma nova ocorrência no condomínio."}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onFormSubmit, toastFormValidationError)} className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-3">
@@ -174,7 +218,6 @@ export default function OcorrenciaForm({
             {errors.descricao && <p className="text-xs text-destructive">{errors.descricao.message}</p>}
           </div>
 
-          {/* Localização e morador (opcionais) */}
           <div className="space-y-3 rounded-lg border border-dashed border-border p-3">
             <p className="text-sm font-medium text-muted-foreground">
               Localização e morador (opcional)
@@ -240,9 +283,9 @@ export default function OcorrenciaForm({
 
           <DialogFooter className="pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isSubmitting} >
+            <Button type="submit" disabled={isSubmitting || !detalhePronto}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Registrar Ocorrência
+              {isEdit ? "Salvar alterações" : "Registrar Ocorrência"}
             </Button>
           </DialogFooter>
         </form>

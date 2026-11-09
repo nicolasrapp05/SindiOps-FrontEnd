@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import Combobox from "@/components/shared/Combobox"
-import { useOcorrencia, useUpdateOcorrenciaStatus, useUploadMidia } from "@/features/ocorrencias/hooks/useOcorrencias"
+import { useOcorrencia, useUpdateOcorrencia, useUpdateOcorrenciaStatus, useUploadMidia } from "@/features/ocorrencias/hooks/useOcorrencias"
+import OcorrenciaForm from "@/features/ocorrencias/components/OcorrenciaForm"
 import { deleteMidia } from "@/features/ocorrencias/services/ocorrencias.service"
 import OcorrenciaStatusBadge from "@/features/ocorrencias/components/OcorrenciaStatusBadge"
 import UploadMidia from "@/features/ocorrencias/components/UploadMidia"
@@ -16,7 +17,7 @@ import EnviarComunicacaoModal from "@/features/ocorrencias/components/EnviarComu
 import {
   TIPO_LABEL, ORIGEM_LABEL, TIPO_LOCAL_LABEL,
 } from "@/features/ocorrencias/types/ocorrencia.types"
-import type { OcorrenciaStatus, Ocorrencia } from "@/features/ocorrencias/types/ocorrencia.types"
+import type { CreateOcorrenciaRequest, OcorrenciaStatus, Ocorrencia } from "@/features/ocorrencias/types/ocorrencia.types"
 import { proximosStatus, isStatusFinal, FLUXO_STATUS_LABEL } from "@/lib/status-transitions"
 import type { FluxoStatus } from "@/lib/status-transitions"
 import { toast } from "sonner"
@@ -30,8 +31,11 @@ export default function OcorrenciaDetalhePage() {
   const qc = useQueryClient()
   const { data: oc, isLoading, isError } = useOcorrencia(id ?? "")
   const statusMutation = useUpdateOcorrenciaStatus()
+  const updateMutation = useUpdateOcorrencia()
   const uploadMutation = useUploadMidia()
   const [comModalOpen, setComModalOpen] = useState(false)
+  const [comSession, setComSession] = useState(0)
+  const [editOpen, setEditOpen] = useState(false)
   const [templateTipo, setTemplateTipo] = useState<string | undefined>()
 
   const handleStatusChange = (status: string) => {
@@ -63,7 +67,11 @@ export default function OcorrenciaDetalhePage() {
     }
   }
 
-  const openCom = (tipo?: string) => { setTemplateTipo(tipo); setComModalOpen(true) }
+  const openCom = (tipo?: string) => {
+    setTemplateTipo(tipo)
+    setComSession((session) => session + 1)
+    setComModalOpen(true)
+  }
 
   const moradorInfo = oc?.morador
     ? {
@@ -122,9 +130,14 @@ export default function OcorrenciaDetalhePage() {
             </p>
           </div>
         </div>
-        <Button onClick={() => openCom()}>
-          <Send className="mr-2 h-4 w-4" /> Enviar Comunicação
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setEditOpen(true)}>
+            Editar
+          </Button>
+          <Button onClick={() => openCom()}>
+            <Send className="mr-2 h-4 w-4" /> Enviar Comunicação
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -294,11 +307,28 @@ export default function OcorrenciaDetalhePage() {
 
       {/* Communication Modal */}
       <EnviarComunicacaoModal
+        key={comSession}
         open={comModalOpen}
         onOpenChange={setComModalOpen}
         ocorrenciaId={id ?? ""}
+        condominioId={oc.condominioId}
+        unidadeId={oc.unidade?.id}
         moradorPadrao={moradorInfo}
         templateTipoPadrao={templateTipo}
+      />
+
+      <OcorrenciaForm
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        condominioId={oc.condominioId}
+        ocorrencia={oc}
+        onSubmit={(data: CreateOcorrenciaRequest) => {
+          updateMutation.mutate(
+            { id: oc.id, data },
+            { onSuccess: () => setEditOpen(false) },
+          )
+        }}
+        isSubmitting={updateMutation.isPending}
       />
     </div>
   )

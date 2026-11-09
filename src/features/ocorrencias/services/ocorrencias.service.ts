@@ -23,7 +23,7 @@ export function createOcorrencia(data: CreateOcorrenciaRequest) {
   return post<Ocorrencia>("/ocorrencias", data)
 }
 
-export function updateOcorrencia(id: string, data: Partial<CreateOcorrenciaRequest>) {
+export function updateOcorrencia(id: string, data: CreateOcorrenciaRequest) {
   return put<Ocorrencia>(`/ocorrencias/${id}`, data)
 }
 
