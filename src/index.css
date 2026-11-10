@@ -248,6 +248,116 @@
 }
 
 @layer components {
+  .list-table {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .list-table[data-pin-actions] > thead > tr > th:last-child:not([colspan]),
+  .list-table[data-pin-actions] > tbody > tr > td:last-child:not([colspan]) {
+    justify-items: end;
+  }
+
+  .list-table[data-pin-actions] > thead > tr > th:last-child:not([colspan]) {
+    display: grid;
+    align-content: center;
+    justify-items: end;
+    line-height: normal;
+  }
+
+  .row-actions-inline {
+    display: none;
+  }
+
+  .list-table[data-actions-expanded] .row-actions-inline {
+    display: flex;
+  }
+
+  .list-table[data-actions-expanded] .row-actions-menu {
+    display: none;
+  }
+
+  .list-table > thead,
+  .list-table > tbody,
+  .list-table > tfoot {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+  }
+
+  .list-table > thead > tr,
+  .list-table > tbody > tr,
+  .list-table > tfoot > tr {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    align-items: stretch;
+  }
+
+  .list-table > thead > tr > th,
+  .list-table > tbody > tr > td,
+  .list-table > tfoot > tr > td {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    min-width: 0;
+    min-height: 2.75rem;
+    overflow: hidden;
+  }
+
+  .list-table > thead > tr > th {
+    height: 2.75rem;
+  }
+
+  .list-table > thead > tr > th:not(:has(*)) {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .list-table > tbody > tr > td:not(:has(*)) {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .list-table > thead > tr > th:not(:has(*)) {
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: 2.75rem;
+  }
+
+  .list-table > thead > tr > th > *,
+  .list-table > tbody > tr > td:not([colspan]) > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .list-table > tbody > tr > td:not([colspan]) .truncate,
+  .list-table > tbody > tr > td:not([colspan]) span:not([data-slot="badge"]),
+  .list-table > tbody > tr > td:not([colspan]) a {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .list-table > tbody > tr > td[colspan],
+  .list-table > tfoot > tr > td[colspan] {
+    display: block;
+    height: auto;
+    min-height: 0;
+  }
+
+  .list-table > thead > tr > th[colspan],
+  .list-table > tbody > tr > td[colspan],
+  .list-table > tfoot > tr > td[colspan] {
+    grid-column: 1 / -1;
+  }
+
   /* Token chips inside the rich-text template editor */
   .token-chip {
     display: inline-flex;

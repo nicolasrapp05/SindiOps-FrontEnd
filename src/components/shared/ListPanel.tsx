@@ -8,7 +8,7 @@ interface ListPanelProps {
 
 export default function ListPanel({ children, className }: ListPanelProps) {
   return (
-    <div className={cn("overflow-hidden rounded-2xl bg-card ring-1 ring-border", className)}>
+    <div className={cn("list-panel overflow-hidden rounded-2xl bg-card ring-1 ring-border", className)}>
       {children}
     </div>
   )

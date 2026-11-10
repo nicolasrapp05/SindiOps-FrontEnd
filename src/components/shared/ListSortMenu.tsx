@@ -25,7 +25,7 @@ export default function ListSortMenu({
   ]
 
   return (
-    <div className={className ?? "w-full sm:w-56 md:hidden"}>
+    <div className={className ?? "w-full sm:w-56 lg:hidden"}>
       <Combobox
         options={options}
         value={sortValue(sort, dir)}

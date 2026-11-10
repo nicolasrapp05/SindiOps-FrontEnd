@@ -1,7 +1,7 @@
-import { ArrowDown, ArrowUp } from "lucide-react"
+import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react"
 import { TableHead } from "@/components/ui/table"
-import { cn } from "@/lib/utils"
 import type { SortDir } from "@/lib/list-sort"
+import { cn } from "@/lib/utils"
 
 interface SortableHeadProps {
   label: string
@@ -10,7 +10,6 @@ interface SortableHeadProps {
   dir?: SortDir
   onSort: (column: string) => void
   className?: string
-  align?: "left" | "right"
 }
 
 export default function SortableHead({
@@ -20,9 +19,9 @@ export default function SortableHead({
   dir,
   onSort,
   className,
-  align = "left",
 }: SortableHeadProps) {
   const active = sort === column && (dir === "asc" || dir === "desc")
+  const Icon = !active ? ChevronsUpDown : dir === "asc" ? ChevronUp : ChevronDown
 
   return (
     <TableHead
@@ -32,14 +31,13 @@ export default function SortableHead({
       <button
         type="button"
         className={cn(
-          "inline-flex min-h-11 items-center gap-1 text-xs font-medium text-muted-foreground",
-          align === "right" && "w-full justify-end",
+          "flex h-full w-full min-w-0 items-center gap-1.5 text-left text-xs font-medium",
+          active ? "text-foreground" : "text-muted-foreground",
         )}
         onClick={() => onSort(column)}
       >
-        {label}
-        {active && dir === "asc" ? <ArrowUp className="size-3.5" aria-hidden="true" /> : null}
-        {active && dir === "desc" ? <ArrowDown className="size-3.5" aria-hidden="true" /> : null}
+        <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+        <span className={cn("whitespace-nowrap", active && "font-semibold")}>{label}</span>
       </button>
     </TableHead>
   )

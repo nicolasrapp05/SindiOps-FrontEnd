@@ -27,12 +27,14 @@ import DatePicker from "@/components/shared/DatePicker"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
+import ListBusy from "@/components/shared/ListBusy"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
 import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
+import { listColumn, listColumns, listFit, listFlex } from "@/components/shared/list-columns"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import { TemplateTipoBadge } from "@/features/comunicacao/components/TemplateTipoBadge"
@@ -79,7 +81,7 @@ function ExpandedLogRow({ logId, log }: { logId: string; log: EmailLog }) {
 const SORT_COLUMNS: SortColumn[] = [
   { key: "status", label: "Status" },
   { key: "template", label: "Template" },
-  { key: "enviadoEm", label: "Enviado em" },
+  { key: "enviadoEm", label: "Envio" },
 ]
 
 const STATUS_OPTIONS: { value: StatusEntrega; label: string }[] = [
@@ -130,7 +132,7 @@ export default function HistoricoEnviosPage() {
     setPage(1)
   }
 
-  const { data, isLoading, isError, refetch } = useEmailLogs(filters)
+  const { data, isLoading, isPlaceholderData, isError, refetch } = useEmailLogs(filters)
 
   const logs = data?.data ?? []
   const totalCount = data?.totalCount ?? 0
@@ -167,6 +169,7 @@ export default function HistoricoEnviosPage() {
     falhasCriticas: String(resumo.falhasCriticas),
   }
   const listaCarregando = isLoading
+  const listaAtualizando = isPlaceholderData
   const resumoCarregando = isLoading && !data
 
   const resetPage = () => setPage(1)
@@ -229,7 +232,7 @@ export default function HistoricoEnviosPage() {
             setDir(nextDir)
             setPage(1)
           }}
-          className="w-full min-w-0 md:hidden"
+          className="w-full min-w-0 lg:hidden"
         />
         <div className="relative w-full min-w-0 md:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -294,11 +297,11 @@ export default function HistoricoEnviosPage() {
           description="Ajuste os filtros ou aguarde novos envios."
         />
       ) : (
-        <div className="space-y-4">
+        <ListBusy busy={listaAtualizando} className="space-y-4">
           {listaCarregando ? (
             <ListSkeletonCards />
           ) : (
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 lg:hidden">
             {logs.map((log) => (
               <ListRecord
                 key={log.id}
@@ -329,7 +332,7 @@ export default function HistoricoEnviosPage() {
                     ),
                   },
                   {
-                    label: "Enviado em",
+                    label: "Envio",
                     value: new Date(log.enviadoEm).toLocaleDateString("pt-BR", {
                       day: "2-digit",
                       month: "short",
@@ -354,17 +357,27 @@ export default function HistoricoEnviosPage() {
             ))}
           </div>
           )}
-          <ListPanel className="hidden md:block">
-            <Table className="table-fixed">
+          <ListPanel className="hidden lg:block">
+            <Table
+              columns={listColumns(
+                listFit("6rem"),
+                listFlex("8rem", "18rem"),
+                listFit("12.5rem"),
+                listFlex("8rem", "16rem"),
+                listFlex("6rem", "10rem"),
+                listColumn.datetime,
+                listColumn.actions1,
+              )}
+            >
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
-                  <TableHead className="w-[16%]">Destinatário</TableHead>
-                  <SortableHead label="Template" column="template" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
-                  <TableHead className="w-[22%]">Assunto</TableHead>
-                  <TableHead className="w-[14%]">Ocorrência</TableHead>
-                  <SortableHead label="Enviado em" column="enviadoEm" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
-                  <TableHead className="w-[10%] text-right">Ações</TableHead>
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Destinatário</TableHead>
+                  <SortableHead label="Template" column="template" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Assunto</TableHead>
+                  <TableHead>Ocorrência</TableHead>
+                  <SortableHead label="Envio" column="enviadoEm" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -377,8 +390,8 @@ export default function HistoricoEnviosPage() {
                         <StatusEntregaBadge status={log.statusEntrega} />
                       </TableCell>
                       <TableCell>
-                        <div className="truncate font-medium text-foreground">{log.morador.nome}</div>
-                        <div className="truncate text-xs text-gray-500">{log.emailDestinatario}</div>
+                        <div className="truncate font-medium text-foreground" title={log.morador.nome}>{log.morador.nome}</div>
+                        <div className="truncate text-xs text-gray-500" title={log.emailDestinatario}>{log.emailDestinatario}</div>
                       </TableCell>
                       <TableCell>
                         {log.template ? (
@@ -387,7 +400,7 @@ export default function HistoricoEnviosPage() {
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="truncate text-gray-700">
+                      <TableCell className="truncate text-gray-700" title={log.assunto}>
                         {log.assunto}
                       </TableCell>
                       <TableCell>
@@ -395,6 +408,7 @@ export default function HistoricoEnviosPage() {
                           <Link
                             to={`/ocorrencias/${log.ocorrencia.id}`}
                             className="block truncate text-sm font-medium text-emerald-700 underline-offset-2 hover:underline"
+                            title={log.ocorrencia.tipoOcorrencia}
                           >
                             {log.ocorrencia.tipoOcorrencia}
                           </Link>
@@ -411,7 +425,7 @@ export default function HistoricoEnviosPage() {
                           minute: "2-digit",
                         })}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell>
                         <Button
                           type="button"
                           variant="ghost"
@@ -432,7 +446,7 @@ export default function HistoricoEnviosPage() {
                     </TableRow>
                     {expandedId === log.id && (
                       <TableRow>
-                        <TableCell colSpan={7} className="p-0">
+                        <TableCell colSpan={7} aria-colspan={7} className="p-0">
                           <ExpandedLogRow logId={log.id} log={log} />
                         </TableCell>
                       </TableRow>
@@ -457,7 +471,7 @@ export default function HistoricoEnviosPage() {
               }}
             />
           )}
-        </div>
+        </ListBusy>
       )}
     </div>
   )

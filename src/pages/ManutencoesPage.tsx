@@ -15,11 +15,13 @@ import {
 import Combobox from "@/components/shared/Combobox"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
+import ListBusy from "@/components/shared/ListBusy"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
+import { listClosedLabelClass, listColumn, listColumns, listFit, listFlex } from "@/components/shared/list-columns"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn } from "@/lib/list-sort"
 import { useDebounce } from "@/hooks/useDebounce"
@@ -67,12 +69,12 @@ const FILA_SORT_COLUMNS: SortColumn[] = [
 ]
 const CHAMADO_SORT_COLUMNS: SortColumn[] = [
   { key: "status", label: "Status" },
-  { key: "tipo", label: "Tipo de serviço" },
+  { key: "tipo", label: "Serviço" },
   { key: "orcamento", label: "Orçamento" },
   { key: "local", label: "Local" },
   { key: "responsavel", label: "Responsável" },
   { key: "fornecedor", label: "Fornecedor" },
-  { key: "dataConclusao", label: "Data conclusão" },
+  { key: "dataConclusao", label: "Conclusão" },
 ]
 
 const TIPOS = Object.keys(SOLICITACAO_TIPO_LABEL) as SolicitacaoTipoServico[]
@@ -197,7 +199,7 @@ export default function ManutencoesPage() {
 
   const detalheTo = (id: string) => manutencaoDetalheTo(id, viewState)
 
-  const { data, isLoading, isError, refetch } = useSolicitacoesManutencao(
+  const { data, isLoading, isPlaceholderData, isError, refetch } = useSolicitacoesManutencao(
     escopoId,
     filters,
   )
@@ -215,6 +217,7 @@ export default function ManutencoesPage() {
 
   const condoConfigured = escopoCondominioAtivo(escopoId)
   const listaCarregando = condoConfigured && isLoading
+  const listaAtualizando = condoConfigured && isPlaceholderData
   const visaoPainel = visaoOrcamentos ? "orcamentos" : "chamados"
 
   useEffect(() => {
@@ -347,7 +350,7 @@ export default function ManutencoesPage() {
             sort={sortAtivo?.sort}
             dir={sortAtivo?.dir}
             onChange={(sort, dir) => updateList({ sort, dir, page: 1 })}
-            className="w-full min-w-0 md:hidden"
+            className="w-full min-w-0 lg:hidden"
           />
           <div className="relative w-full min-w-0 xl:w-64">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -423,11 +426,11 @@ export default function ManutencoesPage() {
           }
         />
       ) : visaoOrcamentos ? (
-        <div className="space-y-4">
+        <ListBusy busy={listaAtualizando} className="space-y-4">
           {listaCarregando ? (
             <ListSkeletonCards />
           ) : (
-            <div className="space-y-3 md:hidden">
+            <div className="space-y-3 lg:hidden">
               {list.map((row) => (
                 <ListRecord
                   key={row.id}
@@ -449,19 +452,29 @@ export default function ManutencoesPage() {
               ))}
             </div>
           )}
-          <ListPanel className="hidden md:block">
-            <Table className="table-fixed">
+          <ListPanel className="hidden lg:block">
+            <Table
+              columns={listColumns(
+                listColumn.status,
+                todos && listFlex("7rem", "12rem"),
+                listColumn.situacao,
+                listFit("8.5rem"),
+                listFlex("5rem", "10rem"),
+                listColumn.propostas,
+                listColumn.actions1,
+              )}
+            >
               <TableHeader>
                 <TableRow>
+                  <SortableHead label="Status" column="status" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
                   {todos && (
-                    <SortableHead label="Condomínio" column="condominio" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[16%]" />
+                    <SortableHead label="Condomínio" column="condominio" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
                   )}
-                  <SortableHead label="Situação" column="situacao" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[16%]" />
-                  <SortableHead label="Chamado" column="tipo" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[28%]" />
-                  <SortableHead label="Local" column="local" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[20%]" />
-                  <SortableHead label="Propostas" column="propostas" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[12%]" />
-                  <SortableHead label="Status" column="status" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[14%]" />
-                  <TableHead className="w-[10%]">Ações</TableHead>
+                  <SortableHead label="Situação" column="situacao" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Chamado" column="tipo" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Local" column="local" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Propostas" column="propostas" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -473,20 +486,24 @@ export default function ManutencoesPage() {
                     className="cursor-pointer"
                     onClick={() => navigate(detalheTo(row.id))}
                   >
-                    {todos && <TableCell className="truncate">{row.condominio?.nome || "—"}</TableCell>}
-                    <TableCell>
-                      <SituacaoOrcamentoBadge situacao={row.situacaoOrcamento} />
-                    </TableCell>
-                    <TableCell className="truncate font-medium text-foreground">
-                      <Link to={detalheTo(row.id)} className="underline-offset-2 hover:underline" onClick={(event) => event.stopPropagation()}>
-                        {SOLICITACAO_TIPO_LABEL[row.tipoServico]}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="truncate">{row.local}</TableCell>
-                    <TableCell className="tabular-nums">{row.totalOrcamentos ?? 0}</TableCell>
                     <TableCell>
                       <SolicitacaoStatusBadge status={row.status} />
                     </TableCell>
+                    {todos && (
+                      <TableCell className="truncate" title={row.condominio?.nome || undefined}>
+                        {row.condominio?.nome || "—"}
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      <SituacaoOrcamentoBadge situacao={row.situacaoOrcamento} />
+                    </TableCell>
+                    <TableCell className="font-medium text-foreground">
+                      <Link to={detalheTo(row.id)} className={`${listClosedLabelClass} underline-offset-2 hover:underline`} onClick={(event) => event.stopPropagation()}>
+                        {SOLICITACAO_TIPO_LABEL[row.tipoServico]}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="truncate" title={row.local}>{row.local}</TableCell>
+                    <TableCell className="tabular-nums">{row.totalOrcamentos ?? 0}</TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"
@@ -517,13 +534,13 @@ export default function ManutencoesPage() {
             onPageSize={(pageSize) => updateList({ pageSize, page: 1 })}
           />
           )}
-        </div>
+        </ListBusy>
       ) : (
-        <div className="space-y-4">
+        <ListBusy busy={listaAtualizando} className="space-y-4">
           {listaCarregando ? (
             <ListSkeletonCards />
           ) : (
-            <div className="space-y-3 md:hidden">
+            <div className="space-y-3 lg:hidden">
               {list.map((row) => (
                 <ListRecord
                   key={row.id}
@@ -547,7 +564,7 @@ export default function ManutencoesPage() {
                     },
                     { label: "Fornecedor", value: row.fornecedor?.nome ?? "-" },
                     {
-                      label: "Data conclusão",
+                      label: "Conclusão",
                       value: row.dataConclusao
                         ? new Date(row.dataConclusao + "T00:00:00").toLocaleDateString("pt-BR")
                         : "-",
@@ -562,21 +579,33 @@ export default function ManutencoesPage() {
               ))}
             </div>
           )}
-          <ListPanel className="hidden md:block">
-            <Table className="table-fixed">
+          <ListPanel className="hidden lg:block">
+            <Table
+              columns={listColumns(
+                listColumn.status,
+                todos && listFlex("7rem", "12rem"),
+                listFit("8.5rem"),
+                listColumn.situacao,
+                listFlex("4.5rem", "10rem"),
+                listFit("6.875rem"),
+                listFlex("6.5rem", "14rem"),
+                listColumn.date,
+                listColumn.actions1,
+              )}
+            >
               <TableHeader>
                 <TableRow>
+                  <SortableHead label="Status" column="status" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
                   {todos && (
-                    <SortableHead label="Condomínio" column="condominio" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[14%]" />
+                    <SortableHead label="Condomínio" column="condominio" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
                   )}
-                  <SortableHead label="Status" column="status" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[12%]" />
-                  <SortableHead label="Tipo de serviço" column="tipo" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[15%]" />
-                  <SortableHead label="Orçamento" column="orcamento" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[18%]" />
-                  <SortableHead label="Local" column="local" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[11%]" />
-                  <SortableHead label="Responsável" column="responsavel" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[12%]" />
-                  <SortableHead label="Fornecedor" column="fornecedor" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[12%]" />
-                  <SortableHead label="Data conclusão" column="dataConclusao" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} className="w-[12%]" />
-                  <TableHead className="w-[8%]">Ações</TableHead>
+                  <SortableHead label="Serviço" column="tipo" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Orçamento" column="orcamento" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Local" column="local" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Responsável" column="responsavel" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Fornecedor" column="fornecedor" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <SortableHead label="Conclusão" column="dataConclusao" sort={sortAtivo?.sort} dir={sortAtivo?.dir} onSort={sortBy} />
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -588,14 +617,18 @@ export default function ManutencoesPage() {
                     className="cursor-pointer"
                     onClick={() => navigate(detalheTo(row.id))}
                   >
-                    {todos && <TableCell className="truncate">{row.condominio?.nome || "—"}</TableCell>}
                     <TableCell>
                       <SolicitacaoStatusBadge status={row.status} />
                     </TableCell>
-                    <TableCell className="truncate font-medium text-foreground">
+                    {todos && (
+                      <TableCell className="truncate" title={row.condominio?.nome || undefined}>
+                        {row.condominio?.nome || "—"}
+                      </TableCell>
+                    )}
+                    <TableCell className="font-medium text-foreground">
                       <Link
                         to={detalheTo(row.id)}
-                        className="underline-offset-2 hover:underline"
+                        className={`${listClosedLabelClass} underline-offset-2 hover:underline`}
                         onClick={(event) => event.stopPropagation()}
                       >
                         {SOLICITACAO_TIPO_LABEL[row.tipoServico]}
@@ -614,13 +647,13 @@ export default function ManutencoesPage() {
                         "—"
                       )}
                     </TableCell>
-                    <TableCell className="truncate">{row.local}</TableCell>
+                    <TableCell className="truncate" title={row.local}>{row.local}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="font-normal">
                         {row.responsavel === "fornecedor" ? "Fornecedor" : "Zeladoria"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="truncate">{row.fornecedor?.nome ?? "-"}</TableCell>
+                    <TableCell className="truncate" title={row.fornecedor?.nome || undefined}>{row.fornecedor?.nome ?? "-"}</TableCell>
                     <TableCell className="whitespace-nowrap">
                       {row.dataConclusao
                         ? new Date(row.dataConclusao + "T00:00:00").toLocaleDateString("pt-BR")
@@ -656,7 +689,7 @@ export default function ManutencoesPage() {
             onPageSize={(pageSize) => updateList({ pageSize, page: 1 })}
           />
           )}
-        </div>
+        </ListBusy>
       )}
       </div>
 

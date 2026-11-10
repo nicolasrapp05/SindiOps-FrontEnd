@@ -15,9 +15,14 @@ interface TemplateTipoBadgeProps {
 }
 
 export function TemplateTipoBadge({ tipo }: TemplateTipoBadgeProps) {
+  const label = TEMPLATE_TIPO_LABEL[tipo]
   return (
-    <Badge variant="outline" className={cn("font-medium", TIPO_STYLES[tipo])}>
-      {TEMPLATE_TIPO_LABEL[tipo]}
+    <Badge
+      variant="outline"
+      title={label}
+      className={cn("max-w-full min-w-0 justify-start font-medium", TIPO_STYLES[tipo])}
+    >
+      <span className="truncate">{label}</span>
     </Badge>
   )
 }

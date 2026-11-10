@@ -25,11 +25,14 @@ import Combobox from "@/components/shared/Combobox"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
+import ListBusy from "@/components/shared/ListBusy"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
+import { listClosedLabelClass, listColumn, listColumns, listFit, listFlex } from "@/components/shared/list-columns"
+import RowActions from "@/components/shared/RowActions"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import { Link } from "react-router-dom"
@@ -64,8 +67,8 @@ const SORT_COLUMNS: SortColumn[] = [
   { key: "status", label: "Status" },
   { key: "tipo", label: "Tipo" },
   { key: "condominio", label: "Condomínio" },
-  { key: "vencimento", label: "Data vencimento" },
-  { key: "ultimaRealizacao", label: "Última realização" },
+  { key: "vencimento", label: "Vencimento" },
+  { key: "ultimaRealizacao", label: "Realização" },
 ]
 
 const TIPOS = Object.keys(MANUTENCAO_TIPO_LABEL) as ManutencaoTipo[]
@@ -121,7 +124,7 @@ export default function ManutencoesObrigatoriasPage() {
     setPage(1)
   }
 
-  const { data, isLoading, isError, refetch } = useManutencoesObrigatorias(
+  const { data, isLoading, isPlaceholderData, isError, refetch } = useManutencoesObrigatorias(
     escopoId,
     filters,
   )
@@ -183,6 +186,7 @@ export default function ManutencoesObrigatoriasPage() {
 
   const condoConfigured = escopoCondominioAtivo(escopoId)
   const listaCarregando = condoConfigured && isLoading
+  const listaAtualizando = condoConfigured && isPlaceholderData
 
   if (condoConfigured && isError) {
     return (
@@ -263,7 +267,7 @@ export default function ManutencoesObrigatoriasPage() {
               setDir(nextDir)
               setPage(1)
             }}
-            className="w-full min-w-0 md:hidden"
+            className="w-full min-w-0 lg:hidden"
           />
           <div className="relative w-full min-w-0 xl:w-64">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -311,11 +315,11 @@ export default function ManutencoesObrigatoriasPage() {
           }
         />
       ) : (
-        <div className="space-y-4">
+        <ListBusy busy={listaAtualizando} className="space-y-4">
           {listaCarregando ? (
             <ListSkeletonCards />
           ) : (
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 lg:hidden">
             {list.map((m) => (
               <ListRecord
                 key={m.id}
@@ -325,11 +329,11 @@ export default function ManutencoesObrigatoriasPage() {
                   { label: "Status", value: <ManutencaoStatusBadge status={m.status} /> },
                   { label: "Condomínio", value: m.condominio.nome },
                   {
-                    label: "Data vencimento",
+                    label: "Vencimento",
                     value: new Date(m.dataVencimento + "T00:00:00").toLocaleDateString("pt-BR"),
                   },
                   {
-                    label: "Última realização",
+                    label: "Realização",
                     value: m.ultimaRealizacao
                       ? new Date(m.ultimaRealizacao + "T00:00:00").toLocaleDateString("pt-BR")
                       : "-",
@@ -359,16 +363,25 @@ export default function ManutencoesObrigatoriasPage() {
             ))}
           </div>
           )}
-          <ListPanel className="hidden md:block">
-            <Table className="table-fixed">
+          <ListPanel className="hidden lg:block">
+            <Table
+              columns={listColumns(
+                listFit("5.625rem"),
+                listFit("10.5rem"),
+                listFlex("8rem", "16rem"),
+                listColumn.date,
+                listColumn.date,
+                listColumn.actionsRealizada,
+              )}
+            >
               <TableHeader>
                 <TableRow>
-                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
-                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
-                  <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
-                  <SortableHead label="Data vencimento" column="vencimento" sort={sort} dir={dir} onSort={sortBy} className="w-[13%]" />
-                  <SortableHead label="Última realização" column="ultimaRealizacao" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
-                  <TableHead className="w-[35%] text-right">Ações</TableHead>
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Vencimento" column="vencimento" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Realização" column="ultimaRealizacao" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -382,10 +395,10 @@ export default function ManutencoesObrigatoriasPage() {
                     <TableCell>
                       <ManutencaoStatusBadge status={m.status} />
                     </TableCell>
-                    <TableCell className="truncate font-medium text-foreground">
-                      {MANUTENCAO_TIPO_LABEL[m.tipo]}
+                    <TableCell className="font-medium text-foreground">
+                      <span className={listClosedLabelClass}>{MANUTENCAO_TIPO_LABEL[m.tipo]}</span>
                     </TableCell>
-                    <TableCell className="truncate">{m.condominio.nome}</TableCell>
+                    <TableCell className="truncate" title={m.condominio.nome}>{m.condominio.nome}</TableCell>
                     <TableCell className="whitespace-nowrap">
                       {new Date(m.dataVencimento + "T00:00:00").toLocaleDateString("pt-BR")}
                     </TableCell>
@@ -394,37 +407,31 @@ export default function ManutencoesObrigatoriasPage() {
                         ? new Date(m.ultimaRealizacao + "T00:00:00").toLocaleDateString("pt-BR")
                         : "-"}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-8 border-emerald-200 text-emerald-800 hover:bg-emerald-50"
-                          onClick={() => openRealizar(m.id)}
-                        >
-                          <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-                          Marcar como Realizada
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          
-                          onClick={() => openEdit(m)}
-                         aria-label="Editar">
-                          <Pencil className="h-4 w-4" aria-hidden="true" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => handleDelete(m)}
-                         aria-label="Excluir">
-                          <Trash2 className="h-4 w-4" aria-hidden="true" />
-                        </Button>
-                      </div>
+                    <TableCell>
+                      <RowActions
+                        collapse
+                        items={[
+                          {
+                            label: "Marcar como Realizada",
+                            icon: CheckCircle2,
+                            appearance: "button",
+                            buttonClassName: "border-emerald-200 text-emerald-800 hover:bg-emerald-50",
+                            onClick: () => openRealizar(m.id),
+                          },
+                          {
+                            label: "Editar",
+                            icon: Pencil,
+                            onClick: () => openEdit(m),
+                          },
+                          {
+                            label: "Excluir",
+                            icon: Trash2,
+                            destructive: true,
+                            buttonClassName: "text-red-600 hover:text-red-700",
+                            onClick: () => handleDelete(m),
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -446,7 +453,7 @@ export default function ManutencoesObrigatoriasPage() {
             }}
           />
           )}
-        </div>
+        </ListBusy>
       )}
 
       <ManutencaoObrigatoriaForm

@@ -27,11 +27,14 @@ import Combobox from "@/components/shared/Combobox"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
+import ListBusy from "@/components/shared/ListBusy"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
+import { listColumn, listColumns, listFlex } from "@/components/shared/list-columns"
+import RowActions from "@/components/shared/RowActions"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import { useQuery } from "@tanstack/react-query"
@@ -113,7 +116,7 @@ export default function MoradoresPage() {
     setPage(1)
   }
 
-  const { data: moradores, isLoading, isError, refetch } = useMoradores(escopoId, filters)
+  const { data: moradores, isLoading, isPlaceholderData, isError, refetch } = useMoradores(escopoId, filters)
   const { data: blocos } = useQuery({
     queryKey: ["condominios", condominioId, "blocos"],
     queryFn: () => getBlocos(condominioId),
@@ -169,6 +172,7 @@ export default function MoradoresPage() {
   const totalCount = moradores?.totalCount
   const totalPages = totalCount ? Math.ceil(totalCount / pageSize) : 1
   const listaCarregando = condoConfigured && isLoading
+  const listaAtualizando = condoConfigured && isPlaceholderData
 
   // ── Error ───────────────────────────────────────────
   if (isError) {
@@ -232,7 +236,7 @@ export default function MoradoresPage() {
             setDir(nextDir)
             setPage(1)
           }}
-          className="w-full min-w-0 md:hidden"
+          className="w-full min-w-0 lg:hidden"
         />
         <div className="relative w-full min-w-0 md:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -278,11 +282,11 @@ export default function MoradoresPage() {
           }
         />
       ) : (
-        <div className="space-y-4">
+        <ListBusy busy={listaAtualizando} className="space-y-4">
           {listaCarregando ? (
             <ListSkeletonCards />
           ) : (
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 lg:hidden">
             {moradorList.map((m) => (
               <ListRecord
                 key={m.id}
@@ -327,20 +331,31 @@ export default function MoradoresPage() {
             ))}
           </div>
           )}
-          <ListPanel className="hidden md:block">
-            <Table className="table-fixed">
+          <ListPanel className="hidden lg:block">
+            <Table
+              columns={listColumns(
+                todos && listFlex("7rem", "12rem"),
+                listFlex("8rem", "16rem"),
+                listFlex("10rem", "18rem"),
+                listColumn.label,
+                listFlex("5rem", "8rem"),
+                listColumn.unit,
+                listColumn.phone,
+                listColumn.actions3,
+              )}
+            >
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   {todos && (
-                    <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} className="w-[16%]" />
+                    <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} />
                   )}
-                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} className="w-[22%]" />
-                  <SortableHead label="Papel" column="papel" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
-                  <SortableHead label="Bloco" column="bloco" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
-                  <SortableHead label="Unidade" column="unidade" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
-                  <TableHead className="w-[20%]">Email</TableHead>
-                  <TableHead className="w-[14%]">Telefone</TableHead>
-                  <TableHead className="w-[12%] text-right">Ações</TableHead>
+                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Email</TableHead>
+                  <SortableHead label="Papel" column="papel" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Bloco" column="bloco" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Unidade" column="unidade" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -352,58 +367,49 @@ export default function MoradoresPage() {
                       className="cursor-pointer transition-colors hover:bg-muted/60"
                       onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}
                     >
-                      {todos && <TableCell className="truncate">{m.condominio?.nome || "—"}</TableCell>}
-                      <TableCell className="truncate font-medium text-foreground">{m.nome}</TableCell>
+                      {todos && (
+                        <TableCell className="truncate" title={m.condominio?.nome || undefined}>
+                          {m.condominio?.nome || "—"}
+                        </TableCell>
+                      )}
+                      <TableCell className="truncate font-medium text-foreground" title={m.nome}>{m.nome}</TableCell>
+                      <TableCell className="truncate text-gray-500" title={m.email}>{m.email}</TableCell>
                       <TableCell>
                         <Badge variant="secondary" className={cn("font-medium", PAPEL_CLASS[m.papel])}>
                           {MORADOR_PAPEL_LABEL[m.papel]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="truncate text-gray-600">{m.bloco.nome}</TableCell>
-                      <TableCell className="truncate text-gray-600">{m.unidade.numero}</TableCell>
-                      <TableCell className="truncate text-gray-500">{m.email}</TableCell>
-                      <TableCell className="truncate text-gray-500">{m.telefone || "-"}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setExpandedId(expandedId === m.id ? null : m.id)
-                            }}
-                           aria-label="Ver detalhes">
-                            <Eye className="h-4 w-4" aria-hidden="true" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              openEdit(m)
-                            }}
-                           aria-label="Editar">
-                            <Pencil className="h-4 w-4" aria-hidden="true" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-500 hover:text-red-700"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDelete(m)
-                            }}
-                           aria-label="Excluir">
-                            <Trash2 className="h-4 w-4" aria-hidden="true" />
-                          </Button>
-                        </div>
+                      <TableCell className="truncate text-gray-600" title={m.bloco.nome}>{m.bloco.nome}</TableCell>
+                      <TableCell className="truncate text-gray-600" title={m.unidade.numero}>{m.unidade.numero}</TableCell>
+                      <TableCell className="truncate text-gray-500" title={m.telefone || undefined}>{m.telefone || "-"}</TableCell>
+                      <TableCell>
+                        <RowActions
+                          collapse
+                          items={[
+                            {
+                              label: "Ver detalhes",
+                              icon: Eye,
+                              onClick: () => setExpandedId(expandedId === m.id ? null : m.id),
+                            },
+                            {
+                              label: "Editar",
+                              icon: Pencil,
+                              onClick: () => openEdit(m),
+                            },
+                            {
+                              label: "Excluir",
+                              icon: Trash2,
+                              destructive: true,
+                              buttonClassName: "text-red-500 hover:text-red-700",
+                              onClick: () => handleDelete(m),
+                            },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                     {expandedId === m.id && (
                       <TableRow key={`${m.id}-expand`}>
-                        <TableCell colSpan={7} className="p-0">
+                        <TableCell colSpan={todos ? 8 : 7} aria-colspan={todos ? 8 : 7} className="p-0">
                           <MoradorExpandido moradorId={m.id} />
                         </TableCell>
                       </TableRow>
@@ -428,7 +434,7 @@ export default function MoradoresPage() {
               }}
             />
           )}
-        </div>
+        </ListBusy>
       )}
 
       {/* Form dialog */}

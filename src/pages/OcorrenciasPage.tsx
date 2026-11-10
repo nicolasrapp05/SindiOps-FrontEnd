@@ -12,12 +12,15 @@ import Combobox from "@/components/shared/Combobox"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
+import ListBusy from "@/components/shared/ListBusy"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
 import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
+import { listClosedLabelClass, listColumn, listColumns, listFit, listFlex } from "@/components/shared/list-columns"
+import RowActions from "@/components/shared/RowActions"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import { useOcorrencias, useCreateOcorrencia, useUpdateOcorrencia } from "@/features/ocorrencias/hooks/useOcorrencias"
@@ -95,7 +98,7 @@ export default function OcorrenciasPage() {
     setPage(1)
   }
 
-  const { data: ocorrenciasPage, isLoading, isError, refetch } = useOcorrencias(escopoId, filters)
+  const { data: ocorrenciasPage, isLoading, isPlaceholderData, isError, refetch } = useOcorrencias(escopoId, filters)
   const {
     data: summaryData,
     isLoading: resumoInicial,
@@ -158,6 +161,7 @@ export default function OcorrenciasPage() {
   }
 
   const listaCarregando = condoConfigured && isLoading
+  const listaAtualizando = condoConfigured && isPlaceholderData
   const resumoCarregando = condoConfigured && (resumoInicial || resumoTrocando)
 
   return (
@@ -251,7 +255,7 @@ export default function OcorrenciasPage() {
             setDir(nextDir)
             setPage(1)
           }}
-          className="w-full min-w-0 md:hidden"
+          className="w-full min-w-0 lg:hidden"
         />
         <div className="relative w-full min-w-0 md:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -313,11 +317,11 @@ export default function OcorrenciasPage() {
           }
         />
       ) : (
-        <div className="space-y-4">
+        <ListBusy busy={listaAtualizando} className="space-y-4">
           {listaCarregando ? (
             <ListSkeletonCards />
           ) : (
-            <div className="space-y-3 md:hidden">
+            <div className="space-y-3 lg:hidden">
               {ocList.map((o) => (
                 <ListRecord
                   key={o.id}
@@ -345,20 +349,31 @@ export default function OcorrenciasPage() {
               ))}
             </div>
           )}
-          <ListPanel className="hidden md:block">
-            <Table className="table-fixed">
+          <ListPanel className="hidden lg:block">
+            <Table
+              columns={listColumns(
+                listColumn.status,
+                todos && listFlex("7rem", "12rem"),
+                listFit("12rem"),
+                listFit("7.375rem"),
+                listFit("9rem"),
+                listFlex("8rem", "18rem"),
+                listColumn.date,
+                listColumn.actions2,
+              )}
+            >
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} />
                   {todos && (
-                    <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} className="w-[16%]" />
+                    <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} />
                   )}
-                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
-                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
-                  <SortableHead label="Origem" column="origem" sort={sort} dir={dir} onSort={sortBy} className="w-[15%]" />
-                  <SortableHead label="Local" column="local" sort={sort} dir={dir} onSort={sortBy} className="w-[15%]" />
-                  <TableHead className="w-[21%]">Descrição</TableHead>
-                  <SortableHead label="Data" column="data" sort={sort} dir={dir} onSort={sortBy} className="w-[13%]" />
-                  <TableHead className="w-[12%]">Ações</TableHead>
+                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Origem" column="origem" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Local" column="local" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Descrição</TableHead>
+                  <SortableHead label="Data" column="data" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -370,24 +385,35 @@ export default function OcorrenciasPage() {
                     className="cursor-pointer transition-colors hover:bg-muted/60"
                     onClick={() => navigate(`/ocorrencias/${o.id}`)}
                   >
-                    {todos && <TableCell className="truncate">{o.condominio?.nome || "—"}</TableCell>}
                     <TableCell><OcorrenciaStatusBadge status={o.status} /></TableCell>
-                    <TableCell className="truncate font-medium">{TIPO_LABEL[o.tipoOcorrencia]}</TableCell>
-                    <TableCell className="truncate">{ORIGEM_LABEL[o.origem]}</TableCell>
-                    <TableCell className="truncate">{TIPO_LOCAL_LABEL[o.tipoLocal]}</TableCell>
-                    <TableCell className="truncate text-sm text-gray-600">{o.descricao.slice(0, 150)}</TableCell>
+                    {todos && (
+                      <TableCell className="truncate" title={o.condominio?.nome || undefined}>
+                        {o.condominio?.nome || "—"}
+                      </TableCell>
+                    )}
+                    <TableCell><span className={listClosedLabelClass}>{TIPO_LABEL[o.tipoOcorrencia]}</span></TableCell>
+                    <TableCell><span className={listClosedLabelClass}>{ORIGEM_LABEL[o.origem]}</span></TableCell>
+                    <TableCell><span className={listClosedLabelClass}>{TIPO_LOCAL_LABEL[o.tipoLocal]}</span></TableCell>
+                    <TableCell className="truncate text-sm text-gray-600" title={o.descricao}>{o.descricao.slice(0, 150)}</TableCell>
                     <TableCell className="text-sm text-gray-500">
                       {new Date(o.ocorreuEm).toLocaleDateString("pt-BR")}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center">
-                        <Button variant="ghost" size="icon" aria-label="Abrir ocorrência" onClick={(e) => { e.stopPropagation(); navigate(`/ocorrencias/${o.id}`) }}>
-                          <Eye className="h-4 w-4" aria-hidden="true" />
-                        </Button>
-                        <Button variant="ghost" size="icon" aria-label="Editar ocorrência" onClick={(e) => { e.stopPropagation(); openEdit(o) }}>
-                          <Pencil className="h-4 w-4" aria-hidden="true" />
-                        </Button>
-                      </div>
+                      <RowActions
+                        collapse
+                        items={[
+                          {
+                            label: "Abrir ocorrência",
+                            icon: Eye,
+                            onClick: () => navigate(`/ocorrencias/${o.id}`),
+                          },
+                          {
+                            label: "Editar ocorrência",
+                            icon: Pencil,
+                            onClick: () => openEdit(o),
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -409,7 +435,7 @@ export default function OcorrenciasPage() {
               }}
             />
           )}
-        </div>
+        </ListBusy>
       )}
 
       {/* Form */}

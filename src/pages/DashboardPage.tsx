@@ -39,12 +39,14 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import ListBusy from "@/components/shared/ListBusy"
 import ListPagination from "@/components/shared/ListPagination"
 import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
 import ListRecord from "@/components/shared/ListRecord"
 import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
+import { listColumn, listColumns, listFit, listFlex } from "@/components/shared/list-columns"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import {
@@ -288,7 +290,7 @@ export default function DashboardPage() {
   const [sort, setSort] = useState<string>()
   const [dir, setDir] = useState<SortDir>()
 
-  const { data, isLoading, isError, refetch } = useDashboard({
+  const { data, isLoading, isPlaceholderData, isError, refetch } = useDashboard({
     ...(condominioConsulta ? { condominioId: condominioConsulta } : {}),
     page,
     pageSize,
@@ -334,6 +336,7 @@ export default function DashboardPage() {
   )
   const resumoCarregando = isLoading && !data
   const listaCarregando = isLoading
+  const listaAtualizando = isPlaceholderData
 
   if (isError && !data) return <DashboardError onRetry={() => refetch()} />
 
@@ -474,11 +477,11 @@ export default function DashboardPage() {
         </div>
 
         {listaCarregando || agenda.length > 0 ? (
-          <div className="mt-6 space-y-4">
+          <ListBusy busy={listaAtualizando} className="mt-6 space-y-4">
           {listaCarregando ? (
             <ListSkeletonCards />
           ) : (
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 lg:hidden">
             {agenda.map((item, idx) => (
               <ListRecord
                 key={`${item.referenciaId}-${idx}`}
@@ -515,15 +518,23 @@ export default function DashboardPage() {
             ))}
           </div>
           )}
-          <div className="hidden md:block">
-            <Table className="table-fixed">
+          <div className="hidden lg:block">
+            <Table
+              columns={listColumns(
+                listFit("6.375rem"),
+                listFit("7.125rem"),
+                listColumn.textLg,
+                listFlex("7rem", "12rem"),
+                listColumn.prazo,
+              )}
+            >
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
-                  <TableHead className="w-[36%]">Descrição</TableHead>
-                  <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} className="w-[20%]" />
-                  <SortableHead label="Vencimento" column="vencimento" sort={sort} dir={dir} onSort={sortBy} className="w-[18%]" />
-                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Descrição</TableHead>
+                  <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Vencimento" column="vencimento" sort={sort} dir={dir} onSort={sortBy} />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -539,22 +550,6 @@ export default function DashboardPage() {
                     )}
                   >
                     <TableCell>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${TIPO_COLORS[item.tipo]}`}
-                      >
-                        {TIPO_LABELS[item.tipo]}
-                      </span>
-                    </TableCell>
-                    <TableCell className="truncate font-medium text-foreground">
-                      {formatDescricao(item)}
-                    </TableCell>
-                    <TableCell className="truncate text-gray-500">
-                      {item.condominioNome}
-                    </TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">
-                      {formatPrazo(item.dataVencimento)}
-                    </TableCell>
-                    <TableCell>
                       <Badge
                         variant="secondary"
                         className={
@@ -564,6 +559,22 @@ export default function DashboardPage() {
                       >
                         {statusLabel(item.status)}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${TIPO_COLORS[item.tipo]}`}
+                      >
+                        {TIPO_LABELS[item.tipo]}
+                      </span>
+                    </TableCell>
+                    <TableCell className="truncate font-medium text-foreground" title={formatDescricao(item)}>
+                      {formatDescricao(item)}
+                    </TableCell>
+                    <TableCell className="truncate text-gray-500" title={item.condominioNome}>
+                      {item.condominioNome}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-muted-foreground">
+                      {formatPrazo(item.dataVencimento)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -585,7 +596,7 @@ export default function DashboardPage() {
             }}
           />
           )}
-          </div>
+          </ListBusy>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="rounded-full bg-muted p-3">

@@ -5,7 +5,7 @@ const ROW_COUNT = 6
 
 export function ListSkeletonCards({ rows = ROW_COUNT }: { rows?: number }) {
   return (
-    <div className="space-y-3 md:hidden">
+    <div className="space-y-3 lg:hidden">
       {Array.from({ length: rows }, (_, row) => (
         <article key={row} className="rounded-2xl bg-card p-4 ring-1 ring-border">
           <Skeleton className="h-5 w-2/5" />

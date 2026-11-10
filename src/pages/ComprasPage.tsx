@@ -16,10 +16,12 @@ import {
 import Combobox from "@/components/shared/Combobox"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
+import ListBusy from "@/components/shared/ListBusy"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
+import { listClosedLabelClass, listColumn, listColumns, listFit, listFlex } from "@/components/shared/list-columns"
 import ListSortMenu from "@/components/shared/ListSortMenu"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn } from "@/lib/list-sort"
@@ -81,7 +83,7 @@ const COMPRA_SORT_COLUMNS: SortColumn[] = [
   { key: "status", label: "Status" },
   { key: "itens", label: "Itens" },
   { key: "solicitante", label: "Solicitante" },
-  { key: "tipoAprovacao", label: "Tipo aprovação" },
+  { key: "tipoAprovacao", label: "Aprovação" },
   { key: "cotacoes", label: "Cotações" },
   { key: "data", label: "Data" },
 ]
@@ -138,7 +140,7 @@ export default function ComprasPage() {
     !!filters.situacaoCotacao ||
     !!filters.search.trim()
 
-  const { data, isLoading, isError, refetch } = useSolicitacoesCompra(escopoId, apiFilters)
+  const { data, isLoading, isPlaceholderData, isError, refetch } = useSolicitacoesCompra(escopoId, apiFilters)
   const createMutation = useCreateSolicitacaoCompra()
 
   const list = data?.data ?? []
@@ -151,6 +153,7 @@ export default function ComprasPage() {
   }
 
   const listaCarregando = condoConfigured && isLoading
+  const listaAtualizando = condoConfigured && isPlaceholderData
 
   if (condoConfigured && isError) {
     return (
@@ -230,7 +233,7 @@ export default function ComprasPage() {
             sort={filters.sort}
             dir={filters.dir}
             onChange={(sort, dir) => updateList({ sort, dir, page: 1 })}
-            className="w-full min-w-0 md:hidden"
+            className="w-full min-w-0 lg:hidden"
           />
           <div className="relative w-full min-w-0 xl:w-64">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -312,11 +315,11 @@ export default function ComprasPage() {
           }
         />
       ) : (
-        <>
+        <ListBusy busy={listaAtualizando} className="space-y-6">
           {listaCarregando ? (
             <ListSkeletonCards />
           ) : (
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 lg:hidden">
             {list.map((row) => {
               const readiness = getCotacaoReadinessLabel(
                 row.status,
@@ -335,7 +338,7 @@ export default function ComprasPage() {
                     { label: "Categoria", value: itensResumo.categoria },
                     { label: "Itens", value: itensResumo.quantidade },
                     { label: "Solicitante", value: row.solicitadoPor.nome },
-                    { label: "Tipo aprovação", value: TIPO_APROVACAO_LABEL[row.tipoAprovacao] },
+                    { label: "Aprovação", value: TIPO_APROVACAO_LABEL[row.tipoAprovacao] },
                     {
                       label: "Cotações",
                       value: readiness ? readiness.label : row.totalCotacoes,
@@ -355,22 +358,35 @@ export default function ComprasPage() {
             })}
           </div>
           )}
-          <ListPanel className="hidden md:block">
-            <Table className="table-fixed">
+          <ListPanel className="hidden lg:block">
+            <Table
+              columns={listColumns(
+                listColumn.status,
+                todos && listFlex("7rem", "12rem"),
+                listFit("11rem"),
+                listFlex("7.5rem", "18rem"),
+                listColumn.count,
+                listFlex("7rem", "12rem"),
+                listColumn.tipoAprovacao,
+                listFit("9.75rem"),
+                listColumn.date,
+                listColumn.actions1,
+              )}
+            >
               <TableHeader>
                 <TableRow>
+                  <SortableHead label="Status" column="status" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
                   {todos && (
-                    <SortableHead label="Condomínio" column="condominio" sort={filters.sort} dir={filters.dir} onSort={sortBy} className="w-[14%]" />
+                    <SortableHead label="Condomínio" column="condominio" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
                   )}
-                  <SortableHead label="Status" column="status" sort={filters.sort} dir={filters.dir} onSort={sortBy} className="w-[13%]" />
-                  <TableHead className="w-[12%]">Categoria</TableHead>
-                  <TableHead className="w-[14%]">Item</TableHead>
-                  <SortableHead label="Itens" column="itens" sort={filters.sort} dir={filters.dir} onSort={sortBy} align="right" className="w-[8%] text-right" />
-                  <SortableHead label="Solicitante" column="solicitante" sort={filters.sort} dir={filters.dir} onSort={sortBy} className="w-[13%]" />
-                  <SortableHead label="Tipo aprovação" column="tipoAprovacao" sort={filters.sort} dir={filters.dir} onSort={sortBy} className="w-[14%]" />
-                  <SortableHead label="Cotações" column="cotacoes" sort={filters.sort} dir={filters.dir} onSort={sortBy} className="w-[8%]" />
-                  <SortableHead label="Data" column="data" sort={filters.sort} dir={filters.dir} onSort={sortBy} className="w-[10%]" />
-                  <TableHead className="w-[8%]">Ações</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Item</TableHead>
+                  <SortableHead label="Itens" column="itens" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
+                  <SortableHead label="Solicitante" column="solicitante" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
+                  <SortableHead label="Aprovação" column="tipoAprovacao" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
+                  <SortableHead label="Cotações" column="cotacoes" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
+                  <SortableHead label="Data" column="data" sort={filters.sort} dir={filters.dir} onSort={sortBy} />
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -390,18 +406,22 @@ export default function ComprasPage() {
                       className="cursor-pointer"
                       onClick={() => navigate(detalheTo(row.id))}
                     >
-                      {todos && <TableCell className="truncate">{row.condominio?.nome || "—"}</TableCell>}
                       <TableCell>
                         <CompraStatusBadge status={row.status} />
                       </TableCell>
+                      {todos && (
+                        <TableCell className="truncate" title={row.condominio?.nome || undefined}>
+                          {row.condominio?.nome || "—"}
+                        </TableCell>
+                      )}
                       <TableCell title={itensResumo.categoriasTitulo}>
-                        {itensResumo.categoria}
+                        <span className={listClosedLabelClass}>{itensResumo.categoria}</span>
                       </TableCell>
                       <TableCell className="overflow-hidden font-medium" title={itensResumo.titulo}>
                         <div className="flex min-w-0 items-center gap-2">
                           <Link
                             to={detalheTo(row.id)}
-                            className="truncate underline-offset-2 hover:underline"
+                            className="min-w-0 truncate underline-offset-2 hover:underline"
                             onClick={(event) => event.stopPropagation()}
                           >
                             {itensResumo.descricao}
@@ -413,12 +433,12 @@ export default function ComprasPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="text-left tabular-nums">
                         {itensResumo.quantidade}
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-0.5">
-                          <span className="truncate">{row.solicitadoPor.nome}</span>
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                          <span className="truncate" title={row.solicitadoPor.nome}>{row.solicitadoPor.nome}</span>
                           {row.solicitadoPor.cargo ? (
                             <span className="text-xs text-muted-foreground">
                               {formatCargoLabel(row.solicitadoPor.cargo)}
@@ -427,11 +447,12 @@ export default function ComprasPage() {
                         </div>
                       </TableCell>
                       <TableCell>{TIPO_APROVACAO_LABEL[row.tipoAprovacao]}</TableCell>
-                      <TableCell>
+                      <TableCell className="justify-items-start text-left">
                         {readiness ? (
                           <span
+                            title={readiness.label}
                             className={cn(
-                              "inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                              "line-clamp-2 w-fit max-w-full min-w-0 justify-self-start whitespace-normal rounded-full px-2 py-0.5 text-left text-xs font-medium leading-4",
                               readiness.className,
                             )}
                           >
@@ -477,7 +498,7 @@ export default function ComprasPage() {
             onPageSize={(pageSize) => updateList({ pageSize, page: 1 })}
           />
           )}
-        </>
+        </ListBusy>
       )}
       <SolicitacaoCompraForm
         open={formOpen}

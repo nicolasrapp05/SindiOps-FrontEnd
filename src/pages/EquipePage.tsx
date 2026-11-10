@@ -14,11 +14,14 @@ import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
+import ListBusy from "@/components/shared/ListBusy"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
+import { listColumn, listColumns, listFit, listFlex } from "@/components/shared/list-columns"
+import RowActions from "@/components/shared/RowActions"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -48,7 +51,7 @@ const SORT_COLUMNS: SortColumn[] = [
   { key: "nome", label: "Nome" },
   { key: "cargo", label: "Cargo" },
   { key: "email", label: "E-mail" },
-  { key: "criadoEm", label: "Data de cadastro" },
+  { key: "criadoEm", label: "Cadastro" },
 ]
 
 type CargoFilter = FuncionarioCargo | "todas"
@@ -91,7 +94,7 @@ export default function EquipePage() {
     setPage(1)
   }
 
-  const { data, isLoading, isError, refetch } = useFuncionarios(apiFilters)
+  const { data, isLoading, isPlaceholderData, isError, refetch } = useFuncionarios(apiFilters)
   const convidar = useConvidarFuncionario()
   const atualizar = useUpdateFuncionario()
   const reenviarConvite = useReenviarConviteFuncionario()
@@ -103,6 +106,7 @@ export default function EquipePage() {
   const totalCount = data?.totalCount
   const totalPages = totalCount != null ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1
   const listaCarregando = isLoading
+  const listaAtualizando = isPlaceholderData
   const CARGOS: CargoFilter[] = ["todas", "zelador", "secretario", "porteiro", "outro"]
 
   const handleConvidar = (payload: ConvidarFuncionarioRequest) => {
@@ -183,7 +187,7 @@ export default function EquipePage() {
             setDir(nextDir)
             setPage(1)
           }}
-          className="w-full min-w-0 md:hidden"
+          className="w-full min-w-0 lg:hidden"
         />
         <Combobox
           options={CARGOS.map((c) => ({
@@ -227,11 +231,11 @@ export default function EquipePage() {
           }
         />
       ) : (
-        <>
+        <ListBusy busy={listaAtualizando} className="space-y-6">
         {listaCarregando ? (
           <ListSkeletonCards />
         ) : (
-        <div className="space-y-3 md:hidden">
+        <div className="space-y-3 lg:hidden">
           {list.map((f) => (
             <ListRecord
               key={f.id}
@@ -248,7 +252,7 @@ export default function EquipePage() {
                   label: "Condomínios",
                   value: f.condominios?.length ? f.condominios.map((c) => c.nome).join(", ") : "Todos",
                 },
-                { label: "Data de cadastro", value: new Date(f.criadoEm).toLocaleDateString("pt-BR") },
+                { label: "Cadastro", value: new Date(f.criadoEm).toLocaleDateString("pt-BR") },
               ]}
               actions={
                 <>
@@ -307,17 +311,27 @@ export default function EquipePage() {
           ))}
         </div>
         )}
-        <ListPanel className="hidden md:block">
-            <Table className="table-fixed">
+        <ListPanel className="hidden lg:block">
+            <Table
+              columns={listColumns(
+                listFit("6.125rem"),
+                listFlex("8rem", "14rem"),
+                listColumn.cargo,
+                listFlex("10rem", "16rem"),
+                listFlex("7rem", "12rem"),
+                listColumn.date,
+                listColumn.actions4,
+              )}
+            >
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[9%]">Status</TableHead>
-                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} className="w-[18%]" />
-                  <SortableHead label="Cargo" column="cargo" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
-                  <SortableHead label="Email" column="email" sort={sort} dir={dir} onSort={sortBy} className="w-[18%]" />
-                  <TableHead className="w-[14%]">Condomínios</TableHead>
-                  <SortableHead label="Data de cadastro" column="criadoEm" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
-                  <TableHead className="w-[15%] text-right">Ações</TableHead>
+                  <TableHead>Status</TableHead>
+                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Cargo" column="cargo" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Email" column="email" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Condomínios</TableHead>
+                  <SortableHead label="Cadastro" column="criadoEm" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -335,18 +349,21 @@ export default function EquipePage() {
                             {getInitials(f.nome)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="truncate font-medium text-foreground">{f.nome}</span>
+                        <span className="truncate font-medium text-foreground" title={f.nome}>{f.nome}</span>
                       </div>
                     </TableCell>
                     <TableCell className={cn("text-gray-600", !f.ativo && "opacity-60")}>
                       {CARGO_LABEL[f.cargo]}
                     </TableCell>
-                    <TableCell className={cn("truncate text-gray-500", !f.ativo && "opacity-60")}>
+                    <TableCell className={cn("truncate text-gray-500", !f.ativo && "opacity-60")} title={f.email}>
                       {f.email}
                     </TableCell>
                     <TableCell className={cn(!f.ativo && "opacity-60")}>
                       {f.condominios?.length ? (
-                        <span className="line-clamp-2 text-sm text-muted-foreground">
+                        <span
+                          className="line-clamp-2 whitespace-normal text-sm leading-5 text-muted-foreground"
+                          title={f.condominios.map((c) => c.nome).join(", ")}
+                        >
                           {f.condominios.map((c) => c.nome).join(", ")}
                         </span>
                       ) : (
@@ -356,71 +373,49 @@ export default function EquipePage() {
                     <TableCell className={cn("whitespace-nowrap text-gray-500", !f.ativo && "opacity-60")}>
                       {new Date(f.criadoEm).toLocaleDateString("pt-BR")}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {f.ativo && f.convitePendente && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            
-                            title="Reenviar convite"
-                            disabled={reenviarConvite.isPending}
-                            onClick={() => reenviarConvite.mutate(f.id)}
-                           aria-label="Reenviar convite">
-                            <Mail className="h-4 w-4" aria-hidden="true" />
-                          </Button>
-                        )}
-                        {f.ativo ? (
-                          f.id !== currentUserId && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="text-amber-600 hover:text-amber-800"
-                              title="Desativar"
-                              disabled={desativar.isPending}
-                              onClick={() => setPendingDeactivate(f)}
-                             aria-label="Desativar">
-                              <UserX className="h-4 w-4" aria-hidden="true" />
-                            </Button>
-                          )
-                        ) : (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="text-emerald-600 hover:text-emerald-800"
-                            title="Ativar"
-                            disabled={ativar.isPending}
-                            onClick={() => ativar.mutate(f.id)}
-                           aria-label="Ativar">
-                            <UserCheck className="h-4 w-4" aria-hidden="true" />
-                          </Button>
-                        )}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          
-                          title="Editar"
-                          onClick={() => openEditModal(f)}
-                         aria-label="Editar">
-                          <Pencil className="h-4 w-4" aria-hidden="true" />
-                        </Button>
-                        {f.id !== currentUserId && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-500 hover:text-red-700"
-                            title="Remover"
-                            onClick={() => setPendingDelete(f)}
-                           aria-label="Remover">
-                            <Trash2 className="h-4 w-4" aria-hidden="true" />
-                          </Button>
-                        )}
-                      </div>
+                    <TableCell>
+                      <RowActions
+                        collapse
+                        items={[
+                          {
+                            label: "Reenviar convite",
+                            icon: Mail,
+                            hidden: !(f.ativo && f.convitePendente),
+                            disabled: reenviarConvite.isPending,
+                            onClick: () => reenviarConvite.mutate(f.id),
+                          },
+                          {
+                            label: "Desativar",
+                            icon: UserX,
+                            hidden: !(f.ativo && f.id !== currentUserId),
+                            disabled: desativar.isPending,
+                            destructive: true,
+                            buttonClassName: "text-amber-600 hover:text-amber-800",
+                            onClick: () => setPendingDeactivate(f),
+                          },
+                          {
+                            label: "Ativar",
+                            icon: UserCheck,
+                            hidden: f.ativo,
+                            disabled: ativar.isPending,
+                            buttonClassName: "text-emerald-600 hover:text-emerald-800",
+                            onClick: () => ativar.mutate(f.id),
+                          },
+                          {
+                            label: "Editar",
+                            icon: Pencil,
+                            onClick: () => openEditModal(f),
+                          },
+                          {
+                            label: "Remover",
+                            icon: Trash2,
+                            hidden: f.id === currentUserId,
+                            destructive: true,
+                            buttonClassName: "text-red-500 hover:text-red-700",
+                            onClick: () => setPendingDelete(f),
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -442,7 +437,7 @@ export default function EquipePage() {
           }}
         />
         )}
-        </>
+        </ListBusy>
       )}
 
       <ConvidarFuncionarioModal

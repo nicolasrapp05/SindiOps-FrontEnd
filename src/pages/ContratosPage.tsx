@@ -28,12 +28,15 @@ import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
+import ListBusy from "@/components/shared/ListBusy"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
 import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
+import { listClosedLabelClass, listColumn, listColumns, listFit, listFlex } from "@/components/shared/list-columns"
+import RowActions from "@/components/shared/RowActions"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import {
@@ -74,11 +77,11 @@ const SUMMARY_CARDS = [
 
 const SORT_COLUMNS: SortColumn[] = [
   { key: "status", label: "Status" },
-  { key: "tipo", label: "Tipo de serviço" },
+  { key: "tipo", label: "Serviço" },
   { key: "fornecedor", label: "Fornecedor" },
   { key: "inicio", label: "Início" },
   { key: "termino", label: "Término" },
-  { key: "valor", label: "Valor mensal" },
+  { key: "valor", label: "Mensal" },
 ]
 
 function formatDate(iso?: string): string {
@@ -125,7 +128,7 @@ export default function ContratosPage() {
 
   const summaryFilters = { page: 1, pageSize: 2000 }
 
-  const { data: contratosRaw, isLoading, isError, refetch } = useContratos(escopoId, tableFilters)
+  const { data: contratosRaw, isLoading, isPlaceholderData, isError, refetch } = useContratos(escopoId, tableFilters)
   const {
     data: contratosSummaryRaw,
     isLoading: resumoInicial,
@@ -155,6 +158,7 @@ export default function ContratosPage() {
   )
 
   const listaCarregando = condoConfigured && isLoading
+  const listaAtualizando = condoConfigured && isPlaceholderData
   const resumoCarregando = condoConfigured && (resumoInicial || resumoTrocando)
 
   const openCreate = () => {
@@ -268,7 +272,7 @@ export default function ContratosPage() {
             setDir(nextDir)
             setPage(1)
           }}
-          className="w-full min-w-0 md:hidden"
+          className="w-full min-w-0 lg:hidden"
         />
         <div className="relative w-full min-w-0 md:w-64">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -308,11 +312,11 @@ export default function ContratosPage() {
           }
         />
       ) : (
-        <div className="space-y-4">
+        <ListBusy busy={listaAtualizando} className="space-y-4">
           {listaCarregando ? (
             <ListSkeletonCards />
           ) : (
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 lg:hidden">
             {contratoList.map((c) => {
               const contato =
                 [c.nomeContato, c.telefoneContato].filter(Boolean).join(" · ") || "-"
@@ -331,7 +335,7 @@ export default function ContratosPage() {
                     { label: "Contato", value: contato },
                     { label: "Início", value: formatDate(c.dataInicio) },
                     { label: "Término", value: formatDate(c.dataFim) },
-                    { label: "Valor mensal", value: c.valorMensal != null ? formatBRL(c.valorMensal) : "-" },
+                    { label: "Mensal", value: c.valorMensal != null ? formatBRL(c.valorMensal) : "-" },
                   ]}
                   actions={
                     <>
@@ -373,21 +377,33 @@ export default function ContratosPage() {
             })}
           </div>
           )}
-          <ListPanel className="hidden md:block">
-            <Table className="table-fixed">
+          <ListPanel className="hidden lg:block">
+            <Table
+              columns={listColumns(
+                listFit("6.375rem"),
+                todos && listFlex("7rem", "12rem"),
+                listFit("10.375rem"),
+                listFlex("7rem", "14rem"),
+                listFlex("6rem", "10rem"),
+                listColumn.date,
+                listColumn.date,
+                listColumn.money,
+                listColumn.actionsCancel,
+              )}
+            >
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
+                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} />
                   {todos && (
-                    <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
+                    <SortableHead label="Condomínio" column="condominio" sort={sort} dir={dir} onSort={sortBy} />
                   )}
-                  <SortableHead label="Status" column="status" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
-                  <SortableHead label="Tipo de serviço" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
-                  <SortableHead label="Fornecedor" column="fornecedor" sort={sort} dir={dir} onSort={sortBy} className="w-[13%]" />
-                  <TableHead className="w-[12%]">Contato</TableHead>
-                  <SortableHead label="Início" column="inicio" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
-                  <SortableHead label="Término" column="termino" sort={sort} dir={dir} onSort={sortBy} className="w-[10%]" />
-                  <SortableHead label="Valor mensal" column="valor" sort={sort} dir={dir} onSort={sortBy} className="w-[12%]" />
-                  <TableHead className="w-[21%] text-right">Ações</TableHead>
+                  <SortableHead label="Serviço" column="tipo" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Fornecedor" column="fornecedor" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Contato</TableHead>
+                  <SortableHead label="Início" column="inicio" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Término" column="termino" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Mensal" column="valor" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -405,55 +421,54 @@ export default function ContratosPage() {
                       key={c.id}
                       className={rowHighlight}
                     >
-                      {todos && <TableCell className="truncate">{c.condominio?.nome || "—"}</TableCell>}
                       <TableCell>
                         <ContratoStatusBadge status={c.status} />
                       </TableCell>
-                      <TableCell className="truncate font-medium text-foreground">
-                        {TIPO_SERVICO_LABEL[c.tipoServico]}
+                      {todos && (
+                        <TableCell className="truncate" title={c.condominio?.nome || undefined}>
+                          {c.condominio?.nome || "—"}
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        <span className={listClosedLabelClass}>{TIPO_SERVICO_LABEL[c.tipoServico]}</span>
                       </TableCell>
-                      <TableCell className="truncate text-gray-700">{c.fornecedor.nome}</TableCell>
-                      <TableCell className="truncate text-gray-600">{contato}</TableCell>
+                      <TableCell className="truncate text-gray-700" title={c.fornecedor.nome}>{c.fornecedor.nome}</TableCell>
+                      <TableCell className="truncate text-gray-600" title={contato}>{contato}</TableCell>
                       <TableCell className="text-gray-600">{formatDate(c.dataInicio)}</TableCell>
                       <TableCell className="text-gray-600">{formatDate(c.dataFim)}</TableCell>
                       <TableCell className="text-gray-700">
                         {c.valorMensal != null ? formatBRL(c.valorMensal) : "-"}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                          {podeCancelarContrato(c.status) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:text-destructive-foreground"
-                              disabled={actionBusy}
-                              onClick={() => setPendingCancel(c)}
-                            >
-                              <Ban className="mr-1.5 h-3.5 w-3.5" />
-                              Cancelar
-                            </Button>
-                          )}
-                          {podeReativarContrato(c.status) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 text-emerald-700"
-                              disabled={actionBusy}
-                              onClick={() => reativarMutation.mutate(c.id)}
-                            >
-                              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                              Reativar
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            
-                            onClick={() => openEdit(c)}
-                           aria-label="Editar">
-                            <Pencil className="h-4 w-4" aria-hidden="true" />
-                          </Button>
-                        </div>
+                      <TableCell>
+                        <RowActions
+                          collapse
+                          items={[
+                            {
+                              label: "Cancelar",
+                              icon: Ban,
+                              hidden: !podeCancelarContrato(c.status),
+                              disabled: actionBusy,
+                              destructive: true,
+                              appearance: "button",
+                              buttonClassName: "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:text-destructive-foreground",
+                              onClick: () => setPendingCancel(c),
+                            },
+                            {
+                              label: "Reativar",
+                              icon: RotateCcw,
+                              hidden: !podeReativarContrato(c.status),
+                              disabled: actionBusy,
+                              appearance: "button",
+                              buttonClassName: "text-emerald-700",
+                              onClick: () => reativarMutation.mutate(c.id),
+                            },
+                            {
+                              label: "Editar",
+                              icon: Pencil,
+                              onClick: () => openEdit(c),
+                            },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   )
@@ -476,7 +491,7 @@ export default function ContratosPage() {
               }}
             />
           )}
-        </div>
+        </ListBusy>
       )}
 
       <ContratoForm

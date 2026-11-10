@@ -20,11 +20,14 @@ import {
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
+import ListBusy from "@/components/shared/ListBusy"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
+import { listColumn, listColumns, listFit, listFlex } from "@/components/shared/list-columns"
+import RowActions from "@/components/shared/RowActions"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import {
@@ -44,7 +47,7 @@ const SORT_COLUMNS: SortColumn[] = [
   { key: "nome", label: "Nome" },
   { key: "tipo", label: "Tipo" },
   { key: "assunto", label: "Assunto" },
-  { key: "atualizadoEm", label: "Última atualização" },
+  { key: "atualizadoEm", label: "Atualização" },
 ]
 
 function formatDate(iso: string | null | undefined): string {
@@ -61,7 +64,7 @@ export default function TemplatesPage() {
   const [editing, setEditing] = useState<EmailTemplate | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<EmailTemplate | null>(null)
 
-  const { data: templates, isLoading, isError, refetch } = useTemplates({
+  const { data: templates, isLoading, isPlaceholderData, isError, refetch } = useTemplates({
     page,
     pageSize,
     sort,
@@ -82,6 +85,7 @@ export default function TemplatesPage() {
   const totalCount = templates?.totalCount
   const totalPages = totalCount != null ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1
   const listaCarregando = isLoading
+  const listaAtualizando = isPlaceholderData
 
   function openCreate() {
     setEditing(null)
@@ -166,11 +170,11 @@ export default function TemplatesPage() {
           }
         />
       ) : (
-        <>
+        <ListBusy busy={listaAtualizando} className="space-y-6">
         {listaCarregando ? (
           <ListSkeletonCards />
         ) : (
-        <div className="space-y-3 md:hidden">
+        <div className="space-y-3 lg:hidden">
           {list.map((t) => (
             <ListRecord
               key={t.id}
@@ -179,7 +183,7 @@ export default function TemplatesPage() {
                 { label: "Tipo", value: <TemplateTipoBadge tipo={t.tipo} /> },
                 { label: "Assunto", value: t.assunto },
                 {
-                  label: "Última atualização",
+                  label: "Atualização",
                   value: t.atualizadoEm ? formatDate(t.atualizadoEm) : `Criado em ${formatDate(t.criadoEm)}`,
                 },
               ]}
@@ -197,15 +201,23 @@ export default function TemplatesPage() {
           ))}
         </div>
         )}
-        <ListPanel className="hidden md:block">
-            <Table className="table-fixed">
+        <ListPanel className="hidden lg:block">
+            <Table
+              columns={listColumns(
+                listFlex("8rem", "16rem"),
+                listFit("12.5rem"),
+                listFlex("8rem", "18rem"),
+                listColumn.dateCreated,
+                listColumn.actions2,
+              )}
+            >
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} className="w-[20%]" />
-                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} className="w-[22%]" />
-                  <SortableHead label="Assunto" column="assunto" sort={sort} dir={dir} onSort={sortBy} className="w-[26%]" />
-                  <SortableHead label="Última atualização" column="atualizadoEm" sort={sort} dir={dir} onSort={sortBy} className="w-[20%]" />
-                  <TableHead className="w-[12%] text-right">Ações</TableHead>
+                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Tipo" column="tipo" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Assunto" column="assunto" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="Atualização" column="atualizadoEm" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -213,11 +225,11 @@ export default function TemplatesPage() {
                   <ListSkeletonRows columns={5} />
                 ) : list.map((t) => (
                   <TableRow key={t.id} className="hover:bg-muted/60">
-                    <TableCell className="truncate font-medium text-foreground">{t.nome}</TableCell>
+                    <TableCell className="truncate font-medium text-foreground" title={t.nome}>{t.nome}</TableCell>
                     <TableCell>
                       <TemplateTipoBadge tipo={t.tipo} />
                     </TableCell>
-                    <TableCell className="truncate text-gray-600">
+                    <TableCell className="truncate text-gray-600" title={t.assunto}>
                       {t.assunto}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
@@ -226,27 +238,24 @@ export default function TemplatesPage() {
                         : <span className="text-xs">Criado em {formatDate(t.criadoEm)}</span>
                       }
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          
-                          onClick={() => openEdit(t)}
-                          aria-label={`Editar ${t.nome}`}
-                        >
-                          <Pencil className="h-4 w-4" aria-hidden="true" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-500 hover:text-red-700"
-                          onClick={() => setDeleteTarget(t)}
-                          aria-label={`Excluir ${t.nome}`}
-                        >
-                          <Trash2 className="h-4 w-4" aria-hidden="true" />
-                        </Button>
-                      </div>
+                    <TableCell>
+                      <RowActions
+                        collapse
+                        items={[
+                          {
+                            label: `Editar ${t.nome}`,
+                            icon: Pencil,
+                            onClick: () => openEdit(t),
+                          },
+                          {
+                            label: `Excluir ${t.nome}`,
+                            icon: Trash2,
+                            destructive: true,
+                            buttonClassName: "text-red-500 hover:text-red-700",
+                            onClick: () => setDeleteTarget(t),
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -268,7 +277,7 @@ export default function TemplatesPage() {
           }}
         />
         )}
-        </>
+        </ListBusy>
       )}
 
       <TemplateEditor

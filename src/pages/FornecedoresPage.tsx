@@ -43,12 +43,15 @@ import ConfirmDialog from "@/components/shared/ConfirmDialog"
 import EmptyState from "@/components/shared/EmptyState"
 import ListPagination from "@/components/shared/ListPagination"
 import { DEFAULT_PAGE_SIZE, type PageSizeOption } from "@/lib/pagination"
+import ListBusy from "@/components/shared/ListBusy"
 import ListPanel from "@/components/shared/ListPanel"
 import ListRecord from "@/components/shared/ListRecord"
 import ListRecordButton from "@/components/shared/ListRecordButton"
 import { KpiCardSkeleton } from "@/components/shared/KpiCardSkeleton"
 import { ListSkeletonCards, ListSkeletonRows } from "@/components/shared/ListSkeleton"
 import ListSortMenu from "@/components/shared/ListSortMenu"
+import { listColumn, listColumns, listFlex } from "@/components/shared/list-columns"
+import RowActions from "@/components/shared/RowActions"
 import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import { useDebounce } from "@/hooks/useDebounce"
@@ -86,7 +89,7 @@ export default function FornecedoresPage() {
     setDir(next.dir)
     setPage(1)
   }
-  const { data: fornecedores, isLoading, isError, refetch } = useFornecedores(filters)
+  const { data: fornecedores, isLoading, isPlaceholderData, isError, refetch } = useFornecedores(filters)
   const { data: summaryData, isLoading: resumoListaCarregando } = useFornecedores({ page: 1, pageSize: 2000 })
   const { data: contratosGlobais, isLoading: contratosResumoCarregando } = useContratosGlobais({ pageSize: 2000 })
   const createMutation = useCreateFornecedor()
@@ -115,6 +118,7 @@ export default function FornecedoresPage() {
   }, [summaryData, contratosGlobais])
 
   const listaCarregando = isLoading
+  const listaAtualizando = isPlaceholderData
   const resumoCarregando = (resumoListaCarregando && !summaryData) || (contratosResumoCarregando && !contratosGlobais)
 
   const openCreate = () => {
@@ -254,11 +258,11 @@ export default function FornecedoresPage() {
           }
         />
       ) : (
-        <div className="space-y-4">
+        <ListBusy busy={listaAtualizando} className="space-y-4">
           {listaCarregando ? (
             <ListSkeletonCards />
           ) : (
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 lg:hidden">
             {fornecedorList.map((f) => {
               const servicos = f.servicos ?? []
               return (
@@ -303,17 +307,27 @@ export default function FornecedoresPage() {
             })}
           </div>
           )}
-          <ListPanel className="hidden md:block">
-            <Table className="table-fixed">
+          <ListPanel className="hidden lg:block">
+            <Table
+              columns={listColumns(
+                listFlex("8rem", "16rem"),
+                listColumn.cnpj,
+                listFlex("6rem", "10rem"),
+                listColumn.phone,
+                listFlex("10rem", "16rem"),
+                listFlex("7rem", "12rem"),
+                listColumn.actions3,
+              )}
+            >
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} className="w-[21%]" />
-                  <SortableHead label="CNPJ" column="cnpj" sort={sort} dir={dir} onSort={sortBy} className="w-[14%]" />
-                  <TableHead className="w-[13%]">Contato</TableHead>
-                  <TableHead className="w-[12%]">Telefone</TableHead>
-                  <TableHead className="w-[16%]">Email</TableHead>
-                  <TableHead className="w-[13%]">Serviços</TableHead>
-                  <TableHead className="w-[11%] text-right">Ações</TableHead>
+                  <SortableHead label="Nome" column="nome" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortableHead label="CNPJ" column="cnpj" sort={sort} dir={dir} onSort={sortBy} />
+                  <TableHead>Contato</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Serviços</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -329,11 +343,11 @@ export default function FornecedoresPage() {
                         setExpandedId(expandedId === f.id ? null : f.id)
                       }
                     >
-                      <TableCell className="truncate font-medium text-foreground">{f.nome}</TableCell>
+                      <TableCell className="truncate font-medium text-foreground" title={f.nome}>{f.nome}</TableCell>
                       <TableCell className="truncate text-gray-500">{f.cnpj || "-"}</TableCell>
-                      <TableCell className="truncate text-gray-600">{f.nomeContato || "-"}</TableCell>
-                      <TableCell className="truncate text-gray-500">{f.telefone || "-"}</TableCell>
-                      <TableCell className="truncate text-gray-500">{f.email || "-"}</TableCell>
+                      <TableCell className="truncate text-gray-600" title={f.nomeContato || undefined}>{f.nomeContato || "-"}</TableCell>
+                      <TableCell className="truncate text-gray-500" title={f.telefone || undefined}>{f.telefone || "-"}</TableCell>
+                      <TableCell className="truncate text-gray-500" title={f.email || undefined}>{f.email || "-"}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {servicos.slice(0, 2).map((s) => (
@@ -351,47 +365,34 @@ export default function FornecedoresPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setExpandedId(expandedId === f.id ? null : f.id)
-                            }}
-                           aria-label="Ver detalhes">
-                            <Eye className="h-4 w-4" aria-hidden="true" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              openEdit(f)
-                            }}
-                           aria-label="Editar">
-                            <Pencil className="h-4 w-4" aria-hidden="true" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-500 hover:text-red-700"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDelete(f)
-                            }}
-                           aria-label="Excluir">
-                            <Trash2 className="h-4 w-4" aria-hidden="true" />
-                          </Button>
-                        </div>
+                      <TableCell>
+                        <RowActions
+                          collapse
+                          items={[
+                            {
+                              label: "Ver detalhes",
+                              icon: Eye,
+                              onClick: () => setExpandedId(expandedId === f.id ? null : f.id),
+                            },
+                            {
+                              label: "Editar",
+                              icon: Pencil,
+                              onClick: () => openEdit(f),
+                            },
+                            {
+                              label: "Excluir",
+                              icon: Trash2,
+                              destructive: true,
+                              buttonClassName: "text-red-500 hover:text-red-700",
+                              onClick: () => handleDelete(f),
+                            },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                     {expandedId === f.id && (
                       <TableRow key={`${f.id}-expand`}>
-                        <TableCell colSpan={7} className="p-0">
+                        <TableCell colSpan={7} aria-colspan={7} className="p-0">
                           <FornecedorExpandido fornecedorId={f.id} />
                         </TableCell>
                       </TableRow>
@@ -417,7 +418,7 @@ export default function FornecedoresPage() {
               }}
             />
           )}
-        </div>
+        </ListBusy>
       )}
 
       {/* Form dialog */}
