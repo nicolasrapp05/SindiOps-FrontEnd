@@ -2,6 +2,7 @@ import { useState, useRef, useMemo } from "react"
 import { Check, ChevronDown } from "lucide-react"
 import { Popover as PopoverPrimitive } from "radix-ui"
 import { cn } from "@/lib/utils"
+import { useNarrowScreen } from "@/lib/use-narrow-screen"
 
 export interface ComboboxOption {
   value: string
@@ -19,6 +20,14 @@ interface ComboboxProps {
   className?: string
 }
 
+const fieldClass = cn(
+  "flex h-10 w-full rounded-lg border border-input bg-card text-sm transition-[color,background-color,border-color,box-shadow] duration-200 outline-none",
+  "placeholder:text-muted-foreground",
+  "hover:border-ring/50",
+  "focus:border-ring focus:ring-3 focus:ring-ring/50",
+  "disabled:cursor-not-allowed disabled:opacity-50",
+)
+
 export default function Combobox({
   options,
   value,
@@ -29,6 +38,7 @@ export default function Combobox({
   disabled,
   className,
 }: ComboboxProps) {
+  const isNarrow = useNarrowScreen()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [dropdownWidth, setDropdownWidth] = useState(0)
@@ -36,6 +46,7 @@ export default function Combobox({
   const inputRef = useRef<HTMLInputElement>(null)
 
   const selectedOption = options.find((o) => o.value === value)
+  const searchLabel = searchPlaceholder ?? "Busca"
 
   const filtered = useMemo(
     () =>
@@ -47,10 +58,21 @@ export default function Combobox({
     [options, search],
   )
 
-  const handleFocus = () => {
+  const syncWidth = () => {
     if (anchorRef.current) {
       setDropdownWidth(anchorRef.current.getBoundingClientRect().width)
     }
+  }
+
+  const handleFocus = () => {
+    syncWidth()
+    setSearch("")
+    setOpen(true)
+  }
+
+  const handleNarrowOpen = () => {
+    if (disabled || open) return
+    syncWidth()
     setSearch("")
     setOpen(true)
   }
@@ -79,7 +101,7 @@ export default function Combobox({
     inputRef.current?.blur()
   }
 
-  // Quando fechado: mostra o label selecionado; quando aberto: mostra o termo de busca
+  // No desktop o próprio campo é a busca. No celular o rótulo fica no botão.
   const inputDisplayValue = open ? search : (selectedOption?.label ?? "")
 
   return (
@@ -92,26 +114,38 @@ export default function Combobox({
         }
       }}
     >
-      {/* Âncora posiciona o dropdown relativo ao input sem ser um trigger de click */}
+      {/* Âncora posiciona o dropdown relativo ao campo sem ser um trigger de click */}
       <PopoverPrimitive.Anchor asChild>
         <div ref={anchorRef} className={cn("relative", className)}>
-          <input
-            ref={inputRef}
-            value={inputDisplayValue}
-            onChange={handleChange}
-            onFocus={handleFocus}
-            onKeyDown={handleKeyDown}
-            placeholder={open ? (searchPlaceholder ?? placeholder) : placeholder}
-            disabled={disabled}
-            autoComplete="off"
-            className={cn(
-              "flex h-10 w-full rounded-lg border border-input bg-card pl-3 pr-8 text-sm transition-[color,background-color,border-color,box-shadow] duration-200 outline-none",
-              "placeholder:text-muted-foreground",
-              "hover:border-ring/50",
-              "focus:border-ring focus:ring-3 focus:ring-ring/50",
-              "disabled:cursor-not-allowed disabled:opacity-50",
-            )}
-          />
+          {isNarrow ? (
+            <button
+              type="button"
+              disabled={disabled}
+              aria-haspopup="listbox"
+              aria-expanded={open}
+              onClick={handleNarrowOpen}
+              className={cn(
+                fieldClass,
+                "cursor-pointer items-center pl-3 pr-8 text-left",
+                "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                !selectedOption && "text-muted-foreground",
+              )}
+            >
+              <span className="truncate">{selectedOption?.label ?? placeholder}</span>
+            </button>
+          ) : (
+            <input
+              ref={inputRef}
+              value={inputDisplayValue}
+              onChange={handleChange}
+              onFocus={handleFocus}
+              onKeyDown={handleKeyDown}
+              placeholder={open ? (searchPlaceholder ?? placeholder) : placeholder}
+              disabled={disabled}
+              autoComplete="off"
+              className={cn(fieldClass, "pl-3 pr-8")}
+            />
+          )}
           <ChevronDown
             className={cn(
               "pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground transition-transform duration-150",
@@ -126,9 +160,9 @@ export default function Combobox({
           align="start"
           sideOffset={4}
           collisionPadding={8}
-          // Não roubar o foco do input ao abrir
+          // Não roubar o foco do campo ao abrir
           onOpenAutoFocus={(e) => e.preventDefault()}
-          // Clicar no próprio input (âncora) não deve fechar
+          // Clicar no próprio campo (âncora) não deve fechar
           onInteractOutside={(e) => {
             if (anchorRef.current?.contains(e.target as Node)) {
               e.preventDefault()
@@ -137,14 +171,30 @@ export default function Combobox({
           style={{ width: dropdownWidth > 0 ? `${dropdownWidth}px` : undefined }}
           className="z-50 overflow-hidden rounded-lg bg-popover p-0 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
+          {isNarrow && (
+            <div className="p-1 pb-0">
+              <input
+                ref={inputRef}
+                value={search}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                placeholder={searchLabel}
+                disabled={disabled}
+                autoComplete="off"
+                aria-label={searchLabel}
+                className={cn(fieldClass, "px-3")}
+              />
+            </div>
+          )}
           <div
             role="listbox"
             // Impede o blur do input ao clicar num item
             onMouseDown={(e) => e.preventDefault()}
             // Impede react-remove-scroll (do Dialog) de cancelar o scroll
             onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
             style={{ maxHeight: "208px", overflowY: "scroll" }}
-            className="dropdown-scroll p-1"
+            className="dropdown-scroll overscroll-contain p-1"
           >
             {filtered.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">{emptyText}</p>

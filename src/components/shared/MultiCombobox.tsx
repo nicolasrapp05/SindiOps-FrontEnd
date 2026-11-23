@@ -2,6 +2,7 @@ import { useState, useRef, useMemo } from "react"
 import { Check, ChevronDown, X } from "lucide-react"
 import { Popover as PopoverPrimitive } from "radix-ui"
 import { cn } from "@/lib/utils"
+import { useNarrowScreen } from "@/lib/use-narrow-screen"
 import type { ComboboxOption } from "./Combobox"
 
 interface MultiComboboxProps {
@@ -14,6 +15,14 @@ interface MultiComboboxProps {
   className?: string
 }
 
+const searchFieldClass = cn(
+  "flex h-10 w-full rounded-lg border border-input bg-card px-3 text-sm transition-[color,background-color,border-color,box-shadow] duration-200 outline-none",
+  "placeholder:text-muted-foreground",
+  "hover:border-ring/50",
+  "focus:border-ring focus:ring-3 focus:ring-ring/50",
+  "disabled:cursor-not-allowed disabled:opacity-50",
+)
+
 export default function MultiCombobox({
   options,
   value,
@@ -23,6 +32,7 @@ export default function MultiCombobox({
   disabled,
   className,
 }: MultiComboboxProps) {
+  const isNarrow = useNarrowScreen()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [dropdownWidth, setDropdownWidth] = useState(0)
@@ -44,10 +54,21 @@ export default function MultiCombobox({
     [options, search],
   )
 
-  const handleFocus = () => {
+  const syncWidth = () => {
     if (anchorRef.current) {
       setDropdownWidth(anchorRef.current.getBoundingClientRect().width)
     }
+  }
+
+  const handleFocus = () => {
+    syncWidth()
+    setSearch("")
+    setOpen(true)
+  }
+
+  const handleNarrowOpen = () => {
+    if (disabled || open) return
+    syncWidth()
     setSearch("")
     setOpen(true)
   }
@@ -63,7 +84,7 @@ export default function MultiCombobox({
       setSearch("")
       inputRef.current?.blur()
     }
-    if (e.key === "Backspace" && !search && value.length > 0) {
+    if (e.key === "Backspace" && !search && value.length > 0 && !isNarrow) {
       onValueChange(value.slice(0, -1))
     }
   }
@@ -75,7 +96,7 @@ export default function MultiCombobox({
       onValueChange([...value, optionValue])
     }
     setSearch("")
-    inputRef.current?.focus()
+    if (!isNarrow) inputRef.current?.focus()
   }
 
   const removeOption = (optionValue: string, e: React.MouseEvent) => {
@@ -103,7 +124,14 @@ export default function MultiCombobox({
             disabled && "cursor-not-allowed opacity-50",
             className,
           )}
-          onClick={() => !disabled && inputRef.current?.focus()}
+          onClick={() => {
+            if (disabled) return
+            if (isNarrow) {
+              handleNarrowOpen()
+              return
+            }
+            inputRef.current?.focus()
+          }}
         >
           {selectedOptions.map((option) => (
             <span
@@ -123,20 +151,28 @@ export default function MultiCombobox({
               )}
             </span>
           ))}
-          <input
-            ref={inputRef}
-            value={search}
-            onChange={handleChange}
-            onFocus={handleFocus}
-            onKeyDown={handleKeyDown}
-            placeholder={selectedOptions.length === 0 ? placeholder : "Buscar..."}
-            disabled={disabled}
-            autoComplete="off"
-            className={cn(
-              "min-w-[80px] flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground",
-              disabled && "cursor-not-allowed",
-            )}
-          />
+          {isNarrow ? (
+            selectedOptions.length === 0 && (
+              <span className="min-w-0 flex-1 truncate px-0.5 text-muted-foreground">
+                {placeholder}
+              </span>
+            )
+          ) : (
+            <input
+              ref={inputRef}
+              value={search}
+              onChange={handleChange}
+              onFocus={handleFocus}
+              onKeyDown={handleKeyDown}
+              placeholder={selectedOptions.length === 0 ? placeholder : "Buscar..."}
+              disabled={disabled}
+              autoComplete="off"
+              className={cn(
+                "min-w-[80px] flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground",
+                disabled && "cursor-not-allowed",
+              )}
+            />
+          )}
           <ChevronDown
             className={cn(
               "pointer-events-none absolute right-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-transform duration-150",
@@ -160,13 +196,29 @@ export default function MultiCombobox({
           style={{ width: dropdownWidth > 0 ? `${dropdownWidth}px` : undefined }}
           className="z-50 overflow-hidden rounded-lg bg-popover p-0 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
+          {isNarrow && (
+            <div className="p-1 pb-0">
+              <input
+                ref={inputRef}
+                value={search}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Busca"
+                disabled={disabled}
+                autoComplete="off"
+                aria-label="Busca"
+                className={searchFieldClass}
+              />
+            </div>
+          )}
           <div
             role="listbox"
             aria-multiselectable
             onMouseDown={(e) => e.preventDefault()}
             onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
             style={{ maxHeight: "208px", overflowY: "scroll" }}
-            className="dropdown-scroll p-1"
+            className="dropdown-scroll overscroll-contain p-1"
           >
             {filtered.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">{emptyText}</p>

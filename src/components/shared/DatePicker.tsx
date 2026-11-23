@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useNarrowScreen } from "@/lib/use-narrow-screen"
 import { cn } from "@/lib/utils"
 
 const FIRST_MONTH = new Date(1970, 0, 1)
@@ -59,19 +60,6 @@ function clampDate(date: Date, min?: Date, max?: Date): Date {
   return date
 }
 
-function useIsNarrowScreen() {
-  const [matches, setMatches] = useState(() => window.matchMedia("(max-width: 767px)").matches)
-
-  useEffect(() => {
-    const media = window.matchMedia("(max-width: 767px)")
-    const onChange = () => setMatches(media.matches)
-    media.addEventListener("change", onChange)
-    return () => media.removeEventListener("change", onChange)
-  }, [])
-
-  return matches
-}
-
 export default function DatePicker({
   id,
   value,
@@ -84,7 +72,7 @@ export default function DatePicker({
   "aria-label": ariaLabel,
   className,
 }: DatePickerProps) {
-  const isNarrow = useIsNarrowScreen()
+  const isNarrow = useNarrowScreen()
   const [open, setOpen] = useState(false)
   const selected = parseIsoDate(value)
   const minDate = parseIsoDate(min)
