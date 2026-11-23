@@ -39,10 +39,15 @@ import SortableHead from "@/components/shared/SortableHead"
 import { nextSort, type SortColumn, type SortDir } from "@/lib/list-sort"
 import { TemplateTipoBadge } from "@/features/comunicacao/components/TemplateTipoBadge"
 import { TEMPLATE_TIPO_LABEL, type TemplateTipo } from "@/features/comunicacao/types/template.types"
+import { TIPO_LABEL, type OcorrenciaTipo } from "@/features/ocorrencias/types/ocorrencia.types"
 import { StatusEntregaBadge } from "@/features/comunicacao/components/StatusEntregaBadge"
 import { useEmailLogs, useEmailLog } from "@/features/comunicacao/hooks/useEmailLogs"
 import type { EmailLog, StatusEntrega } from "@/features/comunicacao/types/email-log.types"
 import { useDebounce } from "@/hooks/useDebounce"
+
+function rotuloTipoOcorrencia(tipo: string) {
+  return TIPO_LABEL[tipo as OcorrenciaTipo] ?? tipo
+}
 
 function ExpandedLogRow({ logId, log }: { logId: string; log: EmailLog }) {
   const { data: detail } = useEmailLog(logId)
@@ -325,7 +330,7 @@ export default function HistoricoEnviosPage() {
                         to={`/ocorrencias/${log.ocorrencia.id}`}
                         className="font-medium text-emerald-700 underline-offset-2 hover:underline"
                       >
-                        {log.ocorrencia.tipoOcorrencia}
+                        {rotuloTipoOcorrencia(log.ocorrencia.tipoOcorrencia)}
                       </Link>
                     ) : (
                       "-"
@@ -408,9 +413,9 @@ export default function HistoricoEnviosPage() {
                           <Link
                             to={`/ocorrencias/${log.ocorrencia.id}`}
                             className="block truncate text-sm font-medium text-emerald-700 underline-offset-2 hover:underline"
-                            title={log.ocorrencia.tipoOcorrencia}
+                            title={rotuloTipoOcorrencia(log.ocorrencia.tipoOcorrencia)}
                           >
-                            {log.ocorrencia.tipoOcorrencia}
+                            {rotuloTipoOcorrencia(log.ocorrencia.tipoOcorrencia)}
                           </Link>
                         ) : (
                           "-"

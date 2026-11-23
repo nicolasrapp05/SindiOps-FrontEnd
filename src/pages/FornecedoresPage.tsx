@@ -278,7 +278,7 @@ export default function FornecedoresPage() {
                     {
                       label: "Serviços",
                       value: servicos.length
-                        ? servicos.map((s) => s.tipo.replace(/_/g, " ")).join(", ")
+                        ? servicos.map((s) => s.tipo).join(", ")
                         : "-",
                     },
                   ]}
@@ -352,7 +352,7 @@ export default function FornecedoresPage() {
                         <div className="flex flex-wrap gap-1">
                           {servicos.slice(0, 2).map((s) => (
                             <Badge key={s.id} variant="secondary" className="text-xs">
-                              {s.tipo.replace(/_/g, " ")}
+                              {s.tipo}
                             </Badge>
                           ))}
                           {servicos.length > 2 && (

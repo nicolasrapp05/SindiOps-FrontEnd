@@ -337,7 +337,7 @@ export default function FornecedorForm({
                     <Input
                       className="flex-1"
                       aria-label={`Tipo do serviço ${idx + 1}`}
-                      placeholder="Tipo (ex: limpeza_geral)"
+                      placeholder="Tipo (ex.: Limpeza geral)"
                       {...register(`servicos.${idx}.tipo`)}
                     />
                     <Input

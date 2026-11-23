@@ -17,7 +17,6 @@ import { Input } from "@/components/ui/input"
 import CurrencyInput from "@/components/shared/CurrencyInput"
 import DatePicker from "@/components/shared/DatePicker"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import TokenTextarea, { type TokenDef, type TokenTextareaHandle } from "@/components/shared/TokenTextarea"
 import {
   Tooltip,
@@ -28,7 +27,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog"
 import { get } from "@/lib/api"
-import { VARIAVEIS_DISPONIVEIS } from "@/features/comunicacao/types/template.types"
+import { TemplateTipoBadge } from "@/features/comunicacao/components/TemplateTipoBadge"
+import { VARIAVEIS_DISPONIVEIS, type TemplateTipo } from "@/features/comunicacao/types/template.types"
 import { useEnviarComunicacao } from "../hooks/useOcorrencias"
 import { useMoradores } from "@/features/moradores/hooks/useMoradores"
 
@@ -238,7 +238,7 @@ export default function EnviarComunicacaoModal({
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="break-words text-sm font-medium text-foreground">{t.nome}</p>
-                      <Badge variant="secondary" className="mt-1 text-xs">{t.tipo}</Badge>
+                      <TemplateTipoBadge tipo={t.tipo as TemplateTipo} />
                     </div>
                     {selectedTemplateId === t.id && (
                       <Check className="h-5 w-5 text-emerald-600" />
