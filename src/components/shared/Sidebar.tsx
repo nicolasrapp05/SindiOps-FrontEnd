@@ -29,6 +29,12 @@ interface SidebarProps {
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-300"
 
+const condoMenuItemClass =
+  "min-h-9 cursor-pointer focus:bg-white/10 focus:text-white"
+
+const condoMenuItemSelectedClass =
+  "bg-white/10 text-white shadow-[inset_3px_0_0_0_#6ee7b7]"
+
 export default function Sidebar({ onNavigate, onClose }: SidebarProps) {
   const user = useAuthStore((s) => s.user)
   const { logout } = useAuth()
@@ -170,13 +176,14 @@ export default function Sidebar({ onNavigate, onClose }: SidebarProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
-              className="min-w-[var(--radix-dropdown-menu-trigger-width)] border border-white/10 bg-[#1a2e22] text-white shadow-lg"
+              className="flex min-w-[var(--radix-dropdown-menu-trigger-width)] flex-col gap-0.5 border border-white/10 bg-[#1a2e22] text-white shadow-lg"
             >
               {(condominios?.length ?? 0) >= 2 && (
                 <DropdownMenuItem
                   className={cn(
-                    "min-h-9 cursor-pointer focus:bg-white/10 focus:text-white",
-                    selectedCondominioId === ALL_CONDOMINIOS_ID && "bg-white/10",
+                    condoMenuItemClass,
+                    selectedCondominioId === ALL_CONDOMINIOS_ID &&
+                      condoMenuItemSelectedClass,
                   )}
                   onSelect={() => setSelectedCondominio(ALL_CONDOMINIOS_ID, ALL_CONDOMINIOS_NOME)}
                 >
@@ -187,8 +194,8 @@ export default function Sidebar({ onNavigate, onClose }: SidebarProps) {
                 <DropdownMenuItem
                   key={c.id}
                   className={cn(
-                    "min-h-9 cursor-pointer focus:bg-white/10 focus:text-white",
-                    selectedCondominioId === c.id && "bg-white/10",
+                    condoMenuItemClass,
+                    selectedCondominioId === c.id && condoMenuItemSelectedClass,
                   )}
                   onSelect={() => setSelectedCondominio(c.id, c.nome)}
                 >
@@ -196,10 +203,7 @@ export default function Sidebar({ onNavigate, onClose }: SidebarProps) {
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem
-                className="min-h-9 cursor-pointer focus:bg-white/10 focus:text-white"
-                asChild
-              >
+              <DropdownMenuItem className={condoMenuItemClass} asChild>
                 <Link to="/condominios" onClick={onNavigate}>
                   Gerenciar condomínios
                 </Link>
