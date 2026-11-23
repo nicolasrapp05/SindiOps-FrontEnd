@@ -491,7 +491,7 @@ export default function GerarEstruturaWizard({
                   Configure ao menos 1 andar e 1 unidade por andar
                 </div>
               ) : (
-                <div className="max-h-44 space-y-2 overflow-y-auto rounded-lg border bg-gray-50 p-3">
+                <div className="max-h-44 space-y-2 overflow-y-auto overscroll-contain rounded-lg border bg-gray-50 p-3">
                   {preview.map((bloco) => (
                     <div key={bloco.nome}>
                       <p className="mb-1 text-xs font-semibold text-gray-600">

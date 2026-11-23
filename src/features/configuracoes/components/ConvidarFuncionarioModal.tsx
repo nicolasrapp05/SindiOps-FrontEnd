@@ -112,7 +112,7 @@ export default function ConvidarFuncionarioModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" showCloseButton>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md" showCloseButton>
         <div className="flex justify-center">
           <div className="rounded-full bg-primary/10 p-3 text-primary">
             <UserPlus className="h-6 w-6" />

@@ -98,7 +98,7 @@ export default function EditarFuncionarioModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" showCloseButton>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md" showCloseButton>
         <div className="flex justify-center">
           <div className="rounded-full bg-primary/10 p-3 text-primary">
             <Pencil className="h-6 w-6" />
