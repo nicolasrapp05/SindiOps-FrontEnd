@@ -16,13 +16,15 @@ export type OcorrenciaTipo =
   | "outro"
 
 export type TipoLocal =
+  | "academia"
   | "area_comum"
-  | "estacionamento"
-  | "portaria"
-  | "jardim"
-  | "salao_festas"
-  | "hall"
+  | "churrasqueira"
   | "corredores"
+  | "estacionamento"
+  | "hall"
+  | "jardim"
+  | "portaria"
+  | "salao_festas"
   | "vizinhos"
   | "outro"
 
@@ -51,13 +53,15 @@ export const TIPO_LABEL: Record<OcorrenciaTipo, string> = {
 }
 
 export const TIPO_LOCAL_LABEL: Record<TipoLocal, string> = {
+  academia: "Academia",
   area_comum: "Área Comum",
-  estacionamento: "Estacionamento",
-  portaria: "Portaria",
-  jardim: "Jardim",
-  salao_festas: "Salão de Festas",
-  hall: "Hall",
+  churrasqueira: "Churrasqueira",
   corredores: "Corredores",
+  estacionamento: "Estacionamento",
+  hall: "Hall",
+  jardim: "Jardim",
+  portaria: "Portaria",
+  salao_festas: "Salão de Festas",
   vizinhos: "Vizinhos",
   outro: "Outro",
 }
