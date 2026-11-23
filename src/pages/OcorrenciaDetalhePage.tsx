@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import Combobox from "@/components/shared/Combobox"
+import { useAuthStore } from "@/store/auth-store"
+import { canAccessAdmin } from "@/lib/cargo-permissions"
 import { useOcorrencia, useUpdateOcorrencia, useUpdateOcorrenciaStatus, useUploadMidia } from "@/features/ocorrencias/hooks/useOcorrencias"
 import OcorrenciaForm from "@/features/ocorrencias/components/OcorrenciaForm"
 import { deleteMidia } from "@/features/ocorrencias/services/ocorrencias.service"
@@ -29,6 +31,8 @@ export default function OcorrenciaDetalhePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const cargo = useAuthStore((s) => s.user?.cargo)
+  const podeEnviarComunicacao = canAccessAdmin(cargo)
   const { data: oc, isLoading, isError } = useOcorrencia(id ?? "")
   const statusMutation = useUpdateOcorrenciaStatus()
   const updateMutation = useUpdateOcorrencia()
@@ -134,9 +138,11 @@ export default function OcorrenciaDetalhePage() {
           <Button variant="outline" onClick={() => setEditOpen(true)}>
             Editar
           </Button>
-          <Button onClick={() => openCom()}>
-            <Send className="mr-2 h-4 w-4" /> Enviar Comunicação
-          </Button>
+          {podeEnviarComunicacao && (
+            <Button onClick={() => openCom()}>
+              <Send className="mr-2 h-4 w-4" /> Enviar Comunicação
+            </Button>
+          )}
         </div>
       </div>
 
@@ -258,21 +264,22 @@ export default function OcorrenciaDetalhePage() {
             </div>
           )}
 
-          {/* Quick actions */}
-          <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
-            <h2 className="mb-4 text-sm font-semibold text-foreground">Ações Rápidas</h2>
-            <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start" onClick={() => openCom("advertencia")}>
-                <AlertTriangle className="mr-2 h-4 w-4 text-amber-500" /> Enviar Advertência
-              </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={() => openCom("multa")}>
-                <AlertTriangle className="mr-2 h-4 w-4 text-red-500" /> Enviar Multa
-              </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={() => openCom("notificacao_ocorrencia")}>
-                <Send className="mr-2 h-4 w-4 text-blue-500" /> Enviar Notificação
-              </Button>
+          {podeEnviarComunicacao && (
+            <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
+              <h2 className="mb-4 text-sm font-semibold text-foreground">Ações Rápidas</h2>
+              <div className="space-y-2">
+                <Button variant="outline" className="w-full justify-start" onClick={() => openCom("advertencia")}>
+                  <AlertTriangle className="mr-2 h-4 w-4 text-amber-500" /> Enviar Advertência
+                </Button>
+                <Button variant="outline" className="w-full justify-start" onClick={() => openCom("multa")}>
+                  <AlertTriangle className="mr-2 h-4 w-4 text-red-500" /> Enviar Multa
+                </Button>
+                <Button variant="outline" className="w-full justify-start" onClick={() => openCom("notificacao_ocorrencia")}>
+                  <Send className="mr-2 h-4 w-4 text-blue-500" /> Enviar Notificação
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Status card */}
           <div className="rounded-2xl bg-card p-6 ring-1 ring-border">
@@ -305,17 +312,18 @@ export default function OcorrenciaDetalhePage() {
         </div>
       </div>
 
-      {/* Communication Modal */}
-      <EnviarComunicacaoModal
-        key={comSession}
-        open={comModalOpen}
-        onOpenChange={setComModalOpen}
-        ocorrenciaId={id ?? ""}
-        condominioId={oc.condominioId}
-        unidadeId={oc.unidade?.id}
-        moradorPadrao={moradorInfo}
-        templateTipoPadrao={templateTipo}
-      />
+      {podeEnviarComunicacao && (
+        <EnviarComunicacaoModal
+          key={comSession}
+          open={comModalOpen}
+          onOpenChange={setComModalOpen}
+          ocorrenciaId={id ?? ""}
+          condominioId={oc.condominioId}
+          unidadeId={oc.unidade?.id}
+          moradorPadrao={moradorInfo}
+          templateTipoPadrao={templateTipo}
+        />
+      )}
 
       <OcorrenciaForm
         open={editOpen}
