@@ -1,7 +1,10 @@
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+import { useNarrowScreen } from "@/lib/use-narrow-screen"
 
 const Toaster = ({ ...props }: ToasterProps) => {
+  const narrow = useNarrowScreen()
+
   return (
     <Sonner
       theme="light"
@@ -29,6 +32,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
           "--border-radius": "var(--radius)",
+          fontFamily: "inherit",
         } as React.CSSProperties
       }
       toastOptions={{
@@ -38,6 +42,15 @@ const Toaster = ({ ...props }: ToasterProps) => {
         },
       }}
       {...props}
+      position={narrow ? "bottom-center" : "bottom-right"}
+      offset={24}
+      mobileOffset={{
+        top: 16,
+        right: 16,
+        bottom: "max(16px, env(safe-area-inset-bottom))",
+        left: 16,
+      }}
+      containerAriaLabel="Notificações"
     />
   )
 }

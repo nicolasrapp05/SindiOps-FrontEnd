@@ -181,30 +181,150 @@
   }
 }
 
-/* Toast: slide in from right, slide out to right.
-   Uses @keyframes + !important because Sonner v2 injects its own <style> via
-   __insertCSS() after our stylesheet, so only !important or higher-specificity
-   rules can reliably override it.
-   No fill-mode on entry so Sonner regains transform control after 0.35s and
-   stacking (--y updates) works normally via its own transitions. */
+/* Toasts: short settle from the bottom edge.
+   Sonner v2 injects its stylesheet after ours, so overrides that must win use
+   !important. `transform` stays with Sonner (stack offset via --y, and swipe).
+   Entry/exit animate translate, scale and opacity instead.
+   The library's own enter is a full-height --y slide; cancel that on the first
+   frame so the settle stays short. Exit is 180ms, inside Sonner's 200ms unmount.
+   Entry fill is backwards only, so a finished toast does not pin opacity/scale
+   and block stacking. */
 
-@keyframes toast-slide-in {
-  from { transform: translateX(calc(100% + 2rem)); opacity: 0; }
-  to   { transform: translateY(0); opacity: 1; }
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+    scale: 0.97;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
 }
 
-@keyframes toast-slide-out {
-  from { transform: translateY(0); opacity: 1; }
-  to   { transform: translateX(calc(100% + 2rem)); opacity: 0; }
+@keyframes toast-in-corner {
+  from {
+    opacity: 0;
+    translate: 12px 14px;
+    scale: 0.97;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    translate: 0 10px;
+    scale: 0.98;
+  }
+}
+
+@keyframes toast-out-corner {
+  from {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    translate: 8px 10px;
+    scale: 0.98;
+  }
+}
+
+@keyframes toast-icon-in {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+[data-sonner-toaster] {
+  pointer-events: none;
 }
 
 [data-sonner-toaster] [data-sonner-toast] {
-  animation: toast-slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  pointer-events: auto;
 }
 
-[data-sonner-toaster] [data-sonner-toast][data-removed='true'][data-swipe-out='false'] {
-  animation: toast-slide-out 0.25s ease-in forwards !important;
+[data-sonner-toaster] [data-sonner-toast]:not([data-mounted='true']) {
+  --y: translateY(0);
   transition: none !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-mounted='true'] {
+  transition:
+    transform 320ms var(--ease-corporate),
+    opacity 200ms var(--ease-corporate),
+    height 320ms var(--ease-corporate),
+    box-shadow 320ms var(--ease-corporate) !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-swiping='true'] {
+  transition: none !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled='true']:not(:focus-visible) {
+  box-shadow:
+    0 16px 40px rgb(15 27 20 / 0.14),
+    0 2px 8px rgb(15 27 20 / 0.06);
+}
+
+[data-sonner-toaster][data-y-position='bottom'] {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 24px) !important;
+}
+
+[data-sonner-toaster][data-x-position='center'] [data-sonner-toast][data-mounted='true']:not([data-removed='true']):not([data-swipe-out='true']) {
+  animation: toast-in 320ms var(--ease-corporate) backwards !important;
+}
+
+[data-sonner-toaster][data-x-position='right'] [data-sonner-toast][data-mounted='true']:not([data-removed='true']):not([data-swipe-out='true']) {
+  animation: toast-in-corner 320ms var(--ease-corporate) backwards !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-removed='true'][data-front='true'][data-swipe-out='false'] {
+  --y: translateY(calc(var(--lift) * var(--offset))) !important;
+}
+
+[data-sonner-toaster][data-x-position='center'] [data-sonner-toast][data-removed='true'][data-swipe-out='false'] {
+  animation: toast-out 180ms cubic-bezier(0.3, 0, 1, 1) forwards !important;
+}
+
+[data-sonner-toaster][data-x-position='right'] [data-sonner-toast][data-removed='true'][data-swipe-out='false'] {
+  animation: toast-out-corner 180ms cubic-bezier(0.3, 0, 1, 1) forwards !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-mounted='true']:not([data-type='loading']):not([data-promise='true']) [data-icon] {
+  animation: toast-icon-in 260ms var(--ease-corporate) 40ms both;
+}
+
+@media (max-width: 600px) {
+  [data-sonner-toaster][data-x-position='center'] {
+    left: 50% !important;
+    right: auto !important;
+    width: min(356px, calc(100% - 32px)) !important;
+    transform: translateX(-50%) !important;
+  }
+
+  [data-sonner-toaster][data-x-position='center'] [data-sonner-toast] {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+  }
 }
 
 @keyframes rise-in {
@@ -241,8 +361,9 @@
   }
 
   .rise-in,
-  [data-sonner-toaster] [data-sonner-toast],
-  [data-sonner-toaster] [data-sonner-toast][data-removed='true'] {
+  [data-sonner-toaster][data-x-position] [data-sonner-toast][data-mounted='true']:not([data-removed='true']):not([data-swipe-out='true']),
+  [data-sonner-toaster][data-x-position] [data-sonner-toast][data-removed='true'][data-swipe-out='false'],
+  [data-sonner-toaster] [data-sonner-toast][data-mounted='true']:not([data-type='loading']):not([data-promise='true']) [data-icon] {
     animation: none !important;
   }
 }
