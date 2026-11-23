@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Loader2 } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -22,6 +21,7 @@ import type { Bloco } from "@/features/condominios/types/condominio.types"
 import { useMoradores } from "@/features/moradores/hooks/useMoradores"
 import type { Morador } from "@/features/moradores/types/morador.types"
 import Combobox from "@/components/shared/Combobox"
+import DateTimePicker from "@/components/shared/DateTimePicker"
 import { useCondominioCadastro, type CondominioOpcao } from "@/components/shared/CondominioCadastroField"
 import { toastFormValidationError } from "@/lib/form-utils"
 import { useOcorrencia } from "../hooks/useOcorrencias"
@@ -222,8 +222,19 @@ export default function OcorrenciaForm({
               {errors.tipoOcorrencia && <p className="text-xs text-destructive">{errors.tipoOcorrencia.message}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>Data e Hora<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
-              <Input type="datetime-local" {...register("ocorreuEm")} />
+              <Label htmlFor="ocorreuEm">Data e Hora<span className="text-destructive ml-0.5 relative top-[2px]">*</span></Label>
+              <Controller
+                control={control}
+                name="ocorreuEm"
+                render={({ field }) => (
+                  <DateTimePicker
+                    id="ocorreuEm"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    aria-invalid={!!errors.ocorreuEm}
+                  />
+                )}
+              />
               {errors.ocorreuEm && <p className="text-xs text-destructive">{errors.ocorreuEm.message}</p>}
             </div>
           </div>
